@@ -1,0 +1,120 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Users ────────────────────────────────────────────────────
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  role      Role     @default(OWNER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  businesses Business[]
+}
+
+enum Role {
+  OWNER
+  ADMIN
+}
+
+// ── Businesses ───────────────────────────────────────────────
+
+model Business {
+  id                 String    @id @default(cuid())
+  name               String
+  googleLocationId   String    @unique // e.g. "accounts/123/locations/456"
+  googlePlaceId      String?
+  googleMapsReviewUrl String?
+  accessToken        String?
+  refreshToken       String?
+  tokenExpiresAt     DateTime?
+  ownerId            String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  owner             User                @relation(fields: [ownerId], references: [id])
+  reviews           Review[]
+  anonymousFeedback AnonymousFeedback[]
+  alertConfigs      AlertConfig[]
+  qrCodes           QrCode[]
+}
+
+// ── Reviews ──────────────────────────────────────────────────
+
+model Review {
+  id             String    @id @default(cuid())
+  businessId     String
+  googleReviewId String    @unique
+  authorName     String
+  authorPhoto    String?
+  rating         Int       // 1–5
+  text           String?
+  publishedAt    DateTime
+  isReplied      Boolean   @default(false)
+  replyText      String?
+  repliedAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id])
+}
+
+// ── Anonymous Feedback ───────────────────────────────────────
+
+model AnonymousFeedback {
+  id         String   @id @default(cuid())
+  businessId String
+  rating     Int      // 1–5
+  text       String?
+  status     String   @default("unread")
+  photos     String[] // Stored as URLs
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id])
+}
+
+// ── Alert Configuration ──────────────────────────────────────
+
+model AlertConfig {
+  id         String    @id @default(cuid())
+  businessId String
+  email      String
+  alertType  AlertType
+  enabled    Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  business Business @relation(fields: [businessId], references: [id])
+
+  @@unique([businessId, alertType])
+}
+
+enum AlertType {
+  NEW_REVIEW
+  RATING_DROP
+}
+
+// ── QR Codes ─────────────────────────────────────────────────
+
+model QrCode {
+  id         String   @id @default(cuid())
+  businessId String
+  code       String   @unique @default(cuid())
+  label      String?
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id])
+}

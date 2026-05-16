@@ -1,0 +1,346 @@
+{
+  "reviews": [
+    {
+      "reviewId": "Rev-001",
+      "reviewer": {
+        "displayName": "Lukas Müller",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Absolutely fantastic! The butter chicken was incredible, and the garlic naan was fresh out of the tandoor. Best Indian food in Berlin by far.",
+      "createTime": "2026-05-14T19:22:10Z",
+      "updateTime": "2026-05-14T19:22:10Z"
+    },
+    {
+      "reviewId": "Rev-002",
+      "reviewer": {
+        "displayName": "Sarah Jenkins",
+        "isAnonymous": false
+      },
+      "starRating": "FOUR",
+      "comment": "Really great flavors and excellent vegan options. It gets very loud in the evening, but the vibe in Kreuzberg is always lively. Will be back.",
+      "createTime": "2026-05-12T20:15:00Z",
+      "updateTime": "2026-05-12T20:15:00Z",
+      "reviewReply": {
+        "comment": "Thank you for the kind words, Sarah! We are thrilled you enjoyed the vegan options. See you next time!",
+        "updateTime": "2026-05-13T09:00:00Z"
+      }
+    },
+    {
+      "reviewId": "Rev-003",
+      "reviewer": {
+        "displayName": "Jonas K.",
+        "isAnonymous": false
+      },
+      "starRating": "TWO",
+      "comment": "Food was okay, but we waited over an hour for our main courses. The staff seemed completely overwhelmed. Not worth the price.",
+      "createTime": "2026-05-10T21:40:33Z",
+      "updateTime": "2026-05-10T21:40:33Z"
+    },
+    {
+      "reviewId": "Rev-004",
+      "reviewer": {
+        "displayName": "Priya Patel",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Authentic taste! Being from Mumbai, I struggle to find proper spice levels in Germany, but they nailed the vindaloo here.",
+      "createTime": "2026-05-09T18:05:12Z",
+      "updateTime": "2026-05-09T18:05:12Z"
+    },
+    {
+      "reviewId": "Rev-005",
+      "reviewer": {
+        "displayName": "Felix R.",
+        "isAnonymous": true
+      },
+      "starRating": "THREE",
+      "comment": "Sehr lecker, aber die Portionen sind für den Preis etwas zu klein. Samosas waren gut.",
+      "createTime": "2026-05-08T13:20:00Z",
+      "updateTime": "2026-05-08T13:20:00Z"
+    },
+    {
+      "reviewId": "Rev-006",
+      "reviewer": {
+        "displayName": "Emma Smith",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "My favorite dinner spot in the city. The Palak Paneer is out of this world.",
+      "createTime": "2026-05-05T19:50:22Z",
+      "updateTime": "2026-05-05T19:50:22Z"
+    },
+    {
+      "reviewId": "Rev-007",
+      "reviewer": {
+        "displayName": "Tom Hansen",
+        "isAnonymous": false
+      },
+      "starRating": "ONE",
+      "comment": "Terrible experience. The chicken was dry and the rice was cold. When I complained, the waiter just shrugged. Avoid.",
+      "createTime": "2026-05-01T20:10:05Z",
+      "updateTime": "2026-05-01T20:10:05Z"
+    },
+    {
+      "reviewId": "Rev-008",
+      "reviewer": {
+        "displayName": "Julia Wagner",
+        "isAnonymous": false
+      },
+      "starRating": "FOUR",
+      "comment": "Gutes indisches Restaurant. Schönes Ambiente und freundliche Bedienung. Mango Lassi ist ein Muss!",
+      "createTime": "2026-04-28T14:30:00Z",
+      "updateTime": "2026-04-28T14:30:00Z"
+    },
+    {
+      "reviewId": "Rev-009",
+      "reviewer": {
+        "displayName": "Daniel O.",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Incredible service. They accommodated my peanut allergy perfectly and the chef even came out to check on us.",
+      "createTime": "2026-04-25T19:00:44Z",
+      "updateTime": "2026-04-25T19:00:44Z",
+      "reviewReply": {
+        "comment": "Hi Daniel, safety is our top priority. We are so glad you had a great and safe dining experience with us!",
+        "updateTime": "2026-04-26T10:15:00Z"
+      }
+    },
+    {
+      "reviewId": "Rev-010",
+      "reviewer": {
+        "displayName": "Maxime L.",
+        "isAnonymous": false
+      },
+      "starRating": "THREE",
+      "comment": "Decent curry, but the cocktails were overpriced and tasted watered down.",
+      "createTime": "2026-04-20T22:15:10Z",
+      "updateTime": "2026-04-20T22:15:10Z"
+    },
+    {
+      "reviewId": "Rev-011",
+      "reviewer": {
+        "displayName": "Andreas Becker",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Immer wieder toll. Schneller Service und das beste Tikka Masala der Stadt.",
+      "createTime": "2026-04-18T18:45:00Z",
+      "updateTime": "2026-04-18T18:45:00Z"
+    },
+    {
+      "reviewId": "Rev-012",
+      "reviewer": {
+        "displayName": "Chloe Davies",
+        "isAnonymous": false
+      },
+      "starRating": "FOUR",
+      "comment": "Lovely decor and great food. Just a bit cramped inside.",
+      "createTime": "2026-04-15T19:30:00Z",
+      "updateTime": "2026-04-15T19:30:00Z"
+    },
+    {
+      "reviewId": "Rev-013",
+      "reviewer": {
+        "displayName": "Marc Richter",
+        "isAnonymous": false
+      },
+      "starRating": "TWO",
+      "comment": "We booked a table but still had to wait 30 minutes outside. Unacceptable.",
+      "createTime": "2026-04-10T20:00:00Z",
+      "updateTime": "2026-04-10T20:00:00Z"
+    },
+    {
+      "reviewId": "Rev-014",
+      "reviewer": {
+        "displayName": "Nina S.",
+        "isAnonymous": true
+      },
+      "starRating": "FIVE",
+      "comment": "Perfekt für ein Date! Gedimmtes Licht und fantastisches Essen.",
+      "createTime": "2026-04-05T21:10:00Z",
+      "updateTime": "2026-04-05T21:10:00Z"
+    },
+    {
+      "reviewId": "Rev-015",
+      "reviewer": {
+        "displayName": "Omar T.",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Everything was 10/10. The Biryani was exactly how it should be.",
+      "createTime": "2026-04-02T19:20:00Z",
+      "updateTime": "2026-04-02T19:20:00Z"
+    },
+    {
+      "reviewId": "Rev-016",
+      "reviewer": {
+        "displayName": "Laura Klein",
+        "isAnonymous": false
+      },
+      "starRating": "FOUR",
+      "comment": "Sehr authentisch. Komme gerne in der Mittagspause hierher.",
+      "createTime": "2026-03-28T12:45:00Z",
+      "updateTime": "2026-03-28T12:45:00Z"
+    },
+    {
+      "reviewId": "Rev-017",
+      "reviewer": {
+        "displayName": "Simon W.",
+        "isAnonymous": false
+      },
+      "starRating": "THREE",
+      "comment": "The food is great, but they don't accept credit cards. In 2026? Come on.",
+      "createTime": "2026-03-25T14:10:00Z",
+      "updateTime": "2026-03-25T14:10:00Z"
+    },
+    {
+      "reviewId": "Rev-018",
+      "reviewer": {
+        "displayName": "Elena R.",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Bestes indisches Restaurant in Friedrichshain. Punkt.",
+      "createTime": "2026-03-20T19:55:00Z",
+      "updateTime": "2026-03-20T19:55:00Z",
+      "reviewReply": {
+        "comment": "Vielen Dank Elena! Bis zum nächsten Mal.",
+        "updateTime": "2026-03-21T08:30:00Z"
+      }
+    },
+    {
+      "reviewId": "Rev-019",
+      "reviewer": {
+        "displayName": "David K.",
+        "isAnonymous": false
+      },
+      "starRating": "ONE",
+      "comment": "Found a hair in my food. Disgusting. They offered a new plate but my appetite was gone.",
+      "createTime": "2026-03-15T20:30:00Z",
+      "updateTime": "2026-03-15T20:30:00Z"
+    },
+    {
+      "reviewId": "Rev-020",
+      "reviewer": {
+        "displayName": "Sophie L.",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Amazing food, super friendly staff. The Chana Masala was perfect.",
+      "createTime": "2026-03-10T18:20:00Z",
+      "updateTime": "2026-03-10T18:20:00Z"
+    },
+    {
+      "reviewId": "Rev-021",
+      "reviewer": {
+        "displayName": "Tim Bauer",
+        "isAnonymous": false
+      },
+      "starRating": "FOUR",
+      "comment": "Gute Auswahl an vegetarischen Gerichten. Service könnte etwas aufmerksamer sein.",
+      "createTime": "2026-03-05T19:40:00Z",
+      "updateTime": "2026-03-05T19:40:00Z"
+    },
+    {
+      "reviewId": "Rev-022",
+      "reviewer": {
+        "displayName": "Alice M.",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Stunning flavors! We tried five different dishes and shared. All were fantastic.",
+      "createTime": "2026-02-28T20:10:00Z",
+      "updateTime": "2026-02-28T20:10:00Z"
+    },
+    {
+      "reviewId": "Rev-023",
+      "reviewer": {
+        "displayName": "Kevin Scholz",
+        "isAnonymous": false
+      },
+      "starRating": "TWO",
+      "comment": "Essen war kalt als es ankam. Lieferdienst war auch unfreundlich.",
+      "createTime": "2026-02-20T18:50:00Z",
+      "updateTime": "2026-02-20T18:50:00Z"
+    },
+    {
+      "reviewId": "Rev-024",
+      "reviewer": {
+        "displayName": "Mia T.",
+        "isAnonymous": true
+      },
+      "starRating": "FIVE",
+      "comment": "I eat here at least once a week. Never disappoints.",
+      "createTime": "2026-02-15T13:00:00Z",
+      "updateTime": "2026-02-15T13:00:00Z"
+    },
+    {
+      "reviewId": "Rev-025",
+      "reviewer": {
+        "displayName": "Hassan E.",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "The tandoori chicken is perfectly charred and juicy. Excellent.",
+      "createTime": "2026-02-10T21:00:00Z",
+      "updateTime": "2026-02-10T21:00:00Z"
+    },
+    {
+      "reviewId": "Rev-026",
+      "reviewer": {
+        "displayName": "Lena Fischer",
+        "isAnonymous": false
+      },
+      "starRating": "FOUR",
+      "comment": "Sehr gemütlich, aber man muss am Wochenende unbedingt reservieren.",
+      "createTime": "2026-02-05T19:30:00Z",
+      "updateTime": "2026-02-05T19:30:00Z"
+    },
+    {
+      "reviewId": "Rev-027",
+      "reviewer": {
+        "displayName": "Chris J.",
+        "isAnonymous": false
+      },
+      "starRating": "THREE",
+      "comment": "Food is decent, but nothing to write home about. Average Berlin Indian food.",
+      "createTime": "2026-01-30T14:15:00Z",
+      "updateTime": "2026-01-30T14:15:00Z"
+    },
+    {
+      "reviewId": "Rev-028",
+      "reviewer": {
+        "displayName": "Katja M.",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Traumhaft lecker! Die Dips zur Vorspeise sind der Hammer.",
+      "createTime": "2026-01-25T18:20:00Z",
+      "updateTime": "2026-01-25T18:20:00Z"
+    },
+    {
+      "reviewId": "Rev-029",
+      "reviewer": {
+        "displayName": "Sam Williams",
+        "isAnonymous": false
+      },
+      "starRating": "ONE",
+      "comment": "Extremely overpriced for the portion sizes. Felt like a tourist trap.",
+      "createTime": "2026-01-18T20:45:00Z",
+      "updateTime": "2026-01-18T20:45:00Z"
+    },
+    {
+      "reviewId": "Rev-030",
+      "reviewer": {
+        "displayName": "Anna Schmidt",
+        "isAnonymous": false
+      },
+      "starRating": "FIVE",
+      "comment": "Absoluter Geheimtipp. Gehe hier mit allen meinen Freunden hin.",
+      "createTime": "2026-01-10T19:00:00Z",
+      "updateTime": "2026-01-10T19:00:00Z"
+    }
+  ]
+}

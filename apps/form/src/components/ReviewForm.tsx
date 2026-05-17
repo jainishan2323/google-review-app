@@ -352,23 +352,47 @@ export default function ReviewForm({
       )}
 
       <div className="mt-auto space-y-3">
-        <button
-          type="button"
-          onClick={handlePostToGoogle}
-          disabled={isGenerating || copyState === "copied"}
-          className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
-          style={{ backgroundColor: brandColor }}
-        >
-          {copyState === "copied" ? "Copied! Redirecting to Google Maps…" : "Copy & Post to Google"}
-        </button>
-        <button
-          type="button"
-          onClick={handleSendPrivately}
-          disabled={isGenerating}
-          className="w-full rounded-xl border border-border py-4 text-base font-medium text-foreground transition-colors hover:bg-muted active:bg-muted disabled:opacity-50"
-        >
-          Actually, send this privately to the manager
-        </button>
+        {rating >= 4 ? (
+          <>
+            <button
+              type="button"
+              onClick={handlePostToGoogle}
+              disabled={isGenerating || copyState === "copied"}
+              className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
+              style={{ backgroundColor: brandColor }}
+            >
+              {copyState === "copied" ? "Copied! Redirecting to Google Maps…" : "Copy & Post to Google"}
+            </button>
+            <button
+              type="button"
+              onClick={handleSendPrivately}
+              disabled={isGenerating}
+              className="w-full rounded-xl border border-border py-4 text-base font-medium text-foreground transition-colors hover:bg-muted active:bg-muted disabled:opacity-50"
+            >
+              Send this privately to the manager
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={handleSendPrivately}
+              disabled={isGenerating}
+              className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
+              style={{ backgroundColor: brandColor }}
+            >
+              Send feedback to the manager
+            </button>
+            <button
+              type="button"
+              onClick={handlePostToGoogle}
+              disabled={isGenerating || copyState === "copied"}
+              className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 touch-manipulation"
+            >
+              {copyState === "copied" ? "Copied! Redirecting…" : "Still want to post to Google →"}
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

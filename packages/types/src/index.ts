@@ -8,6 +8,15 @@ export interface ReviewFormData {
   photos?: string[]; // base64 or presigned URLs
 }
 
+/** Input shape for the chip-based AI review generator (form app). */
+export interface ReviewGenerateInput {
+  rating: number;
+  /** Chips selected by the customer (e.g. ["Great Service", "Clean Environment"]). */
+  tags: string[];
+  /** Optional free-text note from the customer, max 100 chars. */
+  customText?: string;
+}
+
 export interface GeneratedReview {
   text: string;
 }

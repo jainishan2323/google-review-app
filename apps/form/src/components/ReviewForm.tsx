@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface Props {
   businessId: string;
   businessName: string;
+  googlePlaceId: string | null;
   googleMapsReviewUrl: string | null;
   brandColor: string;
   logoUrl: string | null;
@@ -16,26 +17,15 @@ interface Props {
   negativeChips: string[];
 }
 
-function buildReview(rating: number, chips: string[], customText: string, businessName: string): string {
-  const chipPhrase = chips.length > 0 ? chips.join(", ") : "";
-  if (rating >= 4) {
-    return [
-      `I had a wonderful experience at ${businessName}!`,
-      chipPhrase ? `The ${chipPhrase} really stood out.` : "",
-      customText || "I'd definitely recommend it to friends and family.",
-      rating === 5 ? "Five stars without hesitation! ⭐⭐⭐⭐⭐" : "Really happy with my visit! ⭐⭐⭐⭐",
-    ].filter(Boolean).join(" ");
-  }
-  return [
-    `My visit to ${businessName} was okay.`,
-    chipPhrase ? `A few things that could be improved: ${chipPhrase}.` : "",
-    customText || "I hope to see improvements on my next visit.",
-  ].filter(Boolean).join(" ");
-}
+// TODO: replace with real Place ID from Business.googlePlaceId once onboarding is built
+const DEV_PLACE_ID = "ChIJU6S7CYpPqEcReRGBbxw0PRI";
+
+const MAX_GENERATIONS = 3;
 
 export default function ReviewForm({
   businessId,
   businessName,
+  googlePlaceId,
   googleMapsReviewUrl,
   brandColor,
   logoUrl,
@@ -52,20 +42,52 @@ export default function ReviewForm({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [doneMessage, setDoneMessage] = useState("");
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  const [generateCount, setGenerateCount] = useState(0);
 
   const chips = rating >= 4 ? positiveChips : negativeChips;
 
-  const runGenerate = useCallback(() => {
+  const runGenerate = useCallback(async () => {
     setIsGenerating(true);
     setGeneratedReview("");
-    setTimeout(() => {
-      setGeneratedReview(buildReview(rating, selectedChips, customText, businessName));
+    try {
+      const response = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ businessId, rating, tags: selectedChips, customText }),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const isStreaming = response.headers.get("content-type")?.includes("text/plain");
+
+      if (isStreaming && response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let result = "";
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          result += decoder.decode(value, { stream: true });
+          setGeneratedReview(result);
+        }
+      } else {
+        const data = await response.json() as { text: string };
+        setGeneratedReview(data.text);
+      }
+
+      setGenerateCount((c) => c + 1);
+    } catch {
+      setGeneratedReview(
+        "Couldn't generate a review right now. Feel free to write your own above."
+      );
+    } finally {
       setIsGenerating(false);
-    }, 1000);
-  }, [rating, selectedChips, customText, businessName]);
+    }
+  }, [businessId, rating, selectedChips, customText]);
 
   useEffect(() => {
-    if (step === 3) runGenerate();
+    if (step === 3) void runGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
@@ -81,11 +103,44 @@ export default function ReviewForm({
     );
   }
 
-  async function handlePostToGoogle() {
-    try { await navigator.clipboard.writeText(generatedReview); } catch { /* unavailable on some mobile browsers */ }
-    window.open(googleMapsReviewUrl ?? "https://maps.google.com", "_blank", "noopener,noreferrer");
-    setDoneMessage("Review copied! Paste it into Google Maps. Thank you 🎉");
-    setIsDone(true);
+  function handlePostToGoogle() {
+    const placeId = googlePlaceId ?? DEV_PLACE_ID;
+    const reviewUrl = `https://search.google.com/local/writereview?placeid=${placeId}`;
+
+    // Fire-and-forget: record that the customer was redirected to Google.
+    // Does NOT block the clipboard/redirect flow.
+    fetch("/api/submit-private", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        businessId,
+        rating,
+        tags: selectedChips,
+        generatedReview,
+        source: "google_redirect",
+      }),
+    }).catch(() => { /* best-effort */ });
+
+    // Must call clipboard.writeText() synchronously inside the click handler
+    // so mobile browsers (iOS/Android) grant permission via the user gesture.
+    const clipboardPromise =
+      typeof navigator !== "undefined" && navigator.clipboard?.writeText
+        ? navigator.clipboard.writeText(generatedReview)
+        : Promise.reject(new Error("Clipboard API unavailable"));
+
+    clipboardPromise
+      .then(() => {
+        setCopyState("copied");
+        setTimeout(() => {
+          window.location.href = reviewUrl;
+        }, 1500);
+      })
+      .catch(() => {
+        window.alert(
+          `Please copy your review below, then tap OK to open Google Maps:\n\n${generatedReview}`
+        );
+        window.location.href = reviewUrl;
+      });
   }
 
   async function handleSendPrivately() {
@@ -93,7 +148,14 @@ export default function ReviewForm({
       await fetch("/api/submit-private", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessId, rating, text: customText || generatedReview }),
+        body: JSON.stringify({
+          businessId,
+          rating,
+          text: customText || undefined,
+          generatedReview: generatedReview || undefined,
+          tags: selectedChips,
+          source: "private",
+        }),
       });
     } catch { /* best-effort */ }
     setDoneMessage("Thank you! Your feedback has been sent privately to the manager.");
@@ -253,14 +315,19 @@ export default function ReviewForm({
             onChange={(e) => setGeneratedReview(e.target.value)}
             className="min-h-36 resize-none text-sm leading-relaxed"
           />
-          <button
-            type="button"
-            onClick={runGenerate}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation hover:text-foreground transition-colors"
-          >
-            <RefreshCw className="size-3.5" />
-            Generate another version
-          </button>
+          {generateCount < MAX_GENERATIONS ? (
+            <button
+              type="button"
+              onClick={() => void runGenerate()}
+              disabled={isGenerating}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation hover:text-foreground transition-colors disabled:opacity-40"
+            >
+              <RefreshCw className="size-3.5" />
+              Generate another version
+            </button>
+          ) : (
+            <p className="text-xs text-muted-foreground">Maximum regenerations reached</p>
+          )}
         </>
       )}
 
@@ -268,11 +335,11 @@ export default function ReviewForm({
         <button
           type="button"
           onClick={handlePostToGoogle}
-          disabled={isGenerating}
+          disabled={isGenerating || copyState === "copied"}
           className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
           style={{ backgroundColor: brandColor }}
         >
-          Copy &amp; Post to Google
+          {copyState === "copied" ? "Copied! Redirecting to Google Maps…" : "Copy & Post to Google"}
         </button>
         <button
           type="button"

@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { getMockReviews, getMockStats } from "@/lib/mock-data";
 import { prisma } from "@repo/db";
 import { Star, MessageSquare, Clock, TrendingUp } from "lucide-react";
+import { ReviewCTA } from "@/components/ReviewCTA";
 
 export const dynamic = "force-dynamic";
 
@@ -39,14 +40,20 @@ export default async function DashboardPage() {
   const recent = reviews.slice(0, 8);
   const maxCount = Math.max(...stats.distribution.map((d) => d.count));
 
-  const feedbackList = await prisma.anonymousFeedback.findMany({
-    orderBy: { createdAt: "desc" },
-    take: 5,
-  });
-  const totalFeedback = await prisma.anonymousFeedback.count();
+  const [feedbackList, totalFeedback, unreadCount] = await Promise.all([
+    prisma.anonymousFeedback.findMany({
+      orderBy: { createdAt: "desc" },
+      take: 5,
+    }),
+    prisma.anonymousFeedback.count(),
+    prisma.anonymousFeedback.count({ where: { status: "unread" } }),
+  ]);
 
   return (
     <main className="p-8 space-y-8">
+      {/* Gamified CTA */}
+      <ReviewCTA unreadCount={unreadCount} />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

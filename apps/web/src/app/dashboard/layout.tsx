@@ -35,7 +35,7 @@ export default function DashboardLayout({
         <div className="px-6 py-5">
           <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
             ⭐ ReviewApp
-          </span>
+          </span>``
         </div>
 
         <Separator className="bg-sidebar-border" />

@@ -11,7 +11,7 @@ export default async function ReviewFormPage({ params }: PageProps) {
   const [business, config] = await Promise.all([
     prisma.business.findUnique({
       where: { id: businessId },
-      select: { name: true, googleMapsReviewUrl: true },
+      select: { name: true, googlePlaceId: true, googleMapsReviewUrl: true },
     }),
     prisma.formConfig.findUnique({ where: { businessId } }),
   ]);
@@ -28,6 +28,7 @@ export default async function ReviewFormPage({ params }: PageProps) {
     <ReviewForm
       businessId={businessId}
       businessName={business.name}
+      googlePlaceId={business.googlePlaceId ?? null}
       googleMapsReviewUrl={business.googleMapsReviewUrl ?? null}
       brandColor={config?.brandColor ?? "#2563EB"}
       logoUrl={config?.logoUrl ?? null}

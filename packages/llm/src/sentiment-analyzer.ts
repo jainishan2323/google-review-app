@@ -1,9 +1,5 @@
-import OpenAI from "openai";
+import { getLLMClient } from "./client";
 import type { SentimentAnalysis } from "@repo/types";
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
 
 interface ReviewInput {
   text: string;
@@ -40,14 +36,10 @@ Respond ONLY with a valid JSON object using these exact fields:
   "summary": "string"                        // 2–3 sentence executive summary
 }`;
 
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    response_format: { type: "json_object" },
-    max_tokens: 600,
+  const content = await getLLMClient().complete(prompt, {
+    maxTokens: 600,
     temperature: 0.3,
+    json: true,
   });
-
-  const content = response.choices[0]?.message?.content ?? "{}";
   return JSON.parse(content) as SentimentAnalysis;
 }

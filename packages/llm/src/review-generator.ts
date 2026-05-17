@@ -1,44 +1,35 @@
-import OpenAI from "openai";
-import type { ReviewFormData } from "@repo/types";
+import type { ReviewGenerateInput } from "@repo/types";
+import { getLLMClient } from "./client";
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+function buildPrompt(input: ReviewGenerateInput, businessName: string): string {
+  const tags = input.tags.length > 0 ? input.tags.join(", ") : "general experience";
+  const note = input.customText ? ` Note: ${input.customText}.` : "";
+  return (
+    `Write ONE natural first-person Google review. Max 35 words. ` +
+    `No markdown, no quotes, no emojis, no hashtags. ` +
+    `Business: "${businessName}". Rating: ${input.rating}/5. Tags: ${tags}.${note}`
+  );
+}
 
+/** One-shot generation — resolves with the complete review text. */
 export async function generateReviewText(
-  formData: ReviewFormData,
+  input: ReviewGenerateInput,
   businessName: string
 ): Promise<string> {
-  const lines: string[] = [`- Star rating: ${formData.rating}/5`];
-
-  if (formData.whatDidYouEnjoy) {
-    lines.push(`- What they enjoyed: ${formData.whatDidYouEnjoy}`);
-  }
-  if (formData.howWasService) {
-    lines.push(`- Service quality: ${formData.howWasService}`);
-  }
-  if (formData.additionalComments) {
-    lines.push(`- Additional notes: ${formData.additionalComments}`);
-  }
-
-  const prompt = `You are helping a genuine customer write a Google review for "${businessName}".
-
-Based on the following feedback, write a natural, authentic-sounding review in first person:
-${lines.join("\n")}
-
-Guidelines:
-- Write 2–4 sentences
-- Sound like a real person, not a marketing pitch
-- Match the tone to the star rating (enthusiastic for 5★, measured for 3★, honest for 1–2★)
-- Do not fabricate specific details not mentioned in the feedback
-- Do not start with "I" as the very first word`;
-
-  const response = await openai.chat.completions.create({
-    model: "gpt-4o",
-    messages: [{ role: "user", content: prompt }],
-    max_tokens: 250,
-    temperature: 0.75,
+  return getLLMClient().complete(buildPrompt(input, businessName), {
+    maxTokens: 80,
+    temperature: 0.5,
   });
-
-  return response.choices[0]?.message?.content?.trim() ?? "";
 }
+
+/** Streaming generation — resolves with a ReadableStream of text chunks. */
+export async function streamReviewText(
+  input: ReviewGenerateInput,
+  businessName: string
+): Promise<ReadableStream<string>> {
+  return getLLMClient().stream(buildPrompt(input, businessName), {
+    maxTokens: 80,
+    temperature: 0.5,
+  });
+}
+

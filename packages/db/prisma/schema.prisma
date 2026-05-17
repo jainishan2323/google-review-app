@@ -62,6 +62,7 @@ model Review {
   authorPhoto    String?
   rating         Int // 1–5
   text           String?
+  tags           String[]  @default([]) // AI-extracted themes (populated by analysis job)
   publishedAt    DateTime
   isReplied      Boolean   @default(false)
   replyText      String?
@@ -75,13 +76,16 @@ model Review {
 // ── Anonymous Feedback ───────────────────────────────────────
 
 model AnonymousFeedback {
-  id         String   @id @default(cuid())
-  businessId String
-  rating     Int // 1–5
-  text       String?
-  status     String   @default("unread")
-  photos     String[] // Stored as URLs
-  createdAt  DateTime @default(now())
+  id              String   @id @default(cuid())
+  businessId      String
+  rating          Int // 1–5
+  text            String?  // Free-text typed by customer (optional)
+  generatedReview String?  // LLM-generated review text shown to customer
+  tags            String[] @default([]) // Chips selected by customer
+  source          String   @default("private") // "private" | "google_redirect"
+  status          String   @default("unread")
+  photos          String[] // Stored as URLs
+  createdAt       DateTime @default(now())
 
   business Business @relation(fields: [businessId], references: [id])
 }

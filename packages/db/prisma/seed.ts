@@ -2,13 +2,99 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+const DEV_GOOGLE_PLACE_ID = "ChIJU6S7CYpPqEcReRGBbxw0PRI";
+const DEV_GOOGLE_LOCATION_ID = "dev-location-001";
+const DEV_GOOGLE_MAPS_REVIEW_URL = "https://g.page/r/dev-review-url";
+const DEV_BUSINESS_NAME = "Spice Garden Berlin";
+const DEV_USER_EMAIL = "dev@example.com";
+
+// ── Seed helpers ─────────────────────────────────────────────
+
+const POSITIVE_TAGS = [
+  "Great Service",
+  "Clean Environment",
+  "Friendly Staff",
+  "Highly Recommend",
+  "Great Food",
+  "Fast Service",
+  "Good Value",
+];
+
+const NEGATIVE_TAGS = [
+  "Long Wait",
+  "Poor Communication",
+  "Needs Improvement",
+  "Unprofessional",
+  "Overpriced",
+  "Noisy",
+];
+
+const SAMPLE_TEXTS = [
+  "Really enjoyed my visit, will definitely come back!",
+  "Service was a bit slow but the food made up for it.",
+  "Absolutely love this place, everything was perfect.",
+  "Had a mixed experience — staff was great but the wait was too long.",
+  "Best curry I've had in Berlin. Highly recommend.",
+  "Decent food but nothing special.",
+  "The ambiance is lovely. Staff went above and beyond.",
+  null,
+  null,
+  null, // some with no text
+];
+
+function daysAgo(n: number): Date {
+  const d = new Date();
+  d.setDate(d.getDate() - n);
+  return d;
+}
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function pickN<T>(arr: T[], min: number, max: number): T[] {
+  const n = min + Math.floor(Math.random() * (max - min + 1));
+  const shuffled = [...arr].sort(() => Math.random() - 0.5);
+  return shuffled.slice(0, n);
+}
+
+// Deterministic feedback rows spread over the past 90 days
+const FEEDBACK_ROWS = [
+  // High ratings → positive tags
+  { daysBack: 1,  rating: 5, tags: ["Great Service", "Friendly Staff"],         source: "google_redirect" },
+  { daysBack: 2,  rating: 5, tags: ["Great Food", "Highly Recommend"],          source: "private" },
+  { daysBack: 3,  rating: 4, tags: ["Clean Environment", "Good Value"],         source: "google_redirect" },
+  { daysBack: 5,  rating: 5, tags: ["Great Service", "Fast Service"],           source: "google_redirect" },
+  { daysBack: 7,  rating: 4, tags: ["Friendly Staff", "Great Food"],            source: "private" },
+  { daysBack: 8,  rating: 5, tags: ["Highly Recommend", "Great Service"],       source: "google_redirect" },
+  { daysBack: 10, rating: 3, tags: ["Long Wait", "Good Value"],                 source: "private" },
+  { daysBack: 12, rating: 2, tags: ["Poor Communication", "Long Wait"],         source: "private" },
+  { daysBack: 14, rating: 5, tags: ["Great Food", "Clean Environment"],         source: "google_redirect" },
+  { daysBack: 15, rating: 4, tags: ["Great Service", "Friendly Staff"],         source: "private" },
+  { daysBack: 18, rating: 1, tags: ["Unprofessional", "Poor Communication"],    source: "private" },
+  { daysBack: 20, rating: 5, tags: ["Great Food", "Great Service"],             source: "google_redirect" },
+  { daysBack: 22, rating: 3, tags: ["Noisy", "Long Wait"],                      source: "private" },
+  { daysBack: 25, rating: 4, tags: ["Good Value", "Friendly Staff"],            source: "google_redirect" },
+  { daysBack: 28, rating: 5, tags: ["Highly Recommend", "Clean Environment"],   source: "private" },
+  { daysBack: 30, rating: 2, tags: ["Overpriced", "Needs Improvement"],         source: "private" },
+  { daysBack: 35, rating: 5, tags: ["Great Service", "Great Food"],             source: "google_redirect" },
+  { daysBack: 38, rating: 4, tags: ["Fast Service", "Good Value"],              source: "private" },
+  { daysBack: 42, rating: 3, tags: ["Long Wait"],                               source: "private" },
+  { daysBack: 50, rating: 5, tags: ["Friendly Staff", "Great Food"],            source: "google_redirect" },
+  { daysBack: 55, rating: 4, tags: ["Clean Environment", "Great Service"],      source: "private" },
+  { daysBack: 60, rating: 2, tags: ["Poor Communication", "Overpriced"],        source: "private" },
+  { daysBack: 70, rating: 5, tags: ["Highly Recommend", "Great Food"],          source: "google_redirect" },
+  { daysBack: 80, rating: 4, tags: ["Great Service", "Fast Service"],           source: "private" },
+  { daysBack: 88, rating: 3, tags: ["Needs Improvement", "Long Wait"],          source: "private" },
+] as const;
+
 async function main() {
   // Dev user
   const user = await prisma.user.upsert({
-    where: { email: "dev@example.com" },
+    where: { email: DEV_USER_EMAIL },
     update: {},
     create: {
-      email: "dev@example.com",
+      email: DEV_USER_EMAIL,
       name: "Dev Owner",
       role: "OWNER",
     },
@@ -16,18 +102,44 @@ async function main() {
 
   // Dev business
   const business = await prisma.business.upsert({
-    where: { googleLocationId: "dev-location-001" },
-    update: {},
+    where: { googleLocationId: DEV_GOOGLE_LOCATION_ID },
+    update: {
+      googlePlaceId: DEV_GOOGLE_PLACE_ID,
+      googleMapsReviewUrl: DEV_GOOGLE_MAPS_REVIEW_URL,
+    },
     create: {
-      name: "Spice Garden Berlin",
-      googleLocationId: "dev-location-001",
-      googlePlaceId: "ChIJdev0001",
-      googleMapsReviewUrl: "https://g.page/r/dev-review-url",
+      name: DEV_BUSINESS_NAME,
+      googleLocationId: DEV_GOOGLE_LOCATION_ID,
+      googlePlaceId: DEV_GOOGLE_PLACE_ID,
+      googleMapsReviewUrl: DEV_GOOGLE_MAPS_REVIEW_URL,
       ownerId: user.id,
     },
   });
 
+  // Clear existing feedback so re-seeding is idempotent
+  await prisma.anonymousFeedback.deleteMany({ where: { businessId: business.id } });
+
+  // Seed 25 feedback rows across past 90 days
+  for (const row of FEEDBACK_ROWS) {
+    await prisma.anonymousFeedback.create({
+      data: {
+        businessId: business.id,
+        rating: row.rating,
+        tags: [...row.tags],
+        source: row.source,
+        status: row.daysBack <= 7 ? "unread" : "read",
+        text: pick(SAMPLE_TEXTS) ?? null,
+        generatedReview:
+          row.rating >= 4
+            ? `${pick(["Wonderful", "Great", "Fantastic", "Excellent"])} experience at ${DEV_BUSINESS_NAME}! ${row.tags.join(" and ")} really stood out.`
+            : null,
+        createdAt: daysAgo(row.daysBack),
+      },
+    });
+  }
+
   console.log(`✅ Business seeded: ${business.id} — ${business.name}`);
+  console.log(`   Seeded ${FEEDBACK_ROWS.length} feedback rows across the past 90 days.`);
   console.log(`   Use this businessId in your API calls: ${business.id}`);
 }
 

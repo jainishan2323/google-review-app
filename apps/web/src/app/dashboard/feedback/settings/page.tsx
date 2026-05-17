@@ -1,9 +1,11 @@
 import { prisma } from "@repo/db";
 import { Separator } from "@/components/ui/separator";
 import { FormConfigEditor } from "@/components/FormConfigEditor";
+import { QrCodeCard } from "@/components/QrCodeCard";
 
 // Dev: use the seeded business. Replace with session.user.businessId when auth is active.
 const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmp7n349t0002rhz58a4hinnt";
+const FORM_BASE_URL = process.env.NEXT_PUBLIC_FORM_URL ?? "http://localhost:3001";
 
 export default async function FeedbackSettingsPage() {
   const [business, existingConfig] = await Promise.all([
@@ -38,6 +40,10 @@ export default async function FeedbackSettingsPage() {
             : undefined
         }
       />
+
+      <Separator />
+
+      <QrCodeCard formUrl={`${FORM_BASE_URL}/${DEV_BUSINESS_ID}`} />
     </main>
   );
 }

@@ -62,11 +62,13 @@ model Review {
   authorPhoto    String?
   rating         Int // 1–5
   text           String?
-  tags           String[]  @default([]) // AI-extracted themes (populated by analysis job)
-  publishedAt    DateTime
-  isReplied      Boolean   @default(false)
-  replyText      String?
-  repliedAt      DateTime?
+  tags                String[]  @default([]) // AI-extracted themes (populated by analysis job)
+  unmappedInsights    String[]  @default([]) // LLM-identified insights outside the taxonomy
+  publishedAt         DateTime
+  isReplied           Boolean   @default(false)
+  replyText           String?
+  repliedAt           DateTime?
+  analyzedAt          DateTime? // Set when the review has been processed by the batch analyzer
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 
@@ -81,10 +83,12 @@ model AnonymousFeedback {
   rating          Int // 1–5
   text            String?  // Free-text typed by customer (optional)
   generatedReview String?  // LLM-generated review text shown to customer
-  tags            String[] @default([]) // Chips selected by customer
-  source          String   @default("private") // "private" | "google_redirect"
-  status          String   @default("unread")
-  photos          String[] // Stored as URLs
+  tags                String[]  @default([]) // Chips selected by customer
+  unmappedInsights    String[]  @default([]) // LLM-identified insights outside the taxonomy
+  source              String    @default("private") // "private" | "google_redirect"
+  status              String    @default("unread")
+  photos              String[]  // Stored as URLs
+  analyzedAt          DateTime? // Set when the feedback has been processed by the batch analyzer
   createdAt       DateTime @default(now())
 
   business Business @relation(fields: [businessId], references: [id])

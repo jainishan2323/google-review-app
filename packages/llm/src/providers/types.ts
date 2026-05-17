@@ -11,7 +11,7 @@ export interface LLMOptions {
  */
 export interface LLMProvider {
   /** One-shot completion — returns the full text when done. */
-  complete(prompt: string, opts: LLMOptions): Promise<string>;
+  complete(prompt: string, opts: LLMOptions, systemPrompt?: string): Promise<string>;
   /** Streaming completion — returns a ReadableStream of text chunks. */
   stream(prompt: string, opts: LLMOptions): Promise<ReadableStream<string>>;
 }

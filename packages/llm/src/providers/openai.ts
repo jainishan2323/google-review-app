@@ -15,10 +15,13 @@ export class OpenAIProvider implements LLMProvider {
     this.client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   }
 
-  async complete(prompt: string, opts: LLMOptions): Promise<string> {
+  async complete(prompt: string, opts: LLMOptions, systemPrompt?: string): Promise<string> {
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+    if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
+    messages.push({ role: "user", content: prompt });
     const response = await this.client.chat.completions.create({
       model: this.defaultModel,
-      messages: [{ role: "user", content: prompt }],
+      messages,
       max_tokens: opts.maxTokens,
       temperature: opts.temperature,
       ...(opts.json ? { response_format: { type: "json_object" as const } } : {}),

@@ -1,12 +1,180 @@
-export default function ReviewsPage() {
+import { prisma } from "@repo/db";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { Star } from "lucide-react";
+import { ReviewsControls } from "@/components/ReviewsControls";
+
+export const dynamic = "force-dynamic";
+
+const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
+
+type Range = "7d" | "30d" | "90d" | "ytd" | "all";
+type RatingFilter = "all" | "5" | "4" | "3" | "lte2";
+
+function getDateSince(range: Range): Date | null {
+  if (range === "all") return null;
+  const now = new Date();
+  switch (range) {
+    case "7d":  { const d = new Date(now); d.setDate(d.getDate() - 7);   return d; }
+    case "30d": { const d = new Date(now); d.setDate(d.getDate() - 30);  return d; }
+    case "90d": { const d = new Date(now); d.setDate(d.getDate() - 90);  return d; }
+    case "ytd": return new Date(now.getFullYear(), 0, 1);
+  }
+}
+
+function getRatingFilter(rating: RatingFilter): { gte?: number; lte?: number } | number | undefined {
+  switch (rating) {
+    case "5":    return 5;
+    case "4":    return 4;
+    case "3":    return 3;
+    case "lte2": return { lte: 2 };
+    default:     return undefined;
+  }
+}
+
+function StarDisplay({ rating }: { rating: number }) {
   return (
-    <main className="p-8">
-      <h1 className="mb-2 text-2xl font-bold text-gray-900">Reviews</h1>
-      <p className="text-sm text-gray-500">
-        Your Google reviews will appear here. Use the API route{" "}
-        <code className="rounded bg-gray-100 px-1 text-xs">/api/reviews</code>{" "}
-        to sync from Google Business Profile.
-      </p>
+    <span className="text-sm tracking-tight" aria-label={`${rating} out of 5 stars`}>
+      <span className="text-yellow-400">{"★".repeat(rating)}</span>
+      <span className="text-muted-foreground">{"★".repeat(5 - rating)}</span>
+    </span>
+  );
+}
+
+interface PageProps {
+  searchParams: Promise<{ range?: string; rating?: string }>;
+}
+
+export default async function ReviewsPage({ searchParams }: PageProps) {
+  const { range: rawRange, rating: rawRating } = await searchParams;
+
+  const range: Range =
+    rawRange === "7d" || rawRange === "30d" || rawRange === "90d" || rawRange === "ytd" || rawRange === "all"
+      ? rawRange
+      : "all";
+
+  const ratingFilter: RatingFilter =
+    rawRating === "5" || rawRating === "4" || rawRating === "3" || rawRating === "lte2"
+      ? rawRating
+      : "all";
+
+  const since = getDateSince(range);
+  const ratingWhere = getRatingFilter(ratingFilter);
+
+  const [reviews, business] = await Promise.all([
+    prisma.review.findMany({
+      where: {
+        businessId: DEV_BUSINESS_ID,
+        ...(since ? { publishedAt: { gte: since } } : {}),
+        ...(ratingWhere !== undefined
+          ? { rating: typeof ratingWhere === "number" ? ratingWhere : ratingWhere }
+          : {}),
+      },
+      orderBy: { publishedAt: "desc" },
+    }),
+    prisma.business.findUnique({
+      where: { id: DEV_BUSINESS_ID },
+      select: { name: true },
+    }),
+  ]);
+
+  const pendingCount = reviews.filter((r) => !r.isReplied).length;
+
+  const RANGE_LABELS: Record<Range, string> = {
+    "7d": "Last 7 days",
+    "30d": "Last 30 days",
+    "90d": "Last 90 days",
+    ytd: "Year to date",
+    all: "All time",
+  };
+
+  return (
+    <main className="p-8 space-y-8">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">Google Reviews</h1>
+          <p className="text-sm mt-1 text-muted-foreground">
+            {RANGE_LABELS[range]} · {business?.name} · {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <div className="flex items-center gap-3 flex-wrap">
+          {pendingCount > 0 && (
+            <Badge variant="destructive" className="gap-1.5 text-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-white/80 inline-block" />
+              {pendingCount} pending
+            </Badge>
+          )}
+          <ReviewsControls currentRange={range} currentRating={ratingFilter} />
+        </div>
+      </div>
+
+      <Separator />
+
+      {reviews.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-3 text-center">
+          <Star className="h-10 w-10 text-muted-foreground opacity-40" />
+          <p className="text-muted-foreground text-sm">No Google reviews synced yet.</p>
+        </div>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {reviews.map((review) => (
+            <Card key={review.id} className="flex flex-col">
+              <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2">
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-foreground">{review.authorName}</p>
+                  <StarDisplay rating={review.rating} />
+                  <CardTitle className="text-xs font-normal text-muted-foreground">
+                    {review.publishedAt.toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </CardTitle>
+                </div>
+                <Badge
+                  variant={review.isReplied ? "secondary" : "destructive"}
+                  className="text-[10px] shrink-0"
+                >
+                  {review.isReplied ? "Replied" : "Pending"}
+                </Badge>
+              </CardHeader>
+              <CardContent className="flex-1 flex flex-col gap-3">
+                {review.text ? (
+                  <p className="text-sm text-foreground leading-relaxed line-clamp-4">{review.text}</p>
+                ) : (
+                  <p className="text-sm text-muted-foreground italic">No written review.</p>
+                )}
+                {review.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-auto pt-2">
+                    {review.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {review.unmappedInsights.length > 0 && (
+                  <div className="flex flex-wrap gap-1 pt-1">
+                    {review.unmappedInsights.map((insight) => (
+                      <span
+                        key={insight}
+                        className="inline-block rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[11px] text-amber-700 dark:text-amber-400"
+                        title="Novel insight outside your taxonomy"
+                      >
+                        ✦ {insight}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </main>
   );
 }

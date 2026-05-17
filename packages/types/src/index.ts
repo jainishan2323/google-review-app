@@ -77,3 +77,39 @@ export interface AnonymousFeedbackEntry {
   photos: string[];
   createdAt: Date;
 }
+
+// ── Batch Review Analyzer ────────────────────────────────────
+
+/** A single review/feedback record fed into the batch analyzer. */
+export interface ReviewAnalysisInput {
+  id: string;
+  text: string;
+  rating: number;
+}
+
+/** One category from the business's taxonomy dictionary. */
+export interface TaxonomyCategory {
+  name: string;
+  positiveTags: string[];
+  negativeTags: string[];
+}
+
+/** A single tag mapped from a review to the business taxonomy. */
+export interface MappedTag {
+  category: string;
+  tag: string;
+  sentiment: "positive" | "negative";
+}
+
+/** Analysis result for a single review. */
+export interface ReviewAnalysisResult {
+  reviewId: string;
+  mappedTags: MappedTag[];
+  /** Short (≤3 word) insights that didn't match any taxonomy tag. */
+  unmappedInsights: string[];
+}
+
+/** Output shape returned by analyzeBatch(). */
+export interface BatchAnalysisOutput {
+  results: ReviewAnalysisResult[];
+}

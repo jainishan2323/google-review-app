@@ -2,9 +2,12 @@ import { prisma } from "@repo/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export const dynamic = "force-dynamic";
+
+const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
+
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare, ExternalLink } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -17,6 +20,7 @@ function StarDisplay({ rating }: { rating: number }) {
 
 export default async function FeedbackPage() {
   const feedbackList = await prisma.anonymousFeedback.findMany({
+    where: { businessId: DEV_BUSINESS_ID, source: "private" },
     orderBy: { createdAt: "desc" },
   });
 
@@ -68,16 +72,6 @@ export default async function FeedbackPage() {
                   </CardTitle>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
-                  {item.source === "google_redirect" ? (
-                    <Badge variant="secondary" className="text-[10px] gap-1 text-blue-400 border-blue-400/30 bg-blue-400/10">
-                      <ExternalLink className="size-2.5" />
-                      → Google
-                    </Badge>
-                  ) : (
-                    <Badge variant="secondary" className="text-[10px] text-muted-foreground">
-                      Private
-                    </Badge>
-                  )}
                   {item.status === "unread" && (
                     <Badge variant="destructive" className="text-[10px]">New</Badge>
                   )}

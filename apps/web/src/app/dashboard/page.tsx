@@ -1,12 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getMockReviews, getMockStats } from "@/lib/mock-data";
 import { prisma } from "@repo/db";
 import { Star, MessageSquare, Clock, TrendingUp } from "lucide-react";
 import { ReviewCTA } from "@/components/ReviewCTA";
 
 export const dynamic = "force-dynamic";
+
+const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -35,24 +36,46 @@ function RatingBar({ star, count, max }: { star: number; count: number; max: num
 }
 
 export default async function DashboardPage() {
-  const stats = getMockStats();
-  const reviews = getMockReviews();
-  const recent = reviews.slice(0, 8);
-  const maxCount = Math.max(...stats.distribution.map((d) => d.count));
-
-  const [feedbackList, totalFeedback, unreadCount] = await Promise.all([
+  const [business, recentReviews, feedbackList, totalFeedback, unreadCount] = await Promise.all([
+    prisma.business.findUnique({
+      where: { id: DEV_BUSINESS_ID },
+      select: { name: true },
+    }),
+    prisma.review.findMany({
+      where: { businessId: DEV_BUSINESS_ID },
+      orderBy: { publishedAt: "desc" },
+      take: 8,
+      select: { id: true, authorName: true, rating: true, text: true, publishedAt: true, isReplied: true },
+    }),
     prisma.anonymousFeedback.findMany({
+      where: { businessId: DEV_BUSINESS_ID, source: "private" },
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
-    prisma.anonymousFeedback.count(),
-    prisma.anonymousFeedback.count({ where: { status: "unread" } }),
+    prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID } }),
+    prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID, status: "unread" } }),
   ]);
+
+  // Compute stats from real reviews
+  const totalReviews = await prisma.review.count({ where: { businessId: DEV_BUSINESS_ID } });
+  const pendingReplies = await prisma.review.count({ where: { businessId: DEV_BUSINESS_ID, isReplied: false } });
+  const allRatings = await prisma.review.findMany({
+    where: { businessId: DEV_BUSINESS_ID },
+    select: { rating: true },
+  });
+  const avgRating = allRatings.length
+    ? (allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length).toFixed(1)
+    : "—";
+  const distribution = [5, 4, 3, 2, 1].map((star) => ({
+    star,
+    count: allRatings.filter((r) => r.rating === star).length,
+  }));
+  const maxCount = Math.max(...distribution.map((d) => d.count), 1);
 
   return (
     <main className="p-8 space-y-8">
       {/* Gamified CTA */}
-      <ReviewCTA unreadCount={unreadCount} />
+      <ReviewCTA unreadCount={unreadCount} businessId={DEV_BUSINESS_ID} />
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -61,7 +84,7 @@ export default async function DashboardPage() {
             Overview
           </h1>
           <p className="text-sm mt-1 text-muted-foreground">
-            Spice Garden Berlin — Kreuzberg
+            {business?.name ?? "aahaa Indisches Restaurant"}
           </p>
         </div>
         <Badge variant="secondary" className="gap-1">
@@ -82,7 +105,7 @@ export default async function DashboardPage() {
             <Star className="h-4 w-4 text-yellow-400" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-foreground">{stats.averageRating.toFixed(1)}</p>
+            <p className="text-3xl font-bold text-foreground">{avgRating}</p>
             <p className="text-xs mt-1 text-muted-foreground">out of 5.0</p>
           </CardContent>
         </Card>
@@ -95,7 +118,7 @@ export default async function DashboardPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-foreground">{stats.totalReviews}</p>
+            <p className="text-3xl font-bold text-foreground">{totalReviews}</p>
             <p className="text-xs mt-1 text-muted-foreground">on Google</p>
           </CardContent>
         </Card>
@@ -108,7 +131,7 @@ export default async function DashboardPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-3xl font-bold text-foreground">{stats.pendingReplies}</p>
+            <p className="text-3xl font-bold text-foreground">{pendingReplies}</p>
             <p className="text-xs mt-1 text-muted-foreground">awaiting response</p>
           </CardContent>
         </Card>
@@ -134,7 +157,7 @@ export default async function DashboardPage() {
             <CardTitle className="text-sm font-medium text-foreground">Rating Breakdown</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5">
-            {stats.distribution.map(({ star, count }) => (
+            {distribution.map(({ star, count }) => (
               <RatingBar key={star} star={star} count={count} max={maxCount} />
             ))}
           </CardContent>
@@ -146,8 +169,8 @@ export default async function DashboardPage() {
             <CardTitle className="text-sm font-medium text-foreground">Recent Reviews</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recent.map((review) => (
-              <div key={review.reviewId}>
+            {recentReviews.map((review) => (
+              <div key={review.id}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-0.5 flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
@@ -156,12 +179,14 @@ export default async function DashboardPage() {
                       </span>
                       <StarDisplay rating={review.rating} />
                       <span className="text-xs text-muted-foreground">
-                        {review.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        {review.publishedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
                       </span>
                     </div>
-                    <p className="text-sm line-clamp-2 text-muted-foreground">
-                      {review.comment}
-                    </p>
+                    {review.text && (
+                      <p className="text-sm line-clamp-2 text-muted-foreground">
+                        {review.text}
+                      </p>
+                    )}
                   </div>
                   <Badge variant={review.isReplied ? "secondary" : "destructive"} className="shrink-0 text-xs">
                     {review.isReplied ? "Replied" : "Pending"}

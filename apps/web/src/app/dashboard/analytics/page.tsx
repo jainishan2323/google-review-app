@@ -10,7 +10,7 @@ import { ReviewCTA } from "@/components/ReviewCTA";
 
 export const dynamic = "force-dynamic";
 
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmp7n349t0002rhz58a4hinnt";
+const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
 
 type Range = "7d" | "30d" | "90d" | "ytd";
 
@@ -49,6 +49,31 @@ function buildDailyCounts(
     cursor.setDate(cursor.getDate() + 1);
   }
   return result;
+}
+
+function buildTagDeltas(
+  current: { tags: string[] }[],
+  previous: { tags: string[] }[],
+): Record<string, number> {
+  const count = (rows: { tags: string[] }[]) => {
+    const map = new Map<string, number>();
+    for (const row of rows) {
+      for (const tag of row.tags) {
+        map.set(tag, (map.get(tag) ?? 0) + 1);
+      }
+    }
+    return map;
+  };
+  const curr = count(current);
+  const prev = count(previous);
+  const deltas: Record<string, number> = {};
+  for (const [tag, c] of curr) {
+    const p = prev.get(tag) ?? 0;
+    if (p === 0) continue; // no baseline — skip, don't show pill
+    const pct = Math.round(((c - p) / p) * 100);
+    if (pct !== 0) deltas[tag] = pct;
+  }
+  return deltas;
 }
 
 function buildZoneTagBars(
@@ -92,18 +117,43 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   const since = getDateRange(range);
 
-  const [feedback, unreadCount, formConfig] = await Promise.all([
+  const now = new Date();
+  const rangeMs = now.getTime() - since.getTime();
+  const prevSince = new Date(since.getTime() - rangeMs);
+
+  const [feedback, googleReviews, prevFeedback, prevGoogleReviews, pendingAnalysis, formConfig, business] = await Promise.all([
     prisma.anonymousFeedback.findMany({
       where: { businessId: DEV_BUSINESS_ID, createdAt: { gte: since } },
       select: { createdAt: true, rating: true, tags: true, source: true },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.anonymousFeedback.count({
-      where: { businessId: DEV_BUSINESS_ID, status: "unread" },
+    // Google Reviews in range — for zone chart tags
+    prisma.review.findMany({
+      where: { businessId: DEV_BUSINESS_ID, publishedAt: { gte: since } },
+      select: { rating: true, tags: true },
     }),
+    // Previous period — anonymous feedback
+    prisma.anonymousFeedback.findMany({
+      where: { businessId: DEV_BUSINESS_ID, createdAt: { gte: prevSince, lt: since } },
+      select: { tags: true },
+    }),
+    // Previous period — Google reviews
+    prisma.review.findMany({
+      where: { businessId: DEV_BUSINESS_ID, publishedAt: { gte: prevSince, lt: since } },
+      select: { tags: true },
+    }),
+    // Count ALL un-analyzed records (Reviews + AnonymousFeedback) with text
+    Promise.all([
+      prisma.review.count({ where: { businessId: DEV_BUSINESS_ID, analyzedAt: null, text: { not: null } } }),
+      prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID, analyzedAt: null, text: { not: null } } }),
+    ]).then(([r, f]) => r + f),
     prisma.formConfig.findUnique({
       where: { businessId: DEV_BUSINESS_ID },
       include: { categories: { orderBy: { order: "asc" } } },
+    }),
+    prisma.business.findUnique({
+      where: { id: DEV_BUSINESS_ID },
+      select: { name: true },
     }),
   ]);
 
@@ -117,7 +167,18 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   }
 
   const dailyCounts = buildDailyCounts(feedback, since);
-  const zoneBars = buildZoneTagBars(feedback, dynamicZoneMap);
+  // Merge anonymous feedback + Google review tags for the zones chart
+  const allTaggedRows = [
+    ...feedback.map((f) => ({ tags: f.tags, rating: f.rating })),
+    ...googleReviews.map((r) => ({ tags: r.tags, rating: r.rating })),
+  ];
+  const zoneBars = buildZoneTagBars(allTaggedRows, dynamicZoneMap);
+
+  // Real period-over-period deltas
+  const deltas = buildTagDeltas(
+    [...feedback, ...googleReviews],
+    [...prevFeedback, ...prevGoogleReviews],
+  );
 
   const totalFeedback = feedback.length;
   const googleRedirects = feedback.filter((f) => f.source === "google_redirect").length;
@@ -137,14 +198,14 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   return (
     <main className="p-8 space-y-8 max-w-5xl">
       {/* Gamified CTA */}
-      <ReviewCTA unreadCount={unreadCount} />
+      <ReviewCTA unreadCount={pendingAnalysis} businessId={DEV_BUSINESS_ID} />
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Analytics</h1>
           <p className="text-sm mt-1 text-muted-foreground">
-            {RANGE_LABELS[range]} · Spice Garden Berlin
+            {RANGE_LABELS[range]} · {business?.name ?? "aahaa Indisches Restaurant"}
           </p>
         </div>
         <AnalyticsControls currentRange={range} />
@@ -191,7 +252,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           </p>
         </CardHeader>
         <CardContent>
-          <OperationalZonesChart data={zoneBars} businessId={DEV_BUSINESS_ID} zoneOrder={zoneOrder} />
+          <OperationalZonesChart data={zoneBars} businessId={DEV_BUSINESS_ID} zoneOrder={zoneOrder} deltas={deltas} />
         </CardContent>
       </Card>
     </main>

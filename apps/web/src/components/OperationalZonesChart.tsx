@@ -11,7 +11,6 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
-import { MOCK_DELTAS } from "@/lib/analytics-constants";
 import { TagDrillDownSheet } from "@/components/TagDrillDownSheet";
 
 export interface ZoneTagBar {
@@ -25,6 +24,7 @@ interface OperationalZonesChartProps {
   data: ZoneTagBar[];
   businessId: string;
   zoneOrder: string[];
+  deltas: Record<string, number>;
 }
 
 // Delta pill rendered inside the custom YAxis tick
@@ -51,10 +51,11 @@ function CustomYAxisTick(props: {
   y?: number;
   payload?: { value: string };
   onTagClick?: (tag: string) => void;
+  deltas?: Record<string, number>;
 }) {
-  const { x = 0, y = 0, payload, onTagClick } = props;
+  const { x = 0, y = 0, payload, onTagClick, deltas = {} } = props;
   const tag = payload?.value ?? "";
-  const delta = MOCK_DELTAS[tag];
+  const delta = deltas[tag];
   const isPositive = delta !== undefined && delta > 0;
 
   return (
@@ -103,9 +104,10 @@ interface ZoneChartSectionProps {
   tags: ZoneTagBar[];
   onTagClick: (tag: string) => void;
   activeTag: string | null;
+  deltas: Record<string, number>;
 }
 
-function ZoneChartSection({ zone, tags, onTagClick, activeTag }: ZoneChartSectionProps) {
+function ZoneChartSection({ zone, tags, onTagClick, activeTag, deltas }: ZoneChartSectionProps) {
   if (tags.length === 0) return null;
 
   // Recharts requires negative values to go left — store negative as negative number
@@ -151,6 +153,7 @@ function ZoneChartSection({ zone, tags, onTagClick, activeTag }: ZoneChartSectio
             tick={
               <CustomYAxisTick
                 onTagClick={onTagClick}
+                deltas={deltas}
               />
             }
             axisLine={false}
@@ -208,7 +211,7 @@ function ZoneChartSection({ zone, tags, onTagClick, activeTag }: ZoneChartSectio
   );
 }
 
-export function OperationalZonesChart({ data, businessId, zoneOrder }: OperationalZonesChartProps) {
+export function OperationalZonesChart({ data, businessId, zoneOrder, deltas }: OperationalZonesChartProps) {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const handleTagClick = useCallback((tag: string) => {
@@ -256,6 +259,7 @@ export function OperationalZonesChart({ data, businessId, zoneOrder }: Operation
               tags={byZone[zone] ?? []}
               onTagClick={handleTagClick}
               activeTag={selectedTag}
+              deltas={deltas}
             />
           ))}
         </div>

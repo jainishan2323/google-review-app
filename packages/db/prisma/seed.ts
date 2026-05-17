@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import ahaaReviews from "../../../apps/web/src/mock/ahaa-indisches-restaurant.json";
 
 const prisma = new PrismaClient();
 
@@ -180,6 +181,93 @@ async function main() {
   console.log(`   Seeded 3 FeedbackCategory rows (Kitchen, Front of House, Atmosphere).`);
   console.log(`   Seeded ${FEEDBACK_ROWS.length} feedback rows across the past 90 days.`);
   console.log(`   Use this businessId in your API calls: ${business.id}`);
+
+  // ── aahaa Indisches Restaurant ────────────────────────────
+
+  const ahaaBusiness = await prisma.business.upsert({
+    where: { googleLocationId: "ahaa-location-001" },
+    update: {
+      googlePlaceId: "ChIJw6F9_XlRqEcRSsXtXHA8Ju0",
+      googleMapsReviewUrl: "https://www.google.com/maps/search/?api=1&query=aahaa%20Indisches%20Restaurant&query_place_id=ChIJw6F9_XlRqEcRSsXtXHA8Ju0",
+    },
+    create: {
+      name: "aahaa Indisches Restaurant",
+      googleLocationId: "ahaa-location-001",
+      googlePlaceId: "ChIJw6F9_XlRqEcRSsXtXHA8Ju0",
+      googleMapsReviewUrl: "https://www.google.com/maps/search/?api=1&query=aahaa%20Indisches%20Restaurant&query_place_id=ChIJw6F9_XlRqEcRSsXtXHA8Ju0",
+      ownerId: user.id,
+    },
+  });
+
+  // FormConfig + FeedbackCategories for aahaa
+  const ahaaFormConfig = await prisma.formConfig.upsert({
+    where: { businessId: ahaaBusiness.id },
+    create: {
+      businessId: ahaaBusiness.id,
+      brandColor: "#b45309",
+      welcomeMessage: "Thank you for visiting aahaa Indisches Restaurant! We'd love to hear from you.",
+    },
+    update: {},
+  });
+
+  await prisma.feedbackCategory.deleteMany({ where: { formConfigId: ahaaFormConfig.id } });
+  await prisma.feedbackCategory.createMany({
+    data: [
+      {
+        formConfigId: ahaaFormConfig.id,
+        name: "Food",
+        positiveChips: ["Delicious Food", "Authentic Taste", "Great Portions", "Good Value"],
+        negativeChips: ["Bland Taste", "Overpriced", "Small Portions"],
+        order: 0,
+      },
+      {
+        formConfigId: ahaaFormConfig.id,
+        name: "Service",
+        positiveChips: ["Friendly Staff", "Attentive Service", "Fast Service"],
+        negativeChips: ["Long Wait", "Order Mix-up", "Inattentive Staff"],
+        order: 1,
+      },
+      {
+        formConfigId: ahaaFormConfig.id,
+        name: "Atmosphere",
+        positiveChips: ["Nice Ambiance", "Clean Space", "Outdoor Seating"],
+        negativeChips: ["Noisy", "Cramped Space"],
+        order: 2,
+      },
+    ],
+  });
+
+  // Seed Google Reviews from JSON — skip dupes idempotently
+  await prisma.review.deleteMany({ where: { businessId: ahaaBusiness.id } });
+  const ahaaReviewData = ahaaReviews as Array<{
+    stars: number;
+    name: string;
+    reviewUrl: string;
+    text: string | null;
+  }>;
+
+  let reviewsSeeded = 0;
+  for (let i = 0; i < ahaaReviewData.length; i++) {
+    const r = ahaaReviewData[i];
+    // Spread reviews over the past 180 days, newest first
+    const publishedAt = daysAgo(Math.floor((i / ahaaReviewData.length) * 180));
+    await prisma.review.create({
+      data: {
+        businessId: ahaaBusiness.id,
+        googleReviewId: r.reviewUrl,
+        authorName: r.name,
+        rating: r.stars,
+        text: r.text ?? null,
+        publishedAt,
+      },
+    });
+    reviewsSeeded++;
+  }
+
+  console.log(`✅ Business seeded: ${ahaaBusiness.id} — ${ahaaBusiness.name}`);
+  console.log(`   Seeded 3 FeedbackCategory rows (Food, Service, Atmosphere).`);
+  console.log(`   Seeded ${reviewsSeeded} Google Review rows.`);
+  console.log(`   Use this businessId in your API calls: ${ahaaBusiness.id}`);
 }
 
 main()

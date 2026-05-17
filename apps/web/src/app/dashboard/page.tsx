@@ -5,6 +5,8 @@ import { getMockReviews, getMockStats } from "@/lib/mock-data";
 import { prisma } from "@repo/db";
 import { Star, MessageSquare, Clock, TrendingUp } from "lucide-react";
 
+export const dynamic = "force-dynamic";
+
 function StarDisplay({ rating }: { rating: number }) {
   return (
     <span className="text-xs tracking-tight">

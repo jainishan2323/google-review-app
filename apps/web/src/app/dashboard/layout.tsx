@@ -17,7 +17,7 @@ const navItems = [
   { href: "/dashboard/reviews", label: "Reviews", icon: Star },
   { href: "/dashboard/analytics", label: "Analytics", icon: BarChart2 },
   { href: "/dashboard/feedback", label: "Feedback", icon: MessageSquare },
-  { href: "/dashboard/settings", label: "Settings", icon: Settings },
+  { href: "/dashboard/feedback/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({

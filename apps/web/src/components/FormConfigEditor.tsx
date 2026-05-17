@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useTransition, KeyboardEvent } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
-import { X, Loader2 } from "lucide-react";
+import { X, Loader2, Plus, Trash2 } from "lucide-react";
 
 import {
   Form,
@@ -21,20 +21,39 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { upsertFormConfig } from "@/actions/upsertFormConfig";
 
+const categorySchema = z.object({
+  name: z.string().min(1, "Category name is required").max(50),
+  positiveChips: z.array(z.string().min(1)).min(1, "Add at least one positive chip"),
+  negativeChips: z.array(z.string().min(1)).min(1, "Add at least one negative chip"),
+});
+
 const schema = z.object({
   businessId: z.string().min(1),
   brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color"),
   logoUrl: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
   welcomeMessage: z.string().min(1, "Required").max(200),
-  positiveChips: z.array(z.string().min(1)).min(1, "Add at least one"),
-  negativeChips: z.array(z.string().min(1)).min(1, "Add at least one"),
+  categories: z
+    .array(categorySchema)
+    .min(1, "Add at least one category")
+    .max(3, "Maximum 3 categories"),
 });
 
 type FormValues = z.infer<typeof schema>;
 
+interface CategoryData {
+  name: string;
+  positiveChips: string[];
+  negativeChips: string[];
+}
+
 interface Props {
   businessId: string;
-  defaultValues?: Partial<FormValues>;
+  defaultValues?: {
+    brandColor?: string;
+    logoUrl?: string;
+    welcomeMessage?: string;
+    categories?: CategoryData[];
+  };
 }
 
 function ChipInput({
@@ -67,10 +86,6 @@ function ChipInput({
     }
   };
 
-  const removeChip = (index: number) => {
-    onChange(chips.filter((_, i) => i !== index));
-  };
-
   return (
     <div className="flex flex-wrap gap-1.5 rounded-lg border border-input bg-transparent p-2 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50 min-h-10">
       {chips.map((chip, i) => (
@@ -81,7 +96,7 @@ function ChipInput({
           {chip}
           <button
             type="button"
-            onClick={() => removeChip(i)}
+            onClick={() => onChange(chips.filter((_, idx) => idx !== i))}
             className="hover:opacity-70 transition-opacity"
             aria-label={`Remove ${chip}`}
           >
@@ -101,6 +116,14 @@ function ChipInput({
   );
 }
 
+const DEFAULT_CATEGORIES: CategoryData[] = [
+  {
+    name: "General",
+    positiveChips: ["Great Service", "Friendly Staff"],
+    negativeChips: ["Long Wait", "Poor Communication"],
+  },
+];
+
 export function FormConfigEditor({ businessId, defaultValues }: Props) {
   const [isPending, startTransition] = useTransition();
 
@@ -112,19 +135,15 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
       logoUrl: defaultValues?.logoUrl ?? "",
       welcomeMessage:
         defaultValues?.welcomeMessage ?? "Thanks for visiting! We'd love your feedback.",
-      positiveChips: defaultValues?.positiveChips ?? [
-        "Great Service",
-        "Clean Environment",
-        "Friendly Staff",
-        "Highly Recommend",
-      ],
-      negativeChips: defaultValues?.negativeChips ?? [
-        "Long Wait",
-        "Poor Communication",
-        "Needs Improvement",
-        "Unprofessional",
-      ],
+      categories: defaultValues?.categories?.length
+        ? defaultValues.categories
+        : DEFAULT_CATEGORIES,
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "categories",
   });
 
   const onSubmit = (values: FormValues) => {
@@ -162,18 +181,13 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
                           onChange={field.onChange}
                           className="h-8 w-10 cursor-pointer rounded border border-input bg-transparent p-0.5"
                         />
-                        <Input
-                          {...field}
-                          placeholder="#2563EB"
-                          className="font-mono"
-                        />
+                        <Input {...field} placeholder="#2563EB" className="font-mono" />
                       </div>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-
               <FormField
                 control={form.control}
                 name="logoUrl"
@@ -181,12 +195,7 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
                   <FormItem>
                     <FormLabel>Logo URL</FormLabel>
                     <FormControl>
-                      <div>
-                        <Input
-                          {...field}
-                          placeholder="https://example.com/logo.png"
-                        />
-                      </div>
+                      <Input {...field} placeholder="https://example.com/logo.png" />
                     </FormControl>
                     <FormDescription>Optional. Paste a publicly accessible image URL.</FormDescription>
                     <FormMessage />
@@ -210,9 +219,7 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
                 <FormItem>
                   <FormLabel>Welcome Message</FormLabel>
                   <FormControl>
-                    <div>
-                      <Input {...field} placeholder="Thanks for visiting! We'd love your feedback." />
-                    </div>
+                    <Input {...field} placeholder="Thanks for visiting! We'd love your feedback." />
                   </FormControl>
                   <FormDescription>Displayed at the top of the customer feedback form.</FormDescription>
                   <FormMessage />
@@ -222,57 +229,110 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
           </CardContent>
         </Card>
 
-        {/* Chips */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-foreground">Feedback Chips</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <FormField
-              control={form.control}
-              name="positiveChips"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Positive Chips</FormLabel>
-                  <FormControl>
-                    <div>
-                      <ChipInput
-                        chips={field.value}
-                        onChange={field.onChange}
-                        placeholder="Type and press Enter…"
-                        chipClass="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>Shown when customer gives 4–5 stars.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+        {/* Categories */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-foreground">Feedback Categories</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Up to 3 categories. Each appears as a tab in the customer form.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={fields.length >= 3}
+              onClick={() =>
+                append({ name: "", positiveChips: [], negativeChips: [] })
+              }
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" />
+              Add Category
+            </Button>
+          </div>
 
-            <FormField
-              control={form.control}
-              name="negativeChips"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Negative Chips</FormLabel>
-                  <FormControl>
-                    <div>
-                      <ChipInput
-                        chips={field.value}
-                        onChange={field.onChange}
-                        placeholder="Type and press Enter…"
-                        chipClass="bg-red-500/15 text-red-600 dark:text-red-400"
-                      />
-                    </div>
-                  </FormControl>
-                  <FormDescription>Shown when customer gives 1–3 stars.</FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </CardContent>
-        </Card>
+          {form.formState.errors.categories?.root && (
+            <p className="text-sm text-destructive">
+              {form.formState.errors.categories.root.message}
+            </p>
+          )}
+
+          {fields.map((field, index) => (
+            <Card key={field.id} className="border-border/60">
+              <CardHeader className="pb-3 flex flex-row items-center justify-between">
+                <FormField
+                  control={form.control}
+                  name={`categories.${index}.name`}
+                  render={({ field: nameField }) => (
+                    <FormItem className="flex-1 mr-3">
+                      <FormControl>
+                        <Input
+                          {...nameField}
+                          placeholder={`Category ${index + 1} name (e.g. Kitchen)`}
+                          className="text-sm font-medium h-8"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {fields.length > 1 && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive shrink-0"
+                    onClick={() => remove(index)}
+                    aria-label={`Remove category ${index + 1}`}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
+                <FormField
+                  control={form.control}
+                  name={`categories.${index}.positiveChips`}
+                  render={({ field: chipsField }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Positive chips</FormLabel>
+                      <FormControl>
+                        <ChipInput
+                          chips={chipsField.value}
+                          onChange={chipsField.onChange}
+                          placeholder="Type and press Enter…"
+                          chipClass="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">Shown when customer gives 4–5 stars.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name={`categories.${index}.negativeChips`}
+                  render={({ field: chipsField }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Negative chips</FormLabel>
+                      <FormControl>
+                        <ChipInput
+                          chips={chipsField.value}
+                          onChange={chipsField.onChange}
+                          placeholder="Type and press Enter…"
+                          chipClass="bg-red-500/15 text-red-600 dark:text-red-400"
+                        />
+                      </FormControl>
+                      <FormDescription className="text-xs">Shown when customer gives 1–3 stars.</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
 
         <div className="flex justify-end">
           <Button type="submit" disabled={isPending}>

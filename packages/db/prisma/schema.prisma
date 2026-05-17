@@ -119,11 +119,23 @@ model FormConfig {
   brandColor     String   @default("#2563EB")
   logoUrl        String?
   welcomeMessage String   @default("Thanks for visiting! We'd love your feedback.")
-  positiveChips  String[] @default(["Great Service", "Clean Environment", "Friendly Staff", "Highly Recommend"])
-  negativeChips  String[] @default(["Long Wait", "Poor Communication", "Needs Improvement", "Unprofessional"])
   updatedAt      DateTime @updatedAt
 
-  business Business @relation(fields: [businessId], references: [id])
+  business   Business           @relation(fields: [businessId], references: [id])
+  categories FeedbackCategory[]
+}
+
+model FeedbackCategory {
+  id           String   @id @default(cuid())
+  formConfigId String
+  name         String
+  positiveChips String[] @default([])
+  negativeChips String[] @default([])
+  order        Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  formConfig FormConfig @relation(fields: [formConfigId], references: [id], onDelete: Cascade)
 }
 
 // ── QR Codes ─────────────────────────────────────────────────

@@ -5,6 +5,12 @@ import { Star, ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+interface Category {
+  name: string;
+  positiveChips: string[];
+  negativeChips: string[];
+}
+
 interface Props {
   businessId: string;
   businessName: string;
@@ -13,8 +19,7 @@ interface Props {
   brandColor: string;
   logoUrl: string | null;
   welcomeMessage: string;
-  positiveChips: string[];
-  negativeChips: string[];
+  categories: Category[];
 }
 
 // TODO: replace with real Place ID from Business.googlePlaceId once onboarding is built
@@ -30,8 +35,7 @@ export default function ReviewForm({
   brandColor,
   logoUrl,
   welcomeMessage,
-  positiveChips,
-  negativeChips,
+  categories,
 }: Props) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [rating, setRating] = useState(0);
@@ -45,7 +49,7 @@ export default function ReviewForm({
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [generateCount, setGenerateCount] = useState(0);
 
-  const chips = rating >= 4 ? positiveChips : negativeChips;
+
 
   const runGenerate = useCallback(async () => {
     setIsGenerating(true);
@@ -211,7 +215,7 @@ export default function ReviewForm({
     );
   }
 
-  // ── Step 2: Chips + text ─────────────────────────────────────
+  // ── Step 2: Tabs + Chips + text ──────────────────────────────
   if (step === 2) {
     return (
       <div className="flex min-h-svh flex-col p-6 pb-8 gap-6">
@@ -243,22 +247,38 @@ export default function ReviewForm({
           </p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {chips.map((chip) => {
-            const selected = selectedChips.includes(chip);
+        {/* Categories stacked vertically */}
+        <div className="space-y-6">
+          {categories.map((cat) => {
+            const chips = rating >= 4
+              ? cat.positiveChips
+              : [...cat.positiveChips, ...cat.negativeChips];
+            if (chips.length === 0) return null;
             return (
-              <button
-                key={chip}
-                type="button"
-                onClick={() => toggleChip(chip)}
-                className={cn(
-                  "rounded-full border px-4 py-2.5 text-sm font-medium transition-all touch-manipulation active:scale-95",
-                  selected ? "border-transparent text-white" : "border-border bg-background text-foreground"
+              <div key={cat.name} className="space-y-3">
+                {categories.length > 1 && (
+                  <p className="text-sm font-semibold text-foreground">{cat.name}</p>
                 )}
-                style={selected ? { backgroundColor: brandColor } : undefined}
-              >
-                {chip}
-              </button>
+                <div className="flex flex-wrap gap-2">
+                  {chips.map((chip) => {
+                    const selected = selectedChips.includes(chip);
+                    return (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => toggleChip(chip)}
+                        className={cn(
+                          "rounded-full border px-4 py-2.5 text-sm font-medium transition-all touch-manipulation active:scale-95",
+                          selected ? "border-transparent text-white" : "border-border bg-background text-foreground"
+                        )}
+                        style={selected ? { backgroundColor: brandColor } : undefined}
+                      >
+                        {chip}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </div>

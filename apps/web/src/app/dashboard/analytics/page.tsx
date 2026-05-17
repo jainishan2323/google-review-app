@@ -7,7 +7,6 @@ import { AnalyticsControls } from "@/components/AnalyticsControls";
 import { OperationalZonesChart } from "@/components/OperationalZonesChart";
 import type { ZoneTagBar } from "@/components/OperationalZonesChart";
 import { ReviewCTA } from "@/components/ReviewCTA";
-import { ZONE_MAP } from "@/lib/analytics-constants";
 
 export const dynamic = "force-dynamic";
 
@@ -93,7 +92,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   const since = getDateRange(range);
 
-  const [feedback, unreadCount] = await Promise.all([
+  const [feedback, unreadCount, formConfig] = await Promise.all([
     prisma.anonymousFeedback.findMany({
       where: { businessId: DEV_BUSINESS_ID, createdAt: { gte: since } },
       select: { createdAt: true, rating: true, tags: true, source: true },
@@ -102,10 +101,23 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     prisma.anonymousFeedback.count({
       where: { businessId: DEV_BUSINESS_ID, status: "unread" },
     }),
+    prisma.formConfig.findUnique({
+      where: { businessId: DEV_BUSINESS_ID },
+      include: { categories: { orderBy: { order: "asc" } } },
+    }),
   ]);
 
+  // Build zone map + order dynamically from DB categories
+  const zoneOrder = formConfig?.categories.map((c) => c.name) ?? [];
+  const dynamicZoneMap: Record<string, string> = {};
+  for (const cat of formConfig?.categories ?? []) {
+    for (const chip of [...cat.positiveChips, ...cat.negativeChips]) {
+      dynamicZoneMap[chip] = cat.name;
+    }
+  }
+
   const dailyCounts = buildDailyCounts(feedback, since);
-  const zoneBars = buildZoneTagBars(feedback, ZONE_MAP);
+  const zoneBars = buildZoneTagBars(feedback, dynamicZoneMap);
 
   const totalFeedback = feedback.length;
   const googleRedirects = feedback.filter((f) => f.source === "google_redirect").length;
@@ -179,7 +191,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           </p>
         </CardHeader>
         <CardContent>
-          <OperationalZonesChart data={zoneBars} businessId={DEV_BUSINESS_ID} />
+          <OperationalZonesChart data={zoneBars} businessId={DEV_BUSINESS_ID} zoneOrder={zoneOrder} />
         </CardContent>
       </Card>
     </main>

@@ -10,7 +10,10 @@ const FORM_BASE_URL = process.env.NEXT_PUBLIC_FORM_URL ?? "http://localhost:3001
 export default async function FeedbackSettingsPage() {
   const [business, existingConfig] = await Promise.all([
     prisma.business.findUnique({ where: { id: DEV_BUSINESS_ID }, select: { name: true } }),
-    prisma.formConfig.findUnique({ where: { businessId: DEV_BUSINESS_ID } }),
+    prisma.formConfig.findUnique({
+      where: { businessId: DEV_BUSINESS_ID },
+      include: { categories: { orderBy: { order: "asc" } } },
+    }),
   ]);
 
   return (
@@ -34,8 +37,11 @@ export default async function FeedbackSettingsPage() {
                 brandColor: existingConfig.brandColor,
                 logoUrl: existingConfig.logoUrl ?? "",
                 welcomeMessage: existingConfig.welcomeMessage,
-                positiveChips: existingConfig.positiveChips,
-                negativeChips: existingConfig.negativeChips,
+                categories: existingConfig.categories.map((c) => ({
+                  name: c.name,
+                  positiveChips: c.positiveChips,
+                  negativeChips: c.negativeChips,
+                })),
               }
             : undefined
         }

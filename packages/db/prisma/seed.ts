@@ -116,6 +116,44 @@ async function main() {
     },
   });
 
+  // Seed FormConfig + FeedbackCategories (idempotent)
+  const formConfig = await prisma.formConfig.upsert({
+    where: { businessId: business.id },
+    create: {
+      businessId: business.id,
+      brandColor: "#16a34a",
+      welcomeMessage: "Thanks for visiting Spice Garden Berlin! We'd love your feedback.",
+    },
+    update: {},
+  });
+
+  await prisma.feedbackCategory.deleteMany({ where: { formConfigId: formConfig.id } });
+  await prisma.feedbackCategory.createMany({
+    data: [
+      {
+        formConfigId: formConfig.id,
+        name: "Kitchen",
+        positiveChips: ["Great Food", "Good Value"],
+        negativeChips: ["Overpriced"],
+        order: 0,
+      },
+      {
+        formConfigId: formConfig.id,
+        name: "Front of House",
+        positiveChips: ["Great Service", "Friendly Staff", "Fast Service"],
+        negativeChips: ["Long Wait", "Poor Communication", "Unprofessional"],
+        order: 1,
+      },
+      {
+        formConfigId: formConfig.id,
+        name: "Atmosphere",
+        positiveChips: ["Clean Environment", "Highly Recommend"],
+        negativeChips: ["Noisy", "Needs Improvement"],
+        order: 2,
+      },
+    ],
+  });
+
   // Clear existing feedback so re-seeding is idempotent
   await prisma.anonymousFeedback.deleteMany({ where: { businessId: business.id } });
 
@@ -139,6 +177,7 @@ async function main() {
   }
 
   console.log(`✅ Business seeded: ${business.id} — ${business.name}`);
+  console.log(`   Seeded 3 FeedbackCategory rows (Kitchen, Front of House, Atmosphere).`);
   console.log(`   Seeded ${FEEDBACK_ROWS.length} feedback rows across the past 90 days.`);
   console.log(`   Use this businessId in your API calls: ${business.id}`);
 }

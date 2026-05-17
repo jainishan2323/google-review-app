@@ -1,34 +1,8 @@
 /**
- * Maps each known feedback tag to one of three operational zones.
- * Tags not present here are excluded from the Operational Zones chart.
- */
-export const ZONE_MAP: Record<string, string> = {
-  // Kitchen
-  "Great Food": "Kitchen",
-  "Good Value": "Kitchen",
-  "Overpriced": "Kitchen",
-
-  // Front of House
-  "Great Service": "Front of House",
-  "Friendly Staff": "Front of House",
-  "Fast Service": "Front of House",
-  "Long Wait": "Front of House",
-  "Poor Communication": "Front of House",
-  "Unprofessional": "Front of House",
-
-  // Atmosphere
-  "Clean Environment": "Atmosphere",
-  "Noisy": "Atmosphere",
-  "Highly Recommend": "Atmosphere",
-  "Needs Improvement": "Atmosphere",
-};
-
-export const ZONE_ORDER = ["Kitchen", "Front of House", "Atmosphere"] as const;
-
-/**
  * Mock delta values for each tag (percentage change vs previous period).
  * Positive = increasing (bad for negative tags, good for positive).
  * Negative = decreasing.
+ * These are mocked — real period-over-period computation is deferred.
  */
 export const MOCK_DELTAS: Record<string, number> = {
   "Great Food": -8,

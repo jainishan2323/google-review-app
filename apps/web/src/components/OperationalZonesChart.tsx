@@ -11,7 +11,7 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
-import { ZONE_ORDER, MOCK_DELTAS } from "@/lib/analytics-constants";
+import { MOCK_DELTAS } from "@/lib/analytics-constants";
 import { TagDrillDownSheet } from "@/components/TagDrillDownSheet";
 
 export interface ZoneTagBar {
@@ -24,6 +24,7 @@ export interface ZoneTagBar {
 interface OperationalZonesChartProps {
   data: ZoneTagBar[];
   businessId: string;
+  zoneOrder: string[];
 }
 
 // Delta pill rendered inside the custom YAxis tick
@@ -207,15 +208,15 @@ function ZoneChartSection({ zone, tags, onTagClick, activeTag }: ZoneChartSectio
   );
 }
 
-export function OperationalZonesChart({ data, businessId }: OperationalZonesChartProps) {
+export function OperationalZonesChart({ data, businessId, zoneOrder }: OperationalZonesChartProps) {
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const handleTagClick = useCallback((tag: string) => {
     setSelectedTag(tag);
   }, []);
 
-  // Group tags by zone, preserving ZONE_ORDER
-  const byZone = ZONE_ORDER.reduce<Record<string, ZoneTagBar[]>>((acc, zone) => {
+  // Group tags by zone, preserving DB-configured order
+  const byZone = zoneOrder.reduce<Record<string, ZoneTagBar[]>>((acc, zone) => {
     acc[zone] = data.filter((d) => d.zone === zone);
     return acc;
   }, {} as Record<string, ZoneTagBar[]>);
@@ -248,7 +249,7 @@ export function OperationalZonesChart({ data, businessId }: OperationalZonesChar
         </p>
       ) : (
         <div className="space-y-6">
-          {ZONE_ORDER.map((zone) => (
+          {zoneOrder.map((zone) => (
             <ZoneChartSection
               key={zone}
               zone={zone}

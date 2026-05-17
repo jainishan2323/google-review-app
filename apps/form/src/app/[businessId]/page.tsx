@@ -13,7 +13,10 @@ export default async function ReviewFormPage({ params }: PageProps) {
       where: { id: businessId },
       select: { name: true, googlePlaceId: true, googleMapsReviewUrl: true },
     }),
-    prisma.formConfig.findUnique({ where: { businessId } }),
+    prisma.formConfig.findUnique({
+      where: { businessId },
+      include: { categories: { orderBy: { order: "asc" } } },
+    }),
   ]);
 
   if (!business) {
@@ -35,21 +38,20 @@ export default async function ReviewFormPage({ params }: PageProps) {
       welcomeMessage={
         config?.welcomeMessage ?? "Thanks for visiting! We'd love your feedback."
       }
-      positiveChips={
-        config?.positiveChips ?? [
-          "Great Service",
-          "Clean Environment",
-          "Friendly Staff",
-          "Highly Recommend",
-        ]
-      }
-      negativeChips={
-        config?.negativeChips ?? [
-          "Long Wait",
-          "Poor Communication",
-          "Needs Improvement",
-          "Unprofessional",
-        ]
+      categories={
+        config?.categories?.length
+          ? config.categories.map((c) => ({
+              name: c.name,
+              positiveChips: c.positiveChips,
+              negativeChips: c.negativeChips,
+            }))
+          : [
+              {
+                name: "General",
+                positiveChips: ["Great Service", "Friendly Staff"],
+                negativeChips: ["Long Wait", "Poor Communication"],
+              },
+            ]
       }
     />
   );

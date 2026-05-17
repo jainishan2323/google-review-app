@@ -12,9 +12,9 @@ interface FeedbackItem {
   id: string;
   rating: number;
   text: string | null;
-  generatedReview: string | null;
   source: string;
-  createdAt: string;
+  date: string;
+  authorName: string | null;
 }
 
 interface TagDrillDownSheetProps {
@@ -66,8 +66,7 @@ export function TagDrillDownSheet({
     };
   }, [open, tag, businessId]);
 
-  const reviewText = (item: FeedbackItem) =>
-    item.generatedReview ?? item.text ?? null;
+  const reviewText = (item: FeedbackItem) => item.text ?? null;
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
@@ -101,27 +100,34 @@ export function TagDrillDownSheet({
           <div className="space-y-3">
             {items.map((item) => {
               const text = reviewText(item);
-              const date = new Date(item.createdAt).toLocaleDateString("en-GB", {
+              const date = new Date(item.date).toLocaleDateString("en-GB", {
                 day: "numeric",
                 month: "short",
                 year: "numeric",
               });
+              const sourceLabel =
+                item.source === "google" ? "Google"
+                : item.source === "google_redirect" ? "→ Google"
+                : "Private";
+              const sourceCls =
+                item.source === "google" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                : item.source === "google_redirect" ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
+                : "bg-muted text-muted-foreground";
               return (
                 <div
                   key={item.id}
                   className="rounded-lg border bg-card p-4 space-y-2"
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <StarRow rating={item.rating} />
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                          item.source === "google_redirect"
-                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400"
-                            : "bg-muted text-muted-foreground"
-                        }`}
-                      >
-                        {item.source === "google_redirect" ? "→ Google" : "Private"}
+                      <StarRow rating={item.rating} />
+                      {item.authorName && (
+                        <span className="text-xs font-medium text-foreground truncate max-w-[120px]">{item.authorName}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${sourceCls}`}>
+                        {sourceLabel}
                       </span>
                       <span className="text-xs text-muted-foreground">{date}</span>
                     </div>

@@ -29,13 +29,13 @@ function formatDate(d: Date): string {
 }
 
 function buildDailyCounts(
-  rows: { createdAt: Date }[],
+  rows: { date: Date }[],
   since: Date
 ): DailyCount[] {
   // Build a map of date string → count
   const map = new Map<string, number>();
   for (const row of rows) {
-    const key = formatDate(row.createdAt);
+    const key = formatDate(row.date);
     map.set(key, (map.get(key) ?? 0) + 1);
   }
 
@@ -77,17 +77,17 @@ function buildTagDeltas(
 }
 
 function buildZoneTagBars(
-  rows: { tags: string[]; rating: number }[],
+  rows: { tags: string[]; negativeTags: string[] }[],
   zoneMap: Record<string, string>
 ): ZoneTagBar[] {
   const positive = new Map<string, number>();
   const negative = new Map<string, number>();
 
   for (const row of rows) {
-    const isPositive = row.rating >= 4;
+    const negSet = new Set(row.negativeTags);
     for (const tag of row.tags) {
       if (!zoneMap[tag]) continue; // skip tags not in any zone
-      const map = isPositive ? positive : negative;
+      const map = negSet.has(tag) ? negative : positive;
       map.set(tag, (map.get(tag) ?? 0) + 1);
     }
   }
@@ -121,16 +121,16 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const rangeMs = now.getTime() - since.getTime();
   const prevSince = new Date(since.getTime() - rangeMs);
 
-  const [feedback, googleReviews, prevFeedback, prevGoogleReviews, pendingAnalysis, formConfig, business] = await Promise.all([
+  const [feedback, googleReviews, prevFeedback, prevGoogleReviews, pendingAnalysis, totalAnalyzed, oldestAnalyzedAt, formConfig, business] = await Promise.all([
     prisma.anonymousFeedback.findMany({
       where: { businessId: DEV_BUSINESS_ID, createdAt: { gte: since } },
-      select: { createdAt: true, rating: true, tags: true, source: true },
+      select: { createdAt: true, rating: true, tags: true, negativeTags: true, source: true },
       orderBy: { createdAt: "asc" },
     }),
     // Google Reviews in range — for zone chart tags
     prisma.review.findMany({
       where: { businessId: DEV_BUSINESS_ID, publishedAt: { gte: since } },
-      select: { rating: true, tags: true },
+      select: { rating: true, tags: true, negativeTags: true, publishedAt: true },
     }),
     // Previous period — anonymous feedback
     prisma.anonymousFeedback.findMany({
@@ -147,6 +147,27 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       prisma.review.count({ where: { businessId: DEV_BUSINESS_ID, analyzedAt: null, text: { not: null } } }),
       prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID, analyzedAt: null, text: { not: null } } }),
     ]).then(([r, f]) => r + f),
+    // Count already-analyzed records (for re-analyze option)
+    Promise.all([
+      prisma.review.count({ where: { businessId: DEV_BUSINESS_ID, analyzedAt: { not: null } } }),
+      prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID, analyzedAt: { not: null } } }),
+    ]).then(([r, f]) => r + f),
+    // Oldest analyzedAt across both tables — used to detect taxonomy staleness
+    Promise.all([
+      prisma.review.findFirst({
+        where: { businessId: DEV_BUSINESS_ID, analyzedAt: { not: null } },
+        orderBy: { analyzedAt: "asc" },
+        select: { analyzedAt: true },
+      }),
+      prisma.anonymousFeedback.findFirst({
+        where: { businessId: DEV_BUSINESS_ID, analyzedAt: { not: null } },
+        orderBy: { analyzedAt: "asc" },
+        select: { analyzedAt: true },
+      }),
+    ]).then(([r, f]) => {
+      const dates = [r?.analyzedAt, f?.analyzedAt].filter(Boolean) as Date[];
+      return dates.length > 0 ? dates.reduce((a, b) => (a < b ? a : b)) : null;
+    }),
     prisma.formConfig.findUnique({
       where: { businessId: DEV_BUSINESS_ID },
       include: { categories: { orderBy: { order: "asc" } } },
@@ -166,11 +187,27 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     }
   }
 
-  const dailyCounts = buildDailyCounts(feedback, since);
+  // Detect if taxonomy was updated after some reviews were analyzed
+  const latestCategoryUpdate = formConfig?.categories.reduce<Date | null>(
+    (max, cat) => (!max || cat.updatedAt > max ? cat.updatedAt : max),
+    null
+  );
+  const taxonomyChanged =
+    !!oldestAnalyzedAt &&
+    !!latestCategoryUpdate &&
+    latestCategoryUpdate > oldestAnalyzedAt;
+
+  const dailyCounts = buildDailyCounts(
+    [
+      ...feedback.map((f) => ({ date: f.createdAt })),
+      ...googleReviews.map((r) => ({ date: r.publishedAt })),
+    ],
+    since
+  );
   // Merge anonymous feedback + Google review tags for the zones chart
   const allTaggedRows = [
-    ...feedback.map((f) => ({ tags: f.tags, rating: f.rating })),
-    ...googleReviews.map((r) => ({ tags: r.tags, rating: r.rating })),
+    ...feedback.map((f) => ({ tags: f.tags, negativeTags: f.negativeTags })),
+    ...googleReviews.map((r) => ({ tags: r.tags, negativeTags: r.negativeTags })),
   ];
   const zoneBars = buildZoneTagBars(allTaggedRows, dynamicZoneMap);
 
@@ -180,12 +217,18 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     [...prevFeedback, ...prevGoogleReviews],
   );
 
-  const totalFeedback = feedback.length;
+  // Stats from all sources: anonymous feedback + Google reviews
+  const allReviewsInRange = [
+    ...feedback.map((f) => ({ rating: f.rating, source: f.source })),
+    ...googleReviews.map((r) => ({ rating: r.rating, source: "google" as string })),
+  ];
+  const totalFeedback = allReviewsInRange.length;
   const googleRedirects = feedback.filter((f) => f.source === "google_redirect").length;
+  const googleReviewCount = googleReviews.length;
   const privateCount = feedback.filter((f) => f.source === "private").length;
   const avgRating =
     totalFeedback > 0
-      ? (feedback.reduce((s, f) => s + f.rating, 0) / totalFeedback).toFixed(1)
+      ? (allReviewsInRange.reduce((s, r) => s + r.rating, 0) / totalFeedback).toFixed(1)
       : "—";
 
   const RANGE_LABELS: Record<Range, string> = {
@@ -198,7 +241,12 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   return (
     <main className="p-8 space-y-8 max-w-5xl">
       {/* Gamified CTA */}
-      <ReviewCTA unreadCount={pendingAnalysis} businessId={DEV_BUSINESS_ID} />
+      <ReviewCTA
+        unreadCount={pendingAnalysis}
+        businessId={DEV_BUSINESS_ID}
+        totalAnalyzed={totalAnalyzed}
+        taxonomyChanged={taxonomyChanged}
+      />
 
       {/* Header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
@@ -216,9 +264,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       {/* Summary stats */}
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         {[
-          { label: "Submissions", value: totalFeedback },
-          { label: "→ Google", value: googleRedirects },
-          { label: "Private", value: privateCount },
+          { label: "Total Reviews", value: totalFeedback },
+          { label: "Google Reviews", value: googleReviewCount },
+          { label: "Form → Google", value: googleRedirects },
           { label: "Avg Rating", value: avgRating },
         ].map(({ label, value }) => (
           <Card key={label}>
@@ -236,7 +284,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium text-foreground">Feedback Received</CardTitle>
-          <p className="text-xs text-muted-foreground">Daily submissions (private + Google redirects)</p>
+          <p className="text-xs text-muted-foreground">Daily reviews received (Google + form submissions)</p>
         </CardHeader>
         <CardContent>
           <FeedbackReceivedChart data={dailyCounts} />

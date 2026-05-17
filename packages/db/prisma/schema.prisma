@@ -63,6 +63,7 @@ model Review {
   rating         Int // 1–5
   text           String?
   tags                String[]  @default([]) // AI-extracted themes (populated by analysis job)
+  negativeTags        String[]  @default([]) // Subset of tags where sentiment = negative
   unmappedInsights    String[]  @default([]) // LLM-identified insights outside the taxonomy
   publishedAt         DateTime
   isReplied           Boolean   @default(false)
@@ -84,6 +85,7 @@ model AnonymousFeedback {
   text            String?  // Free-text typed by customer (optional)
   generatedReview String?  // LLM-generated review text shown to customer
   tags                String[]  @default([]) // Chips selected by customer
+  negativeTags        String[]  @default([]) // Subset of tags where sentiment = negative
   unmappedInsights    String[]  @default([]) // LLM-identified insights outside the taxonomy
   source              String    @default("private") // "private" | "google_redirect"
   status              String    @default("unread")

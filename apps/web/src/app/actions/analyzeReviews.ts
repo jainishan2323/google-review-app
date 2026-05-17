@@ -106,6 +106,7 @@ export async function analyzeReviews(businessId: string): Promise<{
         where: { id: r.reviewId },
         data: {
           tags: r.mappedTags.map((t) => t.tag),
+          negativeTags: r.mappedTags.filter((t) => t.sentiment === "negative").map((t) => t.tag),
           unmappedInsights: r.unmappedInsights,
           analyzedAt: now,
         },
@@ -120,6 +121,7 @@ export async function analyzeReviews(businessId: string): Promise<{
         where: { id: r.reviewId },
         data: {
           tags: r.mappedTags.map((t) => t.tag),
+          negativeTags: r.mappedTags.filter((t) => t.sentiment === "negative").map((t) => t.tag),
           unmappedInsights: r.unmappedInsights,
           analyzedAt: now,
         },
@@ -133,4 +135,32 @@ export async function analyzeReviews(businessId: string): Promise<{
     reviewsAnalyzed: reviewResultsList.length,
     feedbackAnalyzed: feedbackResultsList.length,
   };
+}
+
+/**
+ * Resets analyzedAt + clears all AI fields on every Review and AnonymousFeedback
+ * for the business, then re-runs the full analysis pipeline.
+ */
+export async function reAnalyzeReviews(businessId: string): Promise<{
+  reviewsAnalyzed: number;
+  feedbackAnalyzed: number;
+}> {
+  if (!businessId || typeof businessId !== "string") {
+    throw new Error("[reAnalyzeReviews] businessId is required.");
+  }
+
+  // Reset all existing analysis for this business
+  await Promise.all([
+    prisma.review.updateMany({
+      where: { businessId },
+      data: { analyzedAt: null, tags: [], negativeTags: [], unmappedInsights: [] },
+    }),
+    prisma.anonymousFeedback.updateMany({
+      where: { businessId },
+      data: { analyzedAt: null, tags: [], negativeTags: [], unmappedInsights: [] },
+    }),
+  ]);
+
+  // Re-run the standard analysis pipeline
+  return analyzeReviews(businessId);
 }

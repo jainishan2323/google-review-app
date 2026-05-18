@@ -3,7 +3,21 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
-      "outputs": [".next/**", "!.next/cache/**", "dist/**"]
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "env": [
+        "DATABASE_URL",
+        "OPENAI_API_KEY",
+        "LLM_PROVIDER",
+        "AI_STREAMING",
+        "DEV_BUSINESS_ID",
+        "NEXT_PUBLIC_FORM_URL",
+        "NEXTAUTH_URL",
+        "NEXTAUTH_SECRET",
+        "GOOGLE_CLIENT_ID",
+        "GOOGLE_CLIENT_SECRET",
+        "RESEND_API_KEY",
+        "ALERT_FROM_EMAIL"
+      ]
     },
     "dev": {
       "cache": false,

@@ -1,4 +1,4 @@
-import { prisma } from "@repo/db";
+import { prisma, type FeedbackCategory } from "@repo/db";
 import ReviewForm from "@/components/ReviewForm";
 
 interface PageProps {
@@ -40,7 +40,7 @@ export default async function ReviewFormPage({ params }: PageProps) {
       }
       categories={
         config?.categories?.length
-          ? config.categories.map((c) => ({
+          ? config.categories.map((c: FeedbackCategory) => ({
               name: c.name,
               positiveChips: c.positiveChips,
               negativeChips: c.negativeChips,

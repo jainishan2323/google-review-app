@@ -3,9 +3,13 @@ import {
   QrCode,
   Star,
   BarChart3,
-  Tag,
   Check,
   Zap,
+  Shield,
+  Mail,
+  Sparkles,
+  MessageSquare,
+  ChevronRight,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -179,16 +183,17 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-14 text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Everything you need
+              Your always-on reputation engine
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Thoughtfully designed for hospitality operators.
+              Not just analytics — an active system that works while you&apos;re
+              serving tables.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {/* Card 1 — spans 2 cols and 2 rows on desktop */}
-            <Card className="md:col-span-2 md:row-span-2">
+            {/* Card 1 — spans 2 cols × 3 rows on desktop */}
+            <Card className="md:col-span-2 md:row-span-3">
               <CardHeader>
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Zap className="size-5 text-primary" />
@@ -219,37 +224,180 @@ export default function LandingPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* Divider with label */}
+                <div className="mt-6 flex items-center gap-3">
+                  <div className="h-px flex-1 bg-border" />
+                  <span className="text-xs font-medium text-muted-foreground">
+                    and for every new review
+                  </span>
+                  <div className="h-px flex-1 bg-border" />
+                </div>
+
+                {/* Reply preview */}
+                <div className="mt-4 rounded-xl border border-border bg-muted/50 p-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                      AI reply — ready to send
+                    </p>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
+                      <span className="size-1.5 rounded-full bg-primary" />
+                      1-click approve
+                    </span>
+                  </div>
+
+                  {/* Original review (compact) */}
+                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2">
+                    <div className="mt-0.5 flex shrink-0 gap-0.5">
+                      <Star className="size-3 fill-yellow-400 text-yellow-400" />
+                      <Star className="size-3 fill-muted text-muted-foreground" />
+                      <Star className="size-3 fill-muted text-muted-foreground" />
+                      <Star className="size-3 fill-muted text-muted-foreground" />
+                      <Star className="size-3 fill-muted text-muted-foreground" />
+                    </div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      &ldquo;The wait was too long and the food arrived cold.&rdquo;
+                    </p>
+                  </div>
+
+                  {/* Draft reply */}
+                  <div className="mt-3 flex items-start gap-2.5">
+                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                      <MessageSquare className="size-3 text-primary" />
+                    </div>
+                    <p className="text-sm leading-relaxed text-foreground">
+                      &ldquo;Hi Maria, thank you for your honest feedback. We&apos;re
+                      sorry the wait and food temperature fell short — this is
+                      not the standard we set for ourselves. Please reach out
+                      directly so we can make it right.&rdquo;
+                    </p>
+                  </div>
+
+                  {/* Action row */}
+                  <div className="mt-4 flex items-center justify-between">
+                    <button className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground">
+                      Regenerate
+                      <ChevronRight className="size-3" />
+                    </button>
+                    <button className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+                      <MessageSquare className="size-3" />
+                      Approve &amp; Send
+                    </button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
-            {/* Card 2 */}
+            {/* Card 2 — Active Reputation Shield */}
             <Card>
               <CardHeader>
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <BarChart3 className="size-5 text-primary" />
+                  <Shield className="size-5 text-primary" />
                 </div>
-                <CardTitle>Operational Dashboard</CardTitle>
+                <CardTitle>Active Reputation Shield</CardTitle>
                 <CardDescription>
-                  Turn subjective complaints into actionable daily metrics. See
-                  trends, spot recurring issues, and fix problems before they
-                  escalate.
+                  Don&apos;t just analyze the past; protect your future. Our
+                  physical QR table codes intercept unhappy customers before
+                  they leave, routing 1-star complaints to your private
+                  dashboard instead of your public Google profile.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            {/* Card 3 */}
+            {/* Card 3 — Monday Morning Pulse */}
             <Card>
               <CardHeader>
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Tag className="size-5 text-primary" />
+                  <Mail className="size-5 text-primary" />
                 </div>
-                <CardTitle>Custom Tags</CardTitle>
+                <CardTitle>The Monday Morning Pulse</CardTitle>
                 <CardDescription>
-                  Track exactly what matters to your business — from &ldquo;Cold
-                  Food&rdquo; to &ldquo;Slow Service&rdquo; to &ldquo;Billing
-                  Error.&rdquo; You define the categories.
+                  Too busy to log into a dashboard? We push the insights to
+                  you. Get an automated weekly email every Monday at 9:00&nbsp;AM
+                  summarising intercepted complaints, trending issues, and your
+                  overall review health.
                 </CardDescription>
               </CardHeader>
+            </Card>
+
+            {/* Card 4 — 1-Click AI Replies */}
+            <Card>
+              <CardHeader>
+                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                  <Sparkles className="size-5 text-primary" />
+                </div>
+                <CardTitle>1-Click AI Replies</CardTitle>
+                <CardDescription>
+                  Google&apos;s algorithm rewards businesses that reply quickly.
+                  Our AI instantly drafts context-aware, professional replies to
+                  every new review — saving you hours of tedious typing every
+                  month.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── The Cost of Doing Nothing ───────────────────────── */}
+      <section className="border-y border-border/40 bg-muted/30 py-20 sm:py-28">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
+          <div className="mb-14 text-center">
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              The cost of doing nothing
+            </h2>
+            <p className="mt-3 text-muted-foreground">
+              The numbers behind why online reputation isn&apos;t optional.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* Stat 1 */}
+            <Card className="text-center">
+              <CardContent className="px-6 pb-8 pt-10">
+                <p className="text-6xl font-extrabold tracking-tight text-destructive">
+                  -9%
+                </p>
+                <p className="mt-5 text-sm leading-relaxed text-foreground">
+                  A one-star drop in your rating leads to a 5–9% decrease in
+                  total revenue.
+                </p>
+                <p className="mt-5 text-xs text-muted-foreground">
+                  Source: Harvard Business School
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Stat 2 */}
+            <Card className="text-center">
+              <CardContent className="px-6 pb-8 pt-10">
+                <p className="text-6xl font-extrabold tracking-tight text-foreground">
+                  30
+                </p>
+                <p className="mt-5 text-sm leading-relaxed text-foreground">
+                  The number of potential customers a business loses from just
+                  one unhandled negative review.
+                </p>
+                <p className="mt-5 text-xs text-muted-foreground">
+                  Source: BrightLocal Consumer Survey
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Stat 3 */}
+            <Card className="text-center">
+              <CardContent className="px-6 pb-8 pt-10">
+                <p className="text-6xl font-extrabold tracking-tight text-primary">
+                  4.5
+                </p>
+                <p className="mt-5 text-sm leading-relaxed text-foreground">
+                  The optimal star rating for maximum trust. Perfect 5.0 ratings
+                  look fake. We help you build an authentic 4.2–4.5 profile.
+                </p>
+                <p className="mt-5 text-xs text-muted-foreground">
+                  Source: Northwestern University Spiegel Research Center
+                </p>
+              </CardContent>
             </Card>
           </div>
         </div>

@@ -17,7 +17,7 @@ const schema = z.object({
   tags: z.array(z.string().max(50).transform(sanitize)).max(5).default([]),
   customText: z
     .string()
-    .max(100)
+    .max(150)
     .transform(sanitize)
     .optional(),
 });

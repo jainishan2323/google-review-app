@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import ahaaReviews from "../../../apps/web/src/mock/ahaa-indisches-restaurant.json";
+import saravanaaReviews from "../../../apps/web/src/mock/sarvanaa-bhavan.json";
 
 const prisma = new PrismaClient();
 
@@ -46,6 +47,20 @@ const SAMPLE_TEXTS = [
 function daysAgo(n: number): Date {
   const d = new Date();
   d.setDate(d.getDate() - n);
+  return d;
+}
+
+function parseRelativeDate(str: string): Date {
+  const s = str.replace(/^Edited\s+/i, "").trim();
+  const match = s.match(/^(\d+|a|an)\s+(day|week|month|year)s?\s+ago$/i);
+  if (!match) return new Date();
+  const qty = match[1].toLowerCase() === "a" || match[1].toLowerCase() === "an" ? 1 : parseInt(match[1]);
+  const unit = match[2].toLowerCase();
+  const d = new Date();
+  if (unit === "day")   d.setDate(d.getDate() - qty);
+  if (unit === "week")  d.setDate(d.getDate() - qty * 7);
+  if (unit === "month") d.setMonth(d.getMonth() - qty);
+  if (unit === "year")  d.setFullYear(d.getFullYear() - qty);
   return d;
 }
 
@@ -268,6 +283,93 @@ async function main() {
   console.log(`   Seeded 3 FeedbackCategory rows (Food, Service, Atmosphere).`);
   console.log(`   Seeded ${reviewsSeeded} Google Review rows.`);
   console.log(`   Use this businessId in your API calls: ${ahaaBusiness.id}`);
+
+  // ── Saravanaa Bhavan ──────────────────────────────────────
+
+  const saravanaa = await prisma.business.upsert({
+    where: { googleLocationId: "saravanaa-bhavan-001" },
+    update: {
+      googlePlaceId: "0x47a85146b41ada43%3A0x5cc76a2ad85b1595",
+    },
+    create: {
+      name: "Saravanaa Bhavan",
+      googleLocationId: "saravanaa-bhavan-001",
+      googlePlaceId: "0x47a85146b41ada43%3A0x5cc76a2ad85b1595",
+      ownerId: user.id,
+    },
+  });
+
+  const saravanaaFormConfig = await prisma.formConfig.upsert({
+    where: { businessId: saravanaa.id },
+    create: {
+      businessId: saravanaa.id,
+      brandColor: "#15803d",
+      welcomeMessage: "Thank you for visiting Saravanaa Bhavan! We'd love your feedback.",
+    },
+    update: {},
+  });
+
+  await prisma.feedbackCategory.deleteMany({ where: { formConfigId: saravanaaFormConfig.id } });
+  await prisma.feedbackCategory.createMany({
+    data: [
+      {
+        formConfigId: saravanaaFormConfig.id,
+        name: "Food",
+        positiveChips: ["Authentic Taste", "Great Portions", "Good Value", "Fresh Ingredients"],
+        negativeChips: ["Bland Taste", "Overpriced", "Small Portions", "Stale Food"],
+        order: 0,
+      },
+      {
+        formConfigId: saravanaaFormConfig.id,
+        name: "Service",
+        positiveChips: ["Friendly Staff", "Attentive Service", "Fast Service"],
+        negativeChips: ["Long Wait", "Rude Staff", "Order Mix-up", "Slow Service"],
+        order: 1,
+      },
+      {
+        formConfigId: saravanaaFormConfig.id,
+        name: "Atmosphere",
+        positiveChips: ["Clean Space", "Nice Ambiance", "Comfortable Seating"],
+        negativeChips: ["Noisy", "Cramped Space", "Dirty Tables"],
+        order: 2,
+      },
+    ],
+  });
+
+  await prisma.review.deleteMany({ where: { businessId: saravanaa.id } });
+
+  type SaravanaaReview = {
+    reviewId: string;
+    authorName: string;
+    authorPhoto?: string;
+    rating: number;
+    text: string | null;
+    publishedAt: string;
+    ownerReply?: string | null;
+  };
+
+  let saravanaaSeeded = 0;
+  for (const r of saravanaaReviews as SaravanaaReview[]) {
+    await prisma.review.create({
+      data: {
+        businessId: saravanaa.id,
+        googleReviewId: r.reviewId,
+        authorName: r.authorName,
+        authorPhoto: r.authorPhoto ?? null,
+        rating: r.rating,
+        text: r.text ?? null,
+        publishedAt: parseRelativeDate(r.publishedAt),
+        isReplied: !!r.ownerReply,
+        replyText: r.ownerReply ?? null,
+        repliedAt: r.ownerReply ? parseRelativeDate(r.publishedAt) : null,
+      },
+    });
+    saravanaaSeeded++;
+  }
+
+  console.log(`✅ Business seeded: ${saravanaa.id} — ${saravanaa.name}`);
+  console.log(`   Seeded ${saravanaaSeeded} Google Review rows (${saravanaaReviews.filter((r: SaravanaaReview) => r.ownerReply).length} with owner replies).`);
+  console.log(`   Use this businessId in your API calls: ${saravanaa.id}`);
 }
 
 main()

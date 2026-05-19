@@ -4,10 +4,10 @@ import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const RANGES = [
-  { value: "7d",  label: "7 days" },
-  { value: "30d", label: "30 days" },
-  { value: "90d", label: "90 days" },
-  { value: "ytd", label: "YTD" },
+  { value: "30d",  label: "30 days" },
+  { value: "90d",  label: "90 days" },
+  { value: "180d", label: "180 days" },
+  { value: "all",  label: "All time" },
 ] as const;
 
 type Range = typeof RANGES[number]["value"];

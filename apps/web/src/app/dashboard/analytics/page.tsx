@@ -7,20 +7,21 @@ import { AnalyticsControls } from "@/components/AnalyticsControls";
 import { OperationalZonesChart } from "@/components/OperationalZonesChart";
 import type { ZoneTagBar } from "@/components/OperationalZonesChart";
 import { ReviewCTA } from "@/components/ReviewCTA";
+import { UnmappedInsightsPanel } from "@/components/UnmappedInsightsPanel";
 
 export const dynamic = "force-dynamic";
 
 const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
 
-type Range = "7d" | "30d" | "90d" | "ytd";
+type Range = "30d" | "90d" | "180d" | "all";
 
-function getDateRange(range: Range): Date {
+function getDateRange(range: Range): Date | null {
   const now = new Date();
   switch (range) {
-    case "7d":  { const d = new Date(now); d.setDate(d.getDate() - 7); return d; }
-    case "30d": { const d = new Date(now); d.setDate(d.getDate() - 30); return d; }
-    case "90d": { const d = new Date(now); d.setDate(d.getDate() - 90); return d; }
-    case "ytd": return new Date(now.getFullYear(), 0, 1);
+    case "30d":  { const d = new Date(now); d.setDate(d.getDate() - 30); return d; }
+    case "90d":  { const d = new Date(now); d.setDate(d.getDate() - 90); return d; }
+    case "180d": { const d = new Date(now); d.setDate(d.getDate() - 180); return d; }
+    case "all":  return null;
   }
 }
 
@@ -111,37 +112,42 @@ interface PageProps {
 export default async function AnalyticsPage({ searchParams }: PageProps) {
   const { range: rawRange } = await searchParams;
   const range: Range =
-    rawRange === "7d" || rawRange === "30d" || rawRange === "90d" || rawRange === "ytd"
+    rawRange === "30d" || rawRange === "90d" || rawRange === "180d" || rawRange === "all"
       ? rawRange
       : "30d";
 
   const since = getDateRange(range);
 
   const now = new Date();
-  const rangeMs = now.getTime() - since.getTime();
-  const prevSince = new Date(since.getTime() - rangeMs);
+  const prevSince = since
+    ? new Date(since.getTime() - (now.getTime() - since.getTime()))
+    : null;
 
-  const [feedback, googleReviews, prevFeedback, prevGoogleReviews, pendingAnalysis, totalAnalyzed, oldestAnalyzedAt, formConfig, business] = await Promise.all([
+  const [feedback, googleReviews, prevFeedback, prevGoogleReviews, pendingAnalysis, totalAnalyzed, oldestAnalyzedAt, formConfig, business, allInsightRows] = await Promise.all([
     prisma.anonymousFeedback.findMany({
-      where: { businessId: DEV_BUSINESS_ID, createdAt: { gte: since } },
+      where: { businessId: DEV_BUSINESS_ID, ...(since ? { createdAt: { gte: since } } : {}) },
       select: { createdAt: true, rating: true, tags: true, negativeTags: true, source: true },
       orderBy: { createdAt: "asc" },
     }),
     // Google Reviews in range — for zone chart tags
     prisma.review.findMany({
-      where: { businessId: DEV_BUSINESS_ID, publishedAt: { gte: since } },
+      where: { businessId: DEV_BUSINESS_ID, ...(since ? { publishedAt: { gte: since } } : {}) },
       select: { rating: true, tags: true, negativeTags: true, publishedAt: true },
     }),
-    // Previous period — anonymous feedback
-    prisma.anonymousFeedback.findMany({
-      where: { businessId: DEV_BUSINESS_ID, createdAt: { gte: prevSince, lt: since } },
-      select: { tags: true },
-    }),
+    // Previous period — anonymous feedback (no prev period for all-time)
+    prevSince && since
+      ? prisma.anonymousFeedback.findMany({
+          where: { businessId: DEV_BUSINESS_ID, createdAt: { gte: prevSince, lt: since } },
+          select: { tags: true },
+        })
+      : Promise.resolve([]),
     // Previous period — Google reviews
-    prisma.review.findMany({
-      where: { businessId: DEV_BUSINESS_ID, publishedAt: { gte: prevSince, lt: since } },
-      select: { tags: true },
-    }),
+    prevSince && since
+      ? prisma.review.findMany({
+          where: { businessId: DEV_BUSINESS_ID, publishedAt: { gte: prevSince, lt: since } },
+          select: { tags: true },
+        })
+      : Promise.resolve([]),
     // Count ALL un-analyzed records (Reviews + AnonymousFeedback) with text
     Promise.all([
       prisma.review.count({ where: { businessId: DEV_BUSINESS_ID, analyzedAt: null, text: { not: null } } }),
@@ -176,6 +182,28 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       where: { id: DEV_BUSINESS_ID },
       select: { name: true },
     }),
+    // All unmapped insights across both tables (all-time, not range-filtered)
+    Promise.all([
+      prisma.review.findMany({
+        where: { businessId: DEV_BUSINESS_ID, analyzedAt: { not: null } },
+        select: { unmappedInsights: true },
+      }),
+      prisma.anonymousFeedback.findMany({
+        where: { businessId: DEV_BUSINESS_ID, analyzedAt: { not: null } },
+        select: { unmappedInsights: true },
+      }),
+    ]).then(([reviews, feedback]) => {
+      const freq = new Map<string, number>();
+      for (const row of [...reviews, ...feedback]) {
+        for (const insight of row.unmappedInsights) {
+          const key = insight.trim().toLowerCase();
+          if (key) freq.set(key, (freq.get(key) ?? 0) + 1);
+        }
+      }
+      return Array.from(freq.entries())
+        .map(([text, count]) => ({ text, count }))
+        .sort((a, b) => b.count - a.count);
+    }),
   ]);
 
   // Build zone map + order dynamically from DB categories
@@ -197,12 +225,14 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
     !!latestCategoryUpdate &&
     latestCategoryUpdate > oldestAnalyzedAt;
 
+  const allDates = [
+    ...feedback.map((f) => f.createdAt),
+    ...googleReviews.map((r) => r.publishedAt),
+  ];
+  const chartSince = since ?? (allDates.length > 0 ? new Date(Math.min(...allDates.map((d) => d.getTime()))) : new Date());
   const dailyCounts = buildDailyCounts(
-    [
-      ...feedback.map((f) => ({ date: f.createdAt })),
-      ...googleReviews.map((r) => ({ date: r.publishedAt })),
-    ],
-    since
+    allDates.map((date) => ({ date })),
+    chartSince
   );
   // Merge anonymous feedback + Google review tags for the zones chart
   const allTaggedRows = [
@@ -232,10 +262,10 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       : "—";
 
   const RANGE_LABELS: Record<Range, string> = {
-    "7d": "Last 7 days",
-    "30d": "Last 30 days",
-    "90d": "Last 90 days",
-    ytd: "Year to date",
+    "30d":  "Last 30 days",
+    "90d":  "Last 90 days",
+    "180d": "Last 180 days",
+    "all":  "All time",
   };
 
   return (
@@ -301,6 +331,19 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         </CardHeader>
         <CardContent>
           <OperationalZonesChart data={zoneBars} businessId={DEV_BUSINESS_ID} zoneOrder={zoneOrder} deltas={deltas} />
+        </CardContent>
+      </Card>
+
+      {/* Unmapped Insights */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm font-medium text-foreground">Unmapped Insights</CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Patterns found in reviews that fall outside your defined taxonomy · darker = more frequent
+          </p>
+        </CardHeader>
+        <CardContent>
+          <UnmappedInsightsPanel insights={allInsightRows} />
         </CardContent>
       </Card>
     </main>

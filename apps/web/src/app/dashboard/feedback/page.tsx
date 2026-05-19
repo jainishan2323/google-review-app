@@ -78,21 +78,32 @@ export default async function FeedbackPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3 flex-1 flex flex-col">
-                {item.text ? (
-                  <p className="text-sm text-foreground leading-relaxed">{item.text}</p>
+                {item.generatedReview ? (
+                  <p className="text-sm text-foreground leading-relaxed">{item.generatedReview}</p>
                 ) : (
-                  <p className="text-sm text-muted-foreground italic">No written feedback.</p>
+                  <p className="text-sm text-muted-foreground italic">No generated review.</p>
+                )}
+                {item.text && (
+                  <div className="border-l-2 border-muted pl-2">
+                    <p className="text-[11px] text-muted-foreground uppercase tracking-wide mb-0.5">Customer note</p>
+                    <p className="text-xs text-muted-foreground leading-relaxed">{item.text}</p>
+                  </div>
                 )}
                 {(item.tags ?? []).length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-auto pt-2">
-                    {(item.tags ?? []).map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
+                    {(item.tags ?? []).map((tag) => {
+                      const isNeg = (item.negativeTags ?? []).includes(tag);
+                      return (
+                        <span
+                          key={tag}
+                          className={`inline-flex items-center rounded-md border-l-2 bg-muted px-2 py-0.5 text-[11px] text-muted-foreground ${
+                            isNeg ? "border-l-red-500" : "border-l-green-500"
+                          }`}
+                        >
+                          {tag}
+                        </span>
+                      );
+                    })}
                   </div>
                 )}
               </CardContent>

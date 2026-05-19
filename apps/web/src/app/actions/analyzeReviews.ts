@@ -59,19 +59,17 @@ export async function analyzeReviews(businessId: string): Promise<{
     return { reviewsAnalyzed: 0, feedbackAnalyzed: 0 };
   }
 
-  // Fetch up to 50 un-analyzed Google Reviews with text
+  // Fetch all un-analyzed Google Reviews with text
   const rawReviews = await prisma.review.findMany({
     where: { businessId, analyzedAt: null, text: { not: null } },
     select: { id: true, text: true, rating: true },
-    take: 50,
     orderBy: { publishedAt: "asc" },
   });
 
-  // Fetch up to 50 un-analyzed AnonymousFeedback with text
+  // Fetch all un-analyzed AnonymousFeedback with text
   const rawFeedback = await prisma.anonymousFeedback.findMany({
     where: { businessId, analyzedAt: null, text: { not: null } },
     select: { id: true, text: true, rating: true },
-    take: 50,
     orderBy: { createdAt: "asc" },
   });
 

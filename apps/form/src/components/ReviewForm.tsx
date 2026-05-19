@@ -120,6 +120,7 @@ export default function ReviewForm({
         businessId,
         rating,
         tags: selectedChips,
+        text: customText || undefined,
         generatedReview,
         source: "google_redirect",
       }),

@@ -1,9 +1,9 @@
 import { prisma } from "@repo/db";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Star } from "lucide-react";
 import { ReviewsControls } from "@/components/ReviewsControls";
+import { ReviewCard } from "@/components/ReviewCard";
 
 export const dynamic = "force-dynamic";
 
@@ -33,14 +33,6 @@ function getRatingFilter(rating: RatingFilter): { gte?: number; lte?: number } |
   }
 }
 
-function StarDisplay({ rating }: { rating: number }) {
-  return (
-    <span className="text-sm tracking-tight" aria-label={`${rating} out of 5 stars`}>
-      <span className="text-yellow-400">{"★".repeat(rating)}</span>
-      <span className="text-muted-foreground">{"★".repeat(5 - rating)}</span>
-    </span>
-  );
-}
 
 interface PageProps {
   searchParams: Promise<{ range?: string; rating?: string }>;
@@ -117,61 +109,22 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
           <p className="text-muted-foreground text-sm">No Google reviews synced yet.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="max-w-3xl">
           {reviews.map((review) => (
-            <Card key={review.id} className="flex flex-col">
-              <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium text-foreground">{review.authorName}</p>
-                  <StarDisplay rating={review.rating} />
-                  <CardTitle className="text-xs font-normal text-muted-foreground">
-                    {review.publishedAt.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </CardTitle>
-                </div>
-                <Badge
-                  variant={review.isReplied ? "secondary" : "destructive"}
-                  className="text-[10px] shrink-0"
-                >
-                  {review.isReplied ? "Replied" : "Pending"}
-                </Badge>
-              </CardHeader>
-              <CardContent className="flex-1 flex flex-col gap-3">
-                {review.text ? (
-                  <p className="text-sm text-foreground leading-relaxed line-clamp-4">{review.text}</p>
-                ) : (
-                  <p className="text-sm text-muted-foreground italic">No written review.</p>
-                )}
-                {review.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-auto pt-2">
-                    {review.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="inline-block rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {review.unmappedInsights.length > 0 && (
-                  <div className="flex flex-wrap gap-1 pt-1">
-                    {review.unmappedInsights.map((insight) => (
-                      <span
-                        key={insight}
-                        className="inline-block rounded-full bg-amber-100 dark:bg-amber-900/30 px-2 py-0.5 text-[11px] text-amber-700 dark:text-amber-400"
-                        title="Novel insight outside your taxonomy"
-                      >
-                        ✦ {insight}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <ReviewCard
+              key={review.id}
+              id={review.id}
+              authorName={review.authorName}
+              authorPhoto={review.authorPhoto}
+              rating={review.rating}
+              text={review.text}
+              publishedAt={review.publishedAt}
+              isReplied={review.isReplied}
+              replyText={review.replyText}
+              tags={review.tags}
+              negativeTags={review.negativeTags}
+              unmappedInsights={review.unmappedInsights}
+            />
           ))}
         </div>
       )}

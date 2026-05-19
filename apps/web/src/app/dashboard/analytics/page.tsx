@@ -343,7 +343,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           </p>
         </CardHeader>
         <CardContent>
-          <UnmappedInsightsPanel insights={allInsightRows} />
+          <UnmappedInsightsPanel insights={allInsightRows} businessId={DEV_BUSINESS_ID} />
         </CardContent>
       </Card>
     </main>

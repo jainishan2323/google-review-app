@@ -22,6 +22,7 @@ interface TagDrillDownSheetProps {
   businessId: string;
   open: boolean;
   onClose: () => void;
+  apiPath?: string;
 }
 
 function StarRow({ rating }: { rating: number }) {
@@ -38,6 +39,7 @@ export function TagDrillDownSheet({
   businessId,
   open,
   onClose,
+  apiPath = "/api/feedback-by-tag",
 }: TagDrillDownSheetProps) {
   const [items, setItems] = useState<FeedbackItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -49,7 +51,7 @@ export function TagDrillDownSheet({
     setLoading(true);
     setItems([]);
 
-    fetch(`/api/feedback-by-tag?tag=${encodeURIComponent(tag)}&businessId=${encodeURIComponent(businessId)}`)
+    fetch(`${apiPath}?tag=${encodeURIComponent(tag)}&businessId=${encodeURIComponent(businessId)}`)
       .then((r) => r.json())
       .then((data: FeedbackItem[]) => {
         if (!cancelled) setItems(data);

@@ -6,7 +6,7 @@ import { postReply } from "@/lib/google-business";
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { reviewId: string } }
+  { params }: { params: Promise<{ reviewId: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session?.userId || !session?.accessToken) {
@@ -22,8 +22,9 @@ export async function POST(
     );
   }
 
+  const { reviewId } = await params;
   const review = await prisma.review.findUnique({
-    where: { id: params.reviewId },
+    where: { id: reviewId },
     include: { business: true },
   });
 
@@ -34,7 +35,7 @@ export async function POST(
   await postReply(session.accessToken, review.googleReviewId, replyText);
 
   await prisma.review.update({
-    where: { id: params.reviewId },
+    where: { id: reviewId },
     data: { isReplied: true, replyText, repliedAt: new Date() },
   });
 

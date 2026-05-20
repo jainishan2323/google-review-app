@@ -27,7 +27,7 @@ export type CategoryInput = z.infer<typeof categorySchema>;
 export async function upsertFormConfig(input: FormConfigInput) {
   const parsed = FormConfigSchema.safeParse(input);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.errors[0]?.message ?? "Validation error" };
+    return { success: false, error: parsed.error.issues[0]?.message ?? "Validation error" };
   }
 
   const { businessId, brandColor, logoUrl, welcomeMessage, categories } = parsed.data;

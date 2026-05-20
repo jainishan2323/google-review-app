@@ -124,6 +124,22 @@ export default function LandingPage() {
             <div id="waitlist" className="w-full max-w-md">
               <WaitlistForm />
             </div>
+
+            {/* Trust badges */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+              {[
+                { flag: "🇩🇪", label: "Data stored in Frankfurt, EU" },
+                { flag: "🇪🇺", label: "GDPR compliant" },
+              ].map(({ flag, label }) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 text-xs text-muted-foreground"
+                >
+                  <span>{flag}</span>
+                  {label}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -457,13 +473,17 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-between">
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <a href="#" className="transition-colors hover:text-foreground">
+              <Link href="/privacy" className="transition-colors hover:text-foreground">
                 Privacy Policy
-              </a>
+              </Link>
               <span aria-hidden>·</span>
-              <a href="#" className="transition-colors hover:text-foreground">
+              <Link href="/terms" className="transition-colors hover:text-foreground">
                 Terms of Service
-              </a>
+              </Link>
+              <span aria-hidden>·</span>
+              <Link href="/impressum" className="transition-colors hover:text-foreground">
+                Impressum
+              </Link>
             </div>
 
             <p className="order-last text-sm text-muted-foreground sm:order-none">

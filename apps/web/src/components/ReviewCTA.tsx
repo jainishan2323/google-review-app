@@ -8,11 +8,11 @@ import { analyzeReviews, reAnalyzeReviews } from "@/app/actions/analyzeReviews";
 interface ReviewCTAProps {
   unreadCount: number;
   businessId: string;
-  totalAnalyzed: number;
-  taxonomyChanged: boolean;
+  totalAnalyzed?: number;
+  taxonomyChanged?: boolean;
 }
 
-export function ReviewCTA({ unreadCount, businessId, totalAnalyzed, taxonomyChanged }: ReviewCTAProps) {
+export function ReviewCTA({ unreadCount, businessId, totalAnalyzed = 0, taxonomyChanged = false }: ReviewCTAProps) {
   const [analyzing, setAnalyzing] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [result, setResult] = useState<{ reviewsAnalyzed: number; feedbackAnalyzed: number } | null>(null);

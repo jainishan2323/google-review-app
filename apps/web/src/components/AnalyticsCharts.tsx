@@ -116,8 +116,8 @@ export function DivergentTagChart({ data }: { data: TagCount[] }) {
           axisLine={false}
         />
         <Tooltip
-          formatter={(value: number, name: string) => [
-            Math.abs(value),
+          formatter={(value, name) => [
+            Math.abs(Number(value)),
             name === "positive" ? "Positive" : "Negative",
           ]}
         />

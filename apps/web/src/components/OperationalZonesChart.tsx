@@ -95,8 +95,9 @@ const ZONE_COLORS: Record<string, string> = {
 const POS_COLOR = "#22c55e";
 const NEG_COLOR = "#f87171";
 
-function absFormatter(value: number) {
-  return Math.abs(value) > 0 ? String(Math.abs(value)) : "";
+function absFormatter(value: unknown) {
+  const n = Math.abs(Number(value));
+  return n > 0 ? String(n) : "";
 }
 
 interface ZoneChartSectionProps {
@@ -160,7 +161,7 @@ function ZoneChartSection({ zone, tags, onTagClick, activeTag, deltas }: ZoneCha
             tickLine={false}
           />
           <Tooltip
-            formatter={(value: number) => [Math.abs(value), "Count"]}
+            formatter={(value) => [Math.abs(Number(value)), "Count"]}
             contentStyle={{
               fontSize: 12,
               borderRadius: 6,
@@ -183,7 +184,7 @@ function ZoneChartSection({ zone, tags, onTagClick, activeTag, deltas }: ZoneCha
               dataKey="positive"
               position="insideRight"
               style={{ fontSize: 10, fill: "#fff", fontWeight: 600 }}
-              formatter={(v: number) => (v > 0 ? String(v) : "")}
+              formatter={(v) => (Number(v) > 0 ? String(v) : "")}
             />
           </Bar>
 

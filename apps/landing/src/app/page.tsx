@@ -8,8 +8,6 @@ import {
   Shield,
   Mail,
   Sparkles,
-  MessageSquare,
-  ChevronRight,
 } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
@@ -21,6 +19,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { WaitlistForm } from "@/components/WaitlistForm";
+import { AIReviewCard } from "@/components/AIReviewCard";
 import { cn } from "@/lib/utils";
 
 const HOW_IT_WORKS_STEPS = [
@@ -29,28 +28,28 @@ const HOW_IT_WORKS_STEPS = [
     Icon: QrCode,
     title: "Scan.",
     description:
-      "Customers scan a branded QR code placed at the table. No app download needed — it opens instantly in their browser.",
+      "Place a ReviewFlow card at your counter, reception, or checkout. Customers scan to open a short feedback form — no app, no account, done in under a minute.",
   },
   {
     number: "02",
     Icon: Star,
     title: "Sort.",
     description:
-      "4 & 5-star experiences are routed to Google with AI-generated review text, ready to post in one tap.",
+      "Happy customers get a ready-to-post Google review, written by our AI based on what they just told us. They just tap Post.",
   },
   {
     number: "03",
     Icon: BarChart3,
     title: "Save.",
     description:
-      "1–3 star complaints are captured privately into your operational dashboard so you can act fast — before they go public.",
+      "Low ratings prompt customers to share their feedback with you anonymously. You hear about problems directly — before they turn into a public post.",
   },
 ];
 
 const PRICING_FEATURES = [
   "Unlimited QR Scans",
   "AI Review Generation",
-  "Operational Analytics Dashboard",
+  "Private Feedback Dashboard",
   "Weekly Reports",
 ];
 
@@ -116,8 +115,10 @@ export default function LandingPage() {
 
             {/* Subheadline */}
             <p className="mb-10 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              The AI-powered QR form that cures &ldquo;blank page syndrome&rdquo; for
-              your customers and gives you real-time operational analytics.
+              Happy customers get an AI-drafted Google review ready to post in
+              seconds. Unhappy ones get a private, anonymous channel to share
+              feedback with you — so you hear about problems before they go
+              anywhere else.
             </p>
 
             {/* CTA */}
@@ -199,110 +200,17 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-14 text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Your always-on reputation engine
+              Everything running while you run your business
             </h2>
             <p className="mt-3 text-muted-foreground">
-              Not just analytics — an active system that works while you&apos;re
-              serving tables.
+              More reviews from happy customers, private feedback from unhappy
+              ones, and AI-drafted replies to everything in between.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             {/* Card 1 — spans 2 cols × 3 rows on desktop */}
-            <Card className="md:col-span-2 md:row-span-3">
-              <CardHeader>
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Zap className="size-5 text-primary" />
-                </div>
-                <CardTitle className="text-lg">AI Review Generation</CardTitle>
-                <CardDescription>
-                  Removes the friction of the blank page. When a happy customer
-                  submits their experience, our AI drafts a personalised,
-                  detailed Google review for them — they just tap Post.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="mt-2 rounded-xl border border-border bg-muted/50 p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                    AI-generated preview
-                  </p>
-                  <p className="mt-3 text-sm leading-relaxed text-foreground">
-                    &ldquo;Had an amazing dinner here. The pasta was cooked to
-                    perfection and our server was incredibly attentive. Will
-                    definitely be coming back — highly recommend the tiramisu!&rdquo;
-                  </p>
-                  <div className="mt-3 flex gap-0.5">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                      <Star
-                        key={i}
-                        className="size-4 fill-yellow-400 text-yellow-400"
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* Divider with label */}
-                <div className="mt-6 flex items-center gap-3">
-                  <div className="h-px flex-1 bg-border" />
-                  <span className="text-xs font-medium text-muted-foreground">
-                    and for every new review
-                  </span>
-                  <div className="h-px flex-1 bg-border" />
-                </div>
-
-                {/* Reply preview */}
-                <div className="mt-4 rounded-xl border border-border bg-muted/50 p-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                      AI reply — ready to send
-                    </p>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">
-                      <span className="size-1.5 rounded-full bg-primary" />
-                      1-click approve
-                    </span>
-                  </div>
-
-                  {/* Original review (compact) */}
-                  <div className="mt-3 flex items-start gap-2 rounded-lg border border-border/60 bg-background/60 px-3 py-2">
-                    <div className="mt-0.5 flex shrink-0 gap-0.5">
-                      <Star className="size-3 fill-yellow-400 text-yellow-400" />
-                      <Star className="size-3 fill-muted text-muted-foreground" />
-                      <Star className="size-3 fill-muted text-muted-foreground" />
-                      <Star className="size-3 fill-muted text-muted-foreground" />
-                      <Star className="size-3 fill-muted text-muted-foreground" />
-                    </div>
-                    <p className="text-xs text-muted-foreground leading-relaxed">
-                      &ldquo;The wait was too long and the food arrived cold.&rdquo;
-                    </p>
-                  </div>
-
-                  {/* Draft reply */}
-                  <div className="mt-3 flex items-start gap-2.5">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                      <MessageSquare className="size-3 text-primary" />
-                    </div>
-                    <p className="text-sm leading-relaxed text-foreground">
-                      &ldquo;Hi Maria, thank you for your honest feedback. We&apos;re
-                      sorry the wait and food temperature fell short — this is
-                      not the standard we set for ourselves. Please reach out
-                      directly so we can make it right.&rdquo;
-                    </p>
-                  </div>
-
-                  {/* Action row */}
-                  <div className="mt-4 flex items-center justify-between">
-                    <button className="inline-flex items-center gap-1 text-xs text-muted-foreground transition-colors hover:text-foreground">
-                      Regenerate
-                      <ChevronRight className="size-3" />
-                    </button>
-                    <button className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-opacity hover:opacity-90">
-                      <MessageSquare className="size-3" />
-                      Approve &amp; Send
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <AIReviewCard />
 
             {/* Card 2 — Active Reputation Shield */}
             <Card>
@@ -312,10 +220,10 @@ export default function LandingPage() {
                 </div>
                 <CardTitle>Active Reputation Shield</CardTitle>
                 <CardDescription>
-                  Don&apos;t just analyze the past; protect your future. Our
-                  physical QR table codes intercept unhappy customers before
-                  they leave, routing 1-star complaints to your private
-                  dashboard instead of your public Google profile.
+                  When a customer has a bad experience, they usually go straight
+                  to Google. ReviewFlow gives them a private, anonymous way to
+                  share that feedback with you instead — so you hear about it
+                  first and get the chance to make it right.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -328,10 +236,9 @@ export default function LandingPage() {
                 </div>
                 <CardTitle>The Monday Morning Pulse</CardTitle>
                 <CardDescription>
-                  Too busy to log into a dashboard? We push the insights to
-                  you. Get an automated weekly email every Monday at 9:00&nbsp;AM
-                  summarising intercepted complaints, trending issues, and your
-                  overall review health.
+                  Every Monday at 9am we send you a short email: what complaints
+                  came in that week, any recurring issues, and how your rating
+                  is tracking. No login needed.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -344,10 +251,9 @@ export default function LandingPage() {
                 </div>
                 <CardTitle>1-Click AI Replies</CardTitle>
                 <CardDescription>
-                  Google&apos;s algorithm rewards businesses that reply quickly.
-                  Our AI instantly drafts context-aware, professional replies to
-                  every new review — saving you hours of tedious typing every
-                  month.
+                  Replying to every review takes time you don&apos;t have. For every
+                  new review, we draft a reply that sounds like you — edit it
+                  if you want, or approve and send in one click.
                 </CardDescription>
               </CardHeader>
             </Card>

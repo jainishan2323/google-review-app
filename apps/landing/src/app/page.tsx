@@ -3,20 +3,18 @@ import {
   QrCode,
   Star,
   BarChart3,
-  Check,
   Zap,
   Shield,
   Mail,
   Sparkles,
 } from "lucide-react";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
   CardDescription,
-  CardFooter,
 } from "@/components/ui/card";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { AIReviewCard } from "@/components/AIReviewCard";
@@ -46,12 +44,6 @@ const HOW_IT_WORKS_STEPS = [
   },
 ];
 
-const PRICING_FEATURES = [
-  "Unlimited QR Scans",
-  "AI Review Generation",
-  "Private Feedback Dashboard",
-  "Weekly Reports",
-];
 
 export default function LandingPage() {
   return (
@@ -80,15 +72,15 @@ export default function LandingPage() {
               Features
             </Link>
             <Link
-              href="#pricing"
+              href="#early-access"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              Pricing
+              Get Early Access
             </Link>
           </div>
 
           <a
-            href="#waitlist"
+            href="#early-access"
             className={cn(buttonVariants({ size: "sm" }))}
           >
             Join Waitlist
@@ -120,11 +112,6 @@ export default function LandingPage() {
               feedback with you — so you hear about problems before they go
               anywhere else.
             </p>
-
-            {/* CTA */}
-            <div id="waitlist" className="w-full max-w-md">
-              <WaitlistForm />
-            </div>
 
             {/* Trust badges */}
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
@@ -284,9 +271,14 @@ export default function LandingPage() {
                   A one-star drop in your rating leads to a 5–9% decrease in
                   total revenue.
                 </p>
-                <p className="mt-5 text-xs text-muted-foreground">
+                <a
+                  href="https://www.hbs.edu/ris/Publication%20Files/12-016_a7e4a5a2-03f9-490d-b093-8f951238dba2.pdf"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 block text-xs text-muted-foreground underline-offset-2 hover:underline"
+                >
                   Source: Harvard Business School
-                </p>
+                </a>
               </CardContent>
             </Card>
 
@@ -300,9 +292,14 @@ export default function LandingPage() {
                   The number of potential customers a business loses from just
                   one unhandled negative review.
                 </p>
-                <p className="mt-5 text-xs text-muted-foreground">
+                <a
+                  href="https://www.brightlocal.com/blog/the-impact-of-online-reviews/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 block text-xs text-muted-foreground underline-offset-2 hover:underline"
+                >
                   Source: BrightLocal Consumer Survey
-                </p>
+                </a>
               </CardContent>
             </Card>
 
@@ -316,60 +313,37 @@ export default function LandingPage() {
                   The optimal star rating for maximum trust. Perfect 5.0 ratings
                   look fake. We help you build an authentic 4.2–4.5 profile.
                 </p>
-                <p className="mt-5 text-xs text-muted-foreground">
+                <a
+                  href="https://spiegel.medill.northwestern.edu/star-ratings-and-review-content/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 block text-xs text-muted-foreground underline-offset-2 hover:underline"
+                >
                   Source: Northwestern University Spiegel Research Center
-                </p>
+                </a>
               </CardContent>
             </Card>
           </div>
         </div>
       </section>
 
-      {/* ─── Pricing ─────────────────────────────────────────── */}
+      {/* ─── Early Access ─────────────────────────────────────── */}
       <section
-        id="pricing"
+        id="early-access"
         className="border-y border-border/40 bg-muted/30 py-20 sm:py-28"
       >
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
-          <div className="mb-14 text-center">
+          <div className="mx-auto max-w-xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Simple pricing
+              Be first through the door.
             </h2>
             <p className="mt-3 text-muted-foreground">
-              One plan. Everything included. No surprises.
+              We&apos;re onboarding our first businesses now. Drop your email and
+              tell us what you&apos;re most excited to try — we&apos;ll reach out personally.
             </p>
-          </div>
-
-          <div className="mx-auto max-w-md">
-            <Card className="ring-2 ring-primary/30">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">Starter</CardTitle>
-                <div className="mt-4">
-                  <span className="text-5xl font-extrabold">$29</span>
-                  <span className="ml-1 text-muted-foreground">/ month</span>
-                </div>
-                <CardDescription className="mt-2">
-                  Everything you need to grow your reputation.
-                </CardDescription>
-              </CardHeader>
-
-              <CardContent>
-                <ul className="space-y-3">
-                  {PRICING_FEATURES.map((feature) => (
-                    <li key={feature} className="flex items-center gap-3 text-sm">
-                      <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                        <Check className="size-3 text-primary" />
-                      </div>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </CardContent>
-
-              <CardFooter className="border-none bg-transparent pt-2">
-                <WaitlistForm fullWidth />
-              </CardFooter>
-            </Card>
+            <div className="mt-8">
+              <WaitlistForm fullWidth showMessage />
+            </div>
           </div>
         </div>
       </section>

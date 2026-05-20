@@ -82,7 +82,7 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
   };
 
   return (
-    <main className="p-8 space-y-8">
+    <main className="p-8 space-y-8 max-w-5xl mx-auto">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Google Reviews</h1>
@@ -118,7 +118,7 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
               authorPhoto={review.authorPhoto}
               rating={review.rating}
               text={review.text}
-              publishedAt={review.publishedAt}
+              publishedAt={review.publishedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
               isReplied={review.isReplied}
               replyText={review.replyText}
               tags={review.tags}

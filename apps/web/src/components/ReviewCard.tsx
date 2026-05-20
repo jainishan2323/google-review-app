@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { MessageSquare } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { MessageSquare, Copy, Check, Loader2, RefreshCw, Send } from "lucide-react";
 
 interface ReviewCardProps {
   id: string;
@@ -11,7 +12,7 @@ interface ReviewCardProps {
   authorPhoto?: string | null;
   rating: number;
   text: string | null;
-  publishedAt: Date;
+  publishedAt: string;
   isReplied: boolean;
   replyText?: string | null;
   tags: string[];
@@ -31,6 +32,7 @@ function StarDisplay({ rating }: { rating: number }) {
 const COLLAPSE_THRESHOLD = 280;
 
 export function ReviewCard({
+  id,
   authorName,
   rating,
   text,
@@ -41,9 +43,62 @@ export function ReviewCard({
   unmappedInsights,
 }: ReviewCardProps) {
   const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState<string | null>(null);
+  const [loadingDraft, setLoadingDraft] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [postError, setPostError] = useState<string | null>(null);
+  const [replied, setReplied] = useState(isReplied);
+
   const negSet = new Set(negativeTags);
   const isLong = !!text && text.length > COLLAPSE_THRESHOLD;
   const displayText = isLong && !expanded ? text!.slice(0, COLLAPSE_THRESHOLD).trimEnd() + "…" : text;
+
+  async function handleDraftReply() {
+    setLoadingDraft(true);
+    try {
+      const res = await fetch("/api/generate-reply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ reviewId: id }),
+      });
+      const data = await res.json();
+      if (data.draft) setDraft(data.draft);
+    } finally {
+      setLoadingDraft(false);
+    }
+  }
+
+  async function handlePostReply() {
+    if (!draft) return;
+    setPosting(true);
+    setPostError(null);
+    try {
+      const res = await fetch(`/api/reviews/${id}/reply`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ replyText: draft }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setPostError(data.error ?? "Failed to post reply.");
+      } else {
+        setReplied(true);
+        setDraft(null);
+      }
+    } catch {
+      setPostError("Network error — please try again.");
+    } finally {
+      setPosting(false);
+    }
+  }
+
+  async function handleCopy() {
+    if (!draft) return;
+    await navigator.clipboard.writeText(draft);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
 
   return (
     <div className="flex flex-col gap-3 py-5 border-b border-border last:border-b-0">
@@ -53,31 +108,32 @@ export function ReviewCard({
           <p className="text-sm font-semibold text-foreground">{authorName}</p>
           <div className="flex items-center gap-2">
             <StarDisplay rating={rating} />
-            <span className="text-xs text-muted-foreground">
-              {publishedAt.toLocaleDateString("en-GB", {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-              })}
-            </span>
+            <span className="text-xs text-muted-foreground">{publishedAt}</span>
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <Badge
-            variant={isReplied ? "secondary" : "destructive"}
+            variant={replied ? "secondary" : "destructive"}
             className="text-[10px]"
           >
-            {isReplied ? "Replied" : "Pending"}
+            {replied ? "Replied" : "Pending"}
           </Badge>
           <Button
             variant="outline"
             size="sm"
             className="h-7 gap-1.5 text-xs"
-            disabled
-            title="AI reply drafting coming soon"
+            onClick={handleDraftReply}
+            disabled={loadingDraft || !text}
+            title={!text ? "No review text to reply to" : undefined}
           >
-            <MessageSquare className="h-3.5 w-3.5" />
-            Reply
+            {loadingDraft ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : draft ? (
+              <RefreshCw className="h-3.5 w-3.5" />
+            ) : (
+              <MessageSquare className="h-3.5 w-3.5" />
+            )}
+            {draft ? "Regenerate" : "Draft Reply"}
           </Button>
         </div>
       </div>
@@ -130,6 +186,50 @@ export function ReviewCard({
               ✦ {insight}
             </span>
           ))}
+        </div>
+      )}
+
+      {/* Draft reply */}
+      {draft && (
+        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
+          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Draft reply</p>
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            className="text-sm bg-background"
+            rows={4}
+          />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={handleCopy}
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-green-500" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+              {copied ? "Copied" : "Copy"}
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={handlePostReply}
+              disabled={posting}
+            >
+              {posting ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Send className="h-3.5 w-3.5" />
+              )}
+              {posting ? "Posting…" : "Post to Google"}
+            </Button>
+          </div>
+          {postError && (
+            <p className="text-xs text-destructive">{postError}</p>
+          )}
         </div>
       )}
     </div>

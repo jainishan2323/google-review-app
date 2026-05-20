@@ -269,7 +269,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   };
 
   return (
-    <main className="p-8 space-y-8 max-w-5xl">
+    <main className="p-8 space-y-8 max-w-5xl mx-auto">
       {/* Gamified CTA */}
       <ReviewCTA
         unreadCount={pendingAnalysis}

@@ -11,24 +11,22 @@ export async function draftReply(
   businessName: string
 ): Promise<string> {
   const isNegative = review.rating <= 2;
-  const tone = isNegative
-    ? "empathetic, apologetic, and solution-focused"
-    : "warm, genuine, and appreciative";
 
   const prompt = `You are the owner of "${businessName}" responding to a Google review.
 
 Review from ${review.authorName} (${review.rating}/5 stars):
 "${review.text}"
 
-Write a professional reply that is ${tone}. 
+Write a short, sincere reply in 2–3 sentences.
 
-Guidelines:
-- Keep it to 2–3 sentences
-- Be personal, use the reviewer's name once
-- If negative: acknowledge the issue, apologise sincerely, offer to resolve offline (do not include fake phone numbers or emails)
-- If positive: thank them genuinely, invite them back
-- Do not be defensive or dismissive
-- Do not use hollow phrases like "We strive for excellence"
+Rules:
+- Use the reviewer's name once
+- If negative (1–2 stars): acknowledge the specific issue they mentioned and apologise sincerely. Nothing else.
+- If mixed (3 stars): acknowledge both what went well and what didn't, briefly
+- If positive (4–5 stars): thank them genuinely for the specific things they praised
+- No offers, no discounts, no "please come back", no "we'll do better next time" promises
+- No hollow phrases like "We strive for excellence" or "Your feedback is valuable"
+- Do not be defensive
 - Sign off naturally as the owner`;
 
   return getLLMClient().complete(prompt, { maxTokens: 200, temperature: 0.6 });

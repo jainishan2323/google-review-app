@@ -35,7 +35,7 @@ export default function TermsPage() {
             </p>
             <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
               <p className="font-medium">Ishan Jain · Olbaid.de</p>
-              <p className="mt-1 text-muted-foreground">Wilhelmstrasse</p>
+              <p className="mt-1 text-muted-foreground">Wilhelmstrasse 45</p>
               <p className="text-muted-foreground">10117 Berlin, Germany</p>
               <p className="mt-2 text-muted-foreground">
                 Email: <a href="mailto:jugnoo@olbaid.de" className="underline hover:text-foreground">jugnoo@olbaid.de</a>

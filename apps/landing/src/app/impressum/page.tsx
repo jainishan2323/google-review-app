@@ -32,7 +32,7 @@ export default function ImpressumPage() {
             <h2 className="mb-3 text-base font-semibold text-foreground">Angaben gemäß § 5 TMG</h2>
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-1">
               <p className="font-medium">Ishan Jain · Olbaid.de</p>
-              <p className="text-muted-foreground">Wilhelmstrasse</p>
+              <p className="text-muted-foreground">Wilhelmstrasse 45</p>
               <p className="text-muted-foreground">10117 Berlin</p>
               <p className="text-muted-foreground">Deutschland</p>
             </div>
@@ -79,7 +79,7 @@ export default function ImpressumPage() {
             </h2>
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-1">
               <p className="font-medium">Ishan Jain</p>
-              <p className="text-muted-foreground">Wilhelmstrasse</p>
+              <p className="text-muted-foreground">Wilhelmstrasse 45</p>
               <p className="text-muted-foreground">10117 Berlin</p>
             </div>
           </section>

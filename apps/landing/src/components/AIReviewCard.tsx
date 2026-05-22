@@ -81,11 +81,11 @@ export function AIReviewCard() {
               <RefreshCw className="size-3" />
               Regenerate
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
               <button
                 onClick={() => setReviewAction("anonymous")}
                 disabled={reviewAction !== null}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-muted disabled:cursor-default disabled:opacity-70"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground transition-all hover:bg-muted disabled:cursor-default disabled:opacity-70 sm:w-auto"
               >
                 {reviewAction === "anonymous" ? (
                   <>
@@ -102,7 +102,7 @@ export function AIReviewCard() {
               <button
                 onClick={() => setReviewAction("google")}
                 disabled={reviewAction !== null}
-                className="inline-flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-70"
+                className="inline-flex w-full items-center justify-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-all hover:opacity-90 disabled:cursor-default disabled:opacity-70 sm:w-auto"
               >
                 {reviewAction === "google" ? (
                   <>

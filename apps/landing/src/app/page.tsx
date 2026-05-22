@@ -19,6 +19,7 @@ import {
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { AIReviewCard } from "@/components/AIReviewCard";
 import { FireflyLogo } from "@/components/FireflyLogo";
+import { ScreenshotCarousel } from "@/components/ScreenshotCarousel";
 import { cn } from "@/lib/utils";
 
 const HOW_IT_WORKS_STEPS = [
@@ -133,12 +134,10 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Hero visual placeholder */}
+        {/* Hero carousel */}
         <div className="mx-auto mt-16 max-w-5xl px-4 sm:px-6">
-          <div className="relative flex aspect-[16/9] items-center justify-center overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-muted to-muted/30">
-            <p className="text-sm text-muted-foreground">
-              [ Phone + Dashboard screenshot ]
-            </p>
+          <div className="relative">
+            <ScreenshotCarousel />
             <div className="absolute bottom-5 right-6 opacity-40">
               <FireflyLogo size={22} />
             </div>

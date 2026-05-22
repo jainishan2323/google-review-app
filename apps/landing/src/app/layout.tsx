@@ -7,7 +7,7 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "ReviewFlow — Turn Happy Customers into 5-Star Google Reviews",
+  title: "Jugnoo — Turn Happy Customers into 5-Star Google Reviews",
   description:
     "The AI-powered QR form that cures blank page syndrome for your customers and gives you real-time operational analytics.",
 };

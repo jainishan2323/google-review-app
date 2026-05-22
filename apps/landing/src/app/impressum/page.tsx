@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Impressum — ReviewFlow",
+  title: "Impressum — Jugnoo",
   description: "Pflichtangaben gemäß § 5 TMG.",
 };
 
@@ -12,7 +12,7 @@ export default function ImpressumPage() {
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
-            ReviewFlow
+            Jugnoo
           </Link>
           <Link href="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
             ← Back to home
@@ -43,8 +43,8 @@ export default function ImpressumPage() {
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-1">
               <p>
                 E-Mail:{" "}
-                <a href="mailto:[YOUR EMAIL]" className="underline hover:text-foreground">
-                  [YOUR EMAIL]
+                <a href="mailto:jugnoo@olbaid.de" className="underline hover:text-foreground">
+                  jugnoo@olbaid.de
                 </a>
               </p>
               <p className="text-muted-foreground">

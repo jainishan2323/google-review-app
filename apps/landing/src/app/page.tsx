@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { AIReviewCard } from "@/components/AIReviewCard";
+import { FireflyLogo } from "@/components/FireflyLogo";
 import { cn } from "@/lib/utils";
 
 const HOW_IT_WORKS_STEPS = [
@@ -26,7 +27,7 @@ const HOW_IT_WORKS_STEPS = [
     Icon: QrCode,
     title: "Scan.",
     description:
-      "Place a ReviewFlow card at your counter, reception, or checkout. Customers scan to open a short feedback form — no app, no account, done in under a minute.",
+      "Place a Jugnoo card at your counter, reception, or checkout. Customers scan to open a short feedback form — no app, no account, done in under a minute.",
   },
   {
     number: "02",
@@ -53,9 +54,10 @@ export default function LandingPage() {
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link
             href="/"
-            className="text-base font-semibold tracking-tight text-foreground"
+            className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground"
           >
-            ReviewFlow
+            <FireflyLogo size={28} />
+            Jugnoo
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">
@@ -137,6 +139,9 @@ export default function LandingPage() {
             <p className="text-sm text-muted-foreground">
               [ Phone + Dashboard screenshot ]
             </p>
+            <div className="absolute bottom-5 right-6 opacity-40">
+              <FireflyLogo size={22} />
+            </div>
           </div>
         </div>
       </section>
@@ -208,7 +213,7 @@ export default function LandingPage() {
                 <CardTitle>Active Reputation Shield</CardTitle>
                 <CardDescription>
                   When a customer has a bad experience, they usually go straight
-                  to Google. ReviewFlow gives them a private, anonymous way to
+                  to Google. Jugnoo gives them a private, anonymous way to
                   share that feedback with you instead — so you hear about it
                   first and get the chance to make it right.
                 </CardDescription>
@@ -367,14 +372,14 @@ export default function LandingPage() {
             </div>
 
             <p className="order-last text-sm text-muted-foreground sm:order-none">
-              &copy; {new Date().getFullYear()} ReviewFlow. All rights reserved.
+              &copy; {new Date().getFullYear()} Jugnoo. All rights reserved.
             </p>
 
             <a
-              href="mailto:support@yourdomain.com"
+              href="mailto:jugnoo@olbaid.de"
               className="text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
-              support@yourdomain.com
+              jugnoo@olbaid.de
             </a>
           </div>
         </div>

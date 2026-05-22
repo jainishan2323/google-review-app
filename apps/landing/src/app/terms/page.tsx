@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — ReviewFlow",
-  description: "Terms and conditions for using ReviewFlow.",
+  title: "Terms of Service — Jugnoo",
+  description: "Terms and conditions for using Jugnoo.",
 };
 
 export default function TermsPage() {
@@ -12,7 +12,7 @@ export default function TermsPage() {
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
-            ReviewFlow
+            Jugnoo
           </Link>
           <Link href="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
             ← Back to home
@@ -31,14 +31,14 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">1. Provider</h2>
             <p>
-              ReviewFlow is operated by:
+              Jugnoo is operated by:
             </p>
             <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
               <p className="font-medium">[YOUR FULL NAME OR COMPANY NAME]</p>
               <p className="mt-1 text-muted-foreground">[Street, House Number]</p>
               <p className="text-muted-foreground">[Postcode, City], Germany</p>
               <p className="mt-2 text-muted-foreground">
-                Email: <a href="mailto:[YOUR EMAIL]" className="underline hover:text-foreground">[YOUR EMAIL]</a>
+                Email: <a href="mailto:jugnoo@olbaid.de" className="underline hover:text-foreground">jugnoo@olbaid.de</a>
               </p>
             </div>
           </section>
@@ -46,7 +46,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">2. Scope of Service</h2>
             <p>
-              ReviewFlow provides a Software-as-a-Service (SaaS) platform that enables restaurant and
+              Jugnoo provides a Software-as-a-Service (SaaS) platform that enables restaurant and
               hospitality businesses to collect customer feedback via QR codes, manage and analyse Google
               reviews, and draft AI-assisted replies. The service is intended for business customers
               (Unternehmer, § 14 BGB) only, not consumers.
@@ -67,7 +67,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">4. Google Account Access</h2>
             <p>
-              By connecting your Google Business Profile, you authorise ReviewFlow to access your Google
+              By connecting your Google Business Profile, you authorise Jugnoo to access your Google
               reviews and post replies on your behalf using the permissions you grant via Google OAuth.
               You may revoke this access at any time via your{" "}
               <a
@@ -78,7 +78,7 @@ export default function TermsPage() {
               >
                 Google Account permissions
               </a>
-              . ReviewFlow does not store your Google password. Our use of Google data is governed by
+              . Jugnoo does not store your Google password. Our use of Google data is governed by
               the{" "}
               <a
                 href="https://developers.google.com/terms/api-services-user-data-policy"
@@ -95,7 +95,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">5. AI-Generated Content</h2>
             <p>
-              ReviewFlow uses AI to generate review text on behalf of customers and draft replies on
+              Jugnoo uses AI to generate review text on behalf of customers and draft replies on
               behalf of business owners. You acknowledge that:
             </p>
             <ul className="mt-3 space-y-1.5 pl-4">
@@ -103,7 +103,7 @@ export default function TermsPage() {
                 "AI-generated content is a draft and should be reviewed before posting.",
                 "You are solely responsible for any content posted to Google under your account.",
                 "You must not post AI-generated reviews that are false, misleading, or violate Google's review policies.",
-                "ReviewFlow does not guarantee the accuracy, tone, or appropriateness of AI-generated content.",
+                "Jugnoo does not guarantee the accuracy, tone, or appropriateness of AI-generated content.",
               ].map((item) => (
                 <li key={item} className="flex items-start gap-2">
                   <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
@@ -116,7 +116,7 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">6. Subscription and Payment</h2>
             <p>
-              ReviewFlow is offered on a subscription basis. Pricing is displayed on the website and
+              Jugnoo is offered on a subscription basis. Pricing is displayed on the website and
               confirmed at checkout. Subscriptions renew automatically unless cancelled before the
               renewal date. Invoices are issued in EUR and include applicable German VAT (Mehrwertsteuer).
             </p>
@@ -132,7 +132,7 @@ export default function TermsPage() {
             <p>You agree not to:</p>
             <ul className="mt-3 space-y-1.5 pl-4">
               {[
-                "Use ReviewFlow to generate or post fake, fabricated, or deceptive reviews.",
+                "Use Jugnoo to generate or post fake, fabricated, or deceptive reviews.",
                 "Violate Google's Terms of Service or review policies.",
                 "Attempt to reverse-engineer, scrape, or otherwise misuse the service.",
                 "Use the service for any unlawful purpose under German or EU law.",
@@ -162,14 +162,14 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">9. Limitation of Liability</h2>
             <p>
-              To the extent permitted by German law, ReviewFlow is liable only for damages caused by
+              To the extent permitted by German law, Jugnoo is liable only for damages caused by
               intent (Vorsatz) or gross negligence (grobe Fahrlässigkeit), or for damages resulting
               from injury to life, body, or health. Liability for slight negligence is excluded except
               for breaches of essential contractual obligations (Kardinalpflichten), in which case
               liability is limited to foreseeable, typical damages.
             </p>
             <p className="mt-3">
-              ReviewFlow is not liable for decisions made by you based on AI-generated content, for
+              Jugnoo is not liable for decisions made by you based on AI-generated content, for
               changes to Google's review policies, or for the removal or modification of reviews by
               Google.
             </p>
@@ -178,10 +178,10 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">10. Intellectual Property</h2>
             <p>
-              ReviewFlow and its original content, features, and technology are owned by the provider
+              Jugnoo and its original content, features, and technology are owned by the provider
               and protected under applicable intellectual property law. You retain ownership of all
               review data and customer feedback data uploaded or generated through your account.
-              By using the service, you grant ReviewFlow a limited licence to process this data solely
+              By using the service, you grant Jugnoo a limited licence to process this data solely
               to deliver the service.
             </p>
           </section>

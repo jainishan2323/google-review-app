@@ -2,8 +2,8 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — ReviewFlow",
-  description: "How ReviewFlow collects, uses, and protects your data.",
+  title: "Privacy Policy — Jugnoo",
+  description: "How Jugnoo collects, uses, and protects your data.",
 };
 
 export default function PrivacyPage() {
@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       <nav className="sticky top-0 z-50 border-b border-border/40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" className="text-base font-semibold tracking-tight text-foreground">
-            ReviewFlow
+            Jugnoo
           </Link>
           <Link href="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
             ← Back to home
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
               <p className="mt-1 text-muted-foreground">[Street, House Number]</p>
               <p className="text-muted-foreground">[Postcode, City], Germany</p>
               <p className="mt-2 text-muted-foreground">
-                Email: <a href="mailto:[YOUR EMAIL]" className="underline hover:text-foreground">[YOUR EMAIL]</a>
+                Email: <a href="mailto:jugnoo@olbaid.de" className="underline hover:text-foreground">jugnoo@olbaid.de</a>
               </p>
             </div>
           </section>
@@ -51,13 +51,13 @@ export default function PrivacyPage() {
             <p>
               When you submit your email address to join our waitlist, we collect and store your email
               address. The legal basis is your consent (Art. 6(1)(a) GDPR). You may withdraw consent at
-              any time by emailing us. We use this data solely to notify you when ReviewFlow launches
+              any time by emailing us. We use this data solely to notify you when Jugnoo launches
               and to send relevant product updates.
             </p>
 
             <h3 className="mb-2 mt-5 font-medium text-foreground">2.2 Dashboard Accounts (Business Users)</h3>
             <p>
-              When you create a ReviewFlow account, we collect your name, email address, and — if you
+              When you create a Jugnoo account, we collect your name, email address, and — if you
               connect your Google Business Profile — your Google account information and access tokens
               required to read your reviews and post replies on your behalf. The legal basis is the
               performance of a contract (Art. 6(1)(b) GDPR).
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
 
             <h3 className="mb-2 mt-5 font-medium text-foreground">2.3 Google API Data</h3>
             <p>
-              ReviewFlow uses the Google My Business API to fetch your Google reviews and, where
+              Jugnoo uses the Google My Business API to fetch your Google reviews and, where
               authorised by you, to post replies. Our use of data received from Google APIs complies
               with the{" "}
               <a
@@ -82,7 +82,7 @@ export default function PrivacyPage() {
 
             <h3 className="mb-2 mt-5 font-medium text-foreground">2.4 Customer Feedback via QR Form</h3>
             <p>
-              When a restaurant customer submits feedback via a ReviewFlow QR form, we collect their
+              When a restaurant customer submits feedback via a Jugnoo QR form, we collect their
               star rating and any optional free-text they provide. This data is associated with the
               business that deployed the QR code. Submissions are anonymous by default; no personal
               identification is stored unless the customer voluntarily provides it.
@@ -102,7 +102,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">3. Data Storage &amp; Location</h2>
             <p>
-              ReviewFlow is built and operated in the European Union. All personal data and business
+              Jugnoo is built and operated in the European Union. All personal data and business
               data is stored exclusively within the EU:
             </p>
             <div className="mt-4 space-y-3">
@@ -202,7 +202,7 @@ export default function PrivacyPage() {
             </ul>
             <p className="mt-4">
               To exercise any right, email us at{" "}
-              <a href="mailto:[YOUR EMAIL]" className="underline hover:text-foreground">[YOUR EMAIL]</a>.
+              <a href="mailto:jugnoo@olbaid.de" className="underline hover:text-foreground">jugnoo@olbaid.de</a>.
               We will respond within 30 days.
             </p>
           </section>

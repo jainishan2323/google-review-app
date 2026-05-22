@@ -34,9 +34,9 @@ export default function TermsPage() {
               Jugnoo is operated by:
             </p>
             <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
-              <p className="font-medium">[YOUR FULL NAME OR COMPANY NAME]</p>
-              <p className="mt-1 text-muted-foreground">[Street, House Number]</p>
-              <p className="text-muted-foreground">[Postcode, City], Germany</p>
+              <p className="font-medium">Ishan Jain · Olbaid.de</p>
+              <p className="mt-1 text-muted-foreground">Wilhelmstrasse</p>
+              <p className="text-muted-foreground">10117 Berlin, Germany</p>
               <p className="mt-2 text-muted-foreground">
                 Email: <a href="mailto:jugnoo@olbaid.de" className="underline hover:text-foreground">jugnoo@olbaid.de</a>
               </p>
@@ -211,7 +211,7 @@ export default function TermsPage() {
               These Terms are governed by the laws of the Federal Republic of Germany, excluding the
               UN Convention on Contracts for the International Sale of Goods (CISG). The exclusive
               place of jurisdiction for all disputes arising from or in connection with these Terms
-              is [YOUR CITY], Germany, provided you are a merchant (Kaufmann) or legal entity under
+              is Berlin, Germany, provided you are a merchant (Kaufmann) or legal entity under
               public law.
             </p>
           </section>

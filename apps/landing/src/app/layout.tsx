@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Providers } from "@/components/providers";
+import { CookieBanner } from "@/components/CookieBanner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
@@ -21,6 +22,7 @@ export default function RootLayout({
     <html lang="en" className={cn(inter.variable)} suppressHydrationWarning>
       <body className="antialiased">
         <Providers>{children}</Providers>
+        <CookieBanner />
       </body>
     </html>
   );

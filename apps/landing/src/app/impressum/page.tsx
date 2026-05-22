@@ -31,9 +31,9 @@ export default function ImpressumPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">Angaben gemäß § 5 TMG</h2>
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-1">
-              <p className="font-medium">[YOUR FULL NAME OR COMPANY NAME]</p>
-              <p className="text-muted-foreground">[Street, House Number]</p>
-              <p className="text-muted-foreground">[Postcode, City]</p>
+              <p className="font-medium">Ishan Jain · Olbaid.de</p>
+              <p className="text-muted-foreground">Wilhelmstrasse</p>
+              <p className="text-muted-foreground">10117 Berlin</p>
               <p className="text-muted-foreground">Deutschland</p>
             </div>
           </section>
@@ -48,7 +48,7 @@ export default function ImpressumPage() {
                 </a>
               </p>
               <p className="text-muted-foreground">
-                Telefon: [YOUR PHONE NUMBER] {" "}
+                Telefon: +49 17684744212{" "}
                 <span className="text-xs">(kein Support-Kanal)</span>
               </p>
             </div>
@@ -78,9 +78,9 @@ export default function ImpressumPage() {
               Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
             </h2>
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-1">
-              <p className="font-medium">[YOUR FULL NAME]</p>
-              <p className="text-muted-foreground">[Street, House Number]</p>
-              <p className="text-muted-foreground">[Postcode, City]</p>
+              <p className="font-medium">Ishan Jain</p>
+              <p className="text-muted-foreground">Wilhelmstrasse</p>
+              <p className="text-muted-foreground">10117 Berlin</p>
             </div>
           </section>
 

@@ -150,9 +150,10 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
     startTransition(async () => {
       const result = await upsertFormConfig(values);
       if (result.success) {
-        toast.success("Form configuration saved.");
+        toast.success("Configuration saved.");
+        form.reset(values);
       } else {
-        toast.error(result.error ?? "Failed to save.");
+        toast.error(result.error ?? "Failed to save. Please try again.");
       }
     });
   };
@@ -193,11 +194,23 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
                 name="logoUrl"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Logo URL</FormLabel>
+                    <FormLabel>Logo URL <span className="text-muted-foreground font-normal">(optional)</span></FormLabel>
                     <FormControl>
-                      <Input {...field} placeholder="https://example.com/logo.png" />
+                      <div className="relative">
+                        <Input {...field} placeholder="https://example.com/logo.png" className={field.value ? "pr-8" : ""} />
+                        {field.value && (
+                          <button
+                            type="button"
+                            onClick={() => field.onChange("")}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                            aria-label="Clear logo URL"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
+                      </div>
                     </FormControl>
-                    <FormDescription>Optional. Paste a publicly accessible image URL.</FormDescription>
+                    <FormDescription>Paste a publicly accessible image URL.</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -334,8 +347,16 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
           ))}
         </div>
 
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isPending}>
+        <div className="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={isPending || !form.formState.isDirty}
+            onClick={() => form.reset()}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isPending || !form.formState.isDirty}>
             {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
             {isPending ? "Saving…" : "Save Configuration"}
           </Button>

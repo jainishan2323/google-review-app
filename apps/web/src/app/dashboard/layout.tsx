@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -9,6 +10,7 @@ import {
   BarChart2,
   MessageSquare,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
@@ -26,6 +28,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
   return (
     <div className="flex min-h-screen bg-background text-foreground">
@@ -64,8 +67,33 @@ export default function DashboardLayout({
 
         <Separator className="bg-sidebar-border" />
 
-        <div className="px-6 py-4">
-          <p className="text-xs text-muted-foreground">dev mode</p>
+        <div className="px-4 py-4 space-y-3">
+          {session?.user && (
+            <div className="flex items-center gap-3 px-2">
+              {session.user.image && (
+                <img
+                  src={session.user.image}
+                  alt={session.user.name ?? "User"}
+                  className="h-7 w-7 rounded-full"
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-sidebar-foreground truncate">
+                  {session.user.name}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">
+                  {session.user.email}
+                </p>
+              </div>
+            </div>
+          )}
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:text-foreground hover:bg-sidebar-accent"
+          >
+            <LogOut className="h-3.5 w-3.5" />
+            Sign out
+          </button>
         </div>
       </aside>
 

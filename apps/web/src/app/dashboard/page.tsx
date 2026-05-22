@@ -73,7 +73,7 @@ export default async function DashboardPage() {
   const maxCount = Math.max(...distribution.map((d) => d.count), 1);
 
   return (
-    <main className="p-8 space-y-8">
+    <div className="p-8 space-y-8">
       {/* Gamified CTA */}
       <ReviewCTA unreadCount={unreadCount} businessId={DEV_BUSINESS_ID} />
 
@@ -233,6 +233,6 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
       )}
-    </main>
+    </div>
   );
 }

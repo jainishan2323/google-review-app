@@ -74,9 +74,14 @@ export function QrCodeCard({ formUrl }: Props) {
           />
         </div>
 
-        <p className="text-xs text-muted-foreground break-all text-center max-w-xs">
+        <a
+          href={formUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-muted-foreground break-all text-center max-w-xs hover:text-foreground transition-colors underline underline-offset-2"
+        >
           {formUrl}
-        </p>
+        </a>
 
         <Button
           type="button"

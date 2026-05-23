@@ -13,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { FireflyLogo } from "@/components/FireflyLogo";
 
 const navItems = [
   { href: "/dashboard",                   label: "Overview",  icon: LayoutDashboard },
@@ -29,11 +30,14 @@ export function DashboardSidebar({ businessName }: { businessName: string }) {
   return (
     <aside className="w-60 shrink-0 flex flex-col border-r border-sidebar-border bg-sidebar">
       {/* Logo */}
-      <div className="px-6 py-5">
-        <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
-          Jugnoo
-        </span>
-        <p className="text-xs text-muted-foreground mt-0.5 truncate">{businessName}</p>
+      <div className="px-6 py-5 flex items-center gap-2.5">
+        <FireflyLogo size={28} />
+        <div>
+          <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
+            Jugnoo
+          </span>
+          <p className="text-xs text-muted-foreground mt-0.5 truncate">{businessName}</p>
+        </div>
       </div>
 
       <Separator className="bg-sidebar-border" />

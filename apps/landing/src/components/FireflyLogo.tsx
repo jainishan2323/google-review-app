@@ -4,92 +4,163 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
   return (
     <>
       <style>{`
-        @keyframes firefly-glow {
+        @keyframes firefly-float {
+          0%, 100% { transform: translateY(0px) rotate(-1deg); }
+          50%       { transform: translateY(-5px) rotate(1deg); }
+        }
+        @keyframes jff-ring-glow {
           0%, 100% {
-            filter: drop-shadow(0 0 3px #b8ff6e)
-                    drop-shadow(0 0 10px #6dff3a)
-                    drop-shadow(0 0 22px #39d900);
-          }
-          45%, 55% {
-            filter: drop-shadow(0 0 1px #b8ff6e);
+            filter: drop-shadow(0 0 3px #feff00)
+                    drop-shadow(0 0 8px #ffe000);
           }
           50% {
-            filter: none;
+            filter: drop-shadow(0 0 6px #feff00)
+                    drop-shadow(0 0 16px #ffe000)
+                    drop-shadow(0 0 28px #ffd000);
           }
         }
-
-        @keyframes firefly-float {
-          0%, 100% { transform: translateY(0px) rotate(-1.5deg); }
-          50%       { transform: translateY(-5px) rotate(1.5deg); }
-        }
-
-        .firefly-wrap {
+        .jff-wrap {
           display: inline-block;
           animation: firefly-float 3.5s ease-in-out infinite;
         }
-
-        .firefly-svg {
-          animation: firefly-glow 2.8s ease-in-out infinite;
+        .jff-ring {
+          animation: jff-ring-glow 2.4s ease-in-out infinite;
         }
       `}</style>
 
-      <span className="firefly-wrap">
+      <span className="jff-wrap">
         <svg
-          className="firefly-svg"
           width={size}
           height={size}
-          viewBox="0 0 512 512"
-          fill="none"
-          stroke="white"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="20"
+          viewBox="0 0 300 300"
           xmlns="http://www.w3.org/2000/svg"
+          style={{ overflow: "visible" }}
         >
-          {/* Left antenna */}
-          <path d="M 242,112 C 233,85 218,63 206,49" />
-          <path d="M 206,49 C 202,43 195,41 191,46 C 188,52 192,60 198,57" />
+          <defs>
+            {/* Wing fill — orange→transparent */}
+            <linearGradient
+              id="jff-wg1"
+              gradientUnits="userSpaceOnUse"
+              gradientTransform="translate(-42.60414,44.764628)"
+              x1="83.291481" y1="144.63643"
+              x2="-9.9875755" y2="148.8064"
+            >
+              <stop offset="0" stopColor="#ff9900" stopOpacity="1" />
+              <stop offset="1" stopColor="#feff00" stopOpacity="0" />
+            </linearGradient>
+            {/* Wing sheen — yellow→transparent */}
+            <linearGradient
+              id="jff-wg2"
+              gradientUnits="userSpaceOnUse"
+              gradientTransform="matrix(1.0859827,0,0,1.0129092,2.9965408,31.031408)"
+              x1="21.454363" y1="173.84612"
+              x2="-87.64196" y2="163.78394"
+            >
+              <stop offset="0" stopColor="#feff00" stopOpacity="0.61" />
+              <stop offset="1" stopColor="#feff00" stopOpacity="0" />
+            </linearGradient>
+            {/* Body spot highlight */}
+            <radialGradient
+              id="jff-spot"
+              gradientUnits="userSpaceOnUse"
+              cx="-16.997471" cy="220.97517"
+              r="9.9322033"
+            >
+              <stop offset="0" stopColor="#ffff06" stopOpacity="1" />
+              <stop offset="1" stopColor="#ffff06" stopOpacity="0" />
+            </radialGradient>
+            {/* Soft blur for wing sheen */}
+            <filter id="jff-blur" colorInterpolationFilters="sRGB">
+              <feGaussianBlur stdDeviation="0.41" />
+            </filter>
+          </defs>
 
-          {/* Right antenna */}
-          <path d="M 270,112 C 279,85 294,63 306,49" />
-          <path d="M 306,49 C 310,43 317,41 321,46 C 324,52 320,60 314,57" />
+          <g transform="matrix(1.294053,0,0,1.294053,-21.5322,-64.805303)">
 
-          {/* Head */}
-          <circle cx="256" cy="128" r="26" />
+            {/* ── Body spot 1 ── */}
+            <g transform="translate(183.47923,-84.277541)">
+              <path
+                fill="#660806"
+                transform="matrix(1.203125,0,0,1.203125,-70.440389,-111.8757)"
+                d="m -6.518,223.164 c 0,5.485 -4.447,9.932 -9.932,9.932 -5.485,0 -9.932,-4.447 -9.932,-9.932 0,-5.485 4.447,-9.932 9.932,-9.932 5.485,0 9.932,4.447 9.932,9.932 z"
+              />
+              <path
+                opacity="0.229"
+                fill="url(#jff-spot)"
+                transform="matrix(1.203125,0,0,1.203125,-70.440389,-111.8757)"
+                d="m -6.518,223.164 c 0,5.485 -4.447,9.932 -9.932,9.932 -5.485,0 -9.932,-4.447 -9.932,-9.932 0,-5.485 4.447,-9.932 9.932,-9.932 5.485,0 9.932,4.447 9.932,9.932 z"
+              />
+            </g>
 
-          {/* Left wing */}
-          <path d="
-            M 214,178
-            C 200,145 174,112 148,105
-            C 112,95 82,118 78,168
-            C 74,216 98,280 148,304
-            C 174,316 206,306 215,284
-            C 223,265 222,208 214,178 Z
-          " />
+            {/* ── Body spot 2 ── */}
+            <g transform="translate(183.47923,-84.277541)">
+              <path
+                fill="#660806"
+                transform="matrix(1.203125,0,0,1.203125,-90.82261,-97.082338)"
+                d="m -6.518,223.164 c 0,5.485 -4.447,9.932 -9.932,9.932 -5.485,0 -9.932,-4.447 -9.932,-9.932 0,-5.485 4.447,-9.932 9.932,-9.932 5.485,0 9.932,4.447 9.932,9.932 z"
+              />
+              <path
+                opacity="0.229"
+                fill="url(#jff-spot)"
+                transform="matrix(1.203125,0,0,1.203125,-90.82261,-97.082338)"
+                d="m -6.518,223.164 c 0,5.485 -4.447,9.932 -9.932,9.932 -5.485,0 -9.932,-4.447 -9.932,-9.932 0,-5.485 4.447,-9.932 9.932,-9.932 5.485,0 9.932,4.447 9.932,9.932 z"
+              />
+            </g>
 
-          {/* Right wing */}
-          <path d="
-            M 298,178
-            C 312,145 338,112 364,105
-            C 400,95 430,118 434,168
-            C 438,216 414,280 364,304
-            C 338,316 306,306 297,284
-            C 289,265 290,208 298,178 Z
-          " />
+            {/* ── Main body ── */}
+            <path
+              fill="#660806"
+              d="m 155.073,88.816 c -45.231,0.375 -96.757,40.634 -104.054,85.326 -4.170,25.538 5.043,61.088 19.086,80.611 17.685,-4.420 36.847,-16.614 44.750,-26.875 -7.737,-9.256 -12.406,-21.180 -12.406,-34.188 0,-29.454 23.858,-53.344 53.313,-53.344 15.184,0 28.881,6.379 38.594,16.563 15.653,-6.309 34.189,-15.380 53.972,-26.037 -14.043,-19.523 -48.371,-36.418 -73.910,-40.588 -6.385,-1.042 -12.882,-1.522 -19.344,-1.469 z"
+            />
 
-          {/* Thorax center line */}
-          <line x1="256" y1="154" x2="256" y2="352" />
+            {/* ── Right wing ── */}
+            <g transform="translate(177.47923,-96.277541)">
+              <path
+                fill="#660806"
+                d="m -86.387,179.978 c 24.884,-15.456 43.014,-20.939 72.038,-22.054 13.987,-0.538 70.559,13.009 65.714,26.142 -12.475,33.812 -35.751,46.023 -59.342,46.877 C -46.721,232.345 -79.855,202.679 -86.387,179.978 z"
+              />
+              <path
+                opacity="0.628"
+                fill="url(#jff-wg1)"
+                d="m -86.387,179.978 c 24.884,-15.456 43.014,-20.939 72.038,-22.054 13.987,-0.538 70.559,13.009 65.714,26.142 C 38.889,217.877 15.613,230.088 -7.977,230.942 -46.721,232.345 -79.855,202.679 -86.387,179.978 z"
+              />
+              <path
+                opacity="0.740"
+                fill="url(#jff-wg2)"
+                filter="url(#jff-blur)"
+                d="m -75.991,193.177 c 0.150,-13.098 31.967,-14.072 57.493,-13.883 25.526,0.189 55.869,12.517 55.719,25.615 -0.150,13.098 -24.064,26.230 -49.590,26.041 -25.526,-0.189 -63.772,-24.675 -63.622,-37.773 z"
+              />
+            </g>
 
-          {/* Abdomen crossbar */}
-          <line x1="172" y1="352" x2="340" y2="352" />
+            {/* ── Left wing ── */}
+            <g transform="matrix(-0.51977344,0.85430414,0.85430414,0.51977344,-107.28242,62.835169)">
+              <path
+                fill="#660806"
+                d="m -86.387,179.978 c 24.884,-15.456 43.014,-20.939 72.038,-22.054 13.987,-0.538 70.559,13.009 65.714,26.142 -12.475,33.812 -35.751,46.023 -59.342,46.877 C -46.721,232.345 -79.855,202.679 -86.387,179.978 z"
+              />
+              <path
+                opacity="0.628"
+                fill="url(#jff-wg1)"
+                d="m -86.387,179.978 c 24.884,-15.456 43.014,-20.939 72.038,-22.054 13.987,-0.538 70.559,13.009 65.714,26.142 C 38.889,217.877 15.613,230.088 -7.977,230.942 -46.721,232.345 -79.855,202.679 -86.387,179.978 z"
+              />
+              <path
+                opacity="0.740"
+                fill="url(#jff-wg2)"
+                filter="url(#jff-blur)"
+                d="m -75.991,193.177 c 0.150,-13.098 31.967,-14.072 57.493,-13.883 25.526,0.189 55.869,12.517 55.719,25.615 -0.150,13.098 -24.064,26.230 -49.590,26.041 -25.526,-0.189 -63.772,-24.675 -63.622,-37.773 z"
+              />
+            </g>
 
-          {/* Abdomen U-shape */}
-          <path d="M 172,352 C 172,424 212,456 256,454 C 300,456 340,424 340,352" />
+            {/* ── Glowing yellow ring ── */}
+            <path
+              className="jff-ring"
+              opacity="0.85"
+              fill="#feff00"
+              fillRule="evenodd"
+              d="m 155.760,111.722 c -45.267,0 -81.938,36.701 -81.938,81.969 0,45.267 36.670,81.969 81.938,81.969 45.267,0 81.969,-36.701 81.969,-81.969 0,-45.267 -36.701,-81.969 -81.969,-81.969 z m 0.031,28.656 c 29.454,0 53.313,23.858 53.313,53.313 0,29.454 -23.858,53.344 -53.313,53.344 -29.454,0 -53.344,-23.889 -53.344,-53.344 0,-29.454 23.889,-53.313 53.344,-53.313 z"
+            />
 
-          {/* Glow rays */}
-          <line x1="196" y1="464" x2="172" y2="493" />
-          <line x1="256" y1="468" x2="256" y2="500" />
-          <line x1="316" y1="464" x2="340" y2="493" />
+          </g>
         </svg>
       </span>
     </>

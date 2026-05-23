@@ -183,13 +183,13 @@ export function FormPreview({ brandColor, logoUrl, welcomeMessage, categories, s
       </div>
 
       {/* Phone frame */}
-      <div className="w-[224px] bg-zinc-900 rounded-[2.5rem] p-2.5 shadow-2xl ring-1 ring-white/10">
+      <div className="w-72 bg-zinc-900 rounded-[2.5rem] p-2.5 shadow-2xl ring-1 ring-white/10">
         {/* Status bar + notch */}
         <div className="h-6 bg-white rounded-t-[1.6rem] flex items-center justify-center relative">
           <div className="w-14 h-4 bg-zinc-900 rounded-b-xl absolute top-0 left-1/2 -translate-x-1/2" />
         </div>
         {/* Screen */}
-        <div className="bg-white rounded-b-[1.6rem] overflow-hidden h-[440px]">
+        <div className="bg-white rounded-b-[1.6rem] overflow-hidden h-[580px]">
           {screen === "stars" ? (
             <StarScreen brandColor={color} logoUrl={logoUrl} welcomeMessage={welcomeMessage} />
           ) : (

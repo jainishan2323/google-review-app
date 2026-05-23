@@ -5,15 +5,15 @@ import { Zap, Star, MessageSquare, Check, RefreshCw, User, Building2, Lock, Exte
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 
 const REVIEW_DRAFTS = [
-  "Had an amazing dinner here last week. The pasta was cooked to perfection and our server was incredibly attentive. Will definitely be coming back — highly recommend the tiramisu!",
-  "Really good experience from start to finish. Everything came out hot, the staff were friendly and remembered our preferences. Fair prices for the quality. Will be back.",
-  "Came here on a Tuesday evening and couldn't have asked for better. Food was fresh, service was attentive without being pushy, and the atmosphere was just right. Highly recommend.",
+  "Had an amazing dinner here last week. The pasta was cooked to perfection and our server was incredibly attentive. Will definitely be coming back. Highly recommend the tiramisu!",
+  "Really good experience from start to finish. Everything came out hot, the staff remembered our preferences and were genuinely friendly. Fair prices for the quality. Will be back.",
+  "Came here on a Tuesday evening and couldn't have asked for better. Food was fresh, service was good without being over the top, and the atmosphere felt right. Highly recommend.",
 ];
 
 const REPLY_DRAFTS = [
-  "Hi Maria, we're really sorry about your experience. Wait times and food temperature are both things we're actively working on. Your feedback goes straight to our team, and we hope you'll give us another chance.",
-  "Hi Maria, thank you for your honest feedback. We're sorry the wait and food temperature fell short — this is not the standard we hold ourselves to. Please reach out directly so we can make it right.",
-  "Thank you for sharing this, Maria. A long wait and cold food is not acceptable, and we take it seriously. We'd love to invite you back and show you what we're really about — please get in touch.",
+  "Hi Maria, sorry to hear this. The wait was too long and cold food is on us. I'm going to look into Tuesday evening personally. Please come back and give us a chance to do better.",
+  "Hi Maria, thank you for telling us. A long wait and cold food, we're not happy about that either. Reach out and we'd like to have you back, on the house.",
+  "Maria, sorry this happened. Cold food and a slow evening is not what we want for anyone. Come back and ask for me directly. I'd like to make it right.",
 ];
 
 function SectionLabel({ icon: Icon, label }: { icon: React.ElementType; label: string }) {
@@ -51,11 +51,11 @@ export function AIReviewCard() {
         <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
           <Zap className="size-5 text-primary" />
         </div>
-        <CardTitle className="text-lg">AI Review Generation</CardTitle>
+        <CardTitle className="text-lg">We write the review for them</CardTitle>
         <CardDescription>
           Most customers want to leave a review but don&apos;t know what to
-          write. When they share their experience, we help write AI assisted
-          review for them — they just tap Post.
+          write. When they tell us how it went, we draft it for them. They
+          read it, tap Post, done.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -128,6 +128,12 @@ export function AIReviewCard() {
           </span>
           <div className="h-px flex-1 bg-border" />
         </div>
+
+        <p className="mb-4 text-sm text-muted-foreground leading-relaxed">
+          Showing up for every reviewer, the happy ones and the unhappy ones,
+          is how you build trust that brings people back. Don&apos;t leave any
+          review unanswered.
+        </p>
 
         {/* Owner view */}
         <SectionLabel icon={Building2} label="You (owner)" />

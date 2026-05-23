@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const SLIDES = [
-  { src: "/screenshots/one.png",   alt: "Jugnoo dashboard overview" },
-  { src: "/screenshots/two.png",   alt: "Review management" },
-  { src: "/screenshots/three.png", alt: "AI reply suggestions" },
-  { src: "/screenshots/four.png",  alt: "Weekly digest" },
+  { src: "/screenshots/one.png",   alt: "Customized feedback form",  title: "Customized feedback form" },
+  { src: "/screenshots/two.png",   alt: "Review overview",            title: "Review overview" },
+  { src: "/screenshots/three.png", alt: "Detailed review analysis",   title: "Detailed review analysis" },
+  { src: "/screenshots/four.png",  alt: "AI assisted reply to users", title: "AI assisted reply" },
 ];
 
 const INTERVAL = 12000;
@@ -23,6 +24,24 @@ export function ScreenshotCarousel() {
     }, INTERVAL);
   };
 
+  const go = (i: number) => {
+    setCurrent((i + SLIDES.length) % SLIDES.length);
+    startTimer();
+  };
+
+  const touchStartX = useRef<number | null>(null);
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) go(current + (diff > 0 ? 1 : -1));
+    touchStartX.current = null;
+  };
+
   useEffect(() => {
     startTimer();
     return () => {
@@ -31,18 +50,24 @@ export function ScreenshotCarousel() {
   }, []);
 
   return (
-    <div className="relative w-full overflow-hidden rounded-2xl border border-border shadow-2xl">
+    <div
+      className="relative w-full overflow-hidden rounded-2xl border border-border shadow-2xl"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <style>{`
         @keyframes slide-fade-in {
           from { opacity: 0; transform: scale(1.015); }
           to   { opacity: 1; transform: scale(1); }
         }
-        .slide-in {
-          animation: slide-fade-in 500ms ease forwards;
+        @keyframes title-fade-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
+        .slide-in { animation: slide-fade-in 500ms ease forwards; }
+        .title-in { animation: title-fade-in 300ms ease forwards; }
       `}</style>
 
-      {/* key={current} remounts the div on each slide change, re-triggering the animation */}
       <div key={current} className="slide-in" style={{ lineHeight: 0 }}>
         <Image
           src={SLIDES[current].src}
@@ -55,18 +80,31 @@ export function ScreenshotCarousel() {
         />
       </div>
 
-      {/* Dot indicators */}
-      <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-        {SLIDES.map((_, i) => (
+      {/* Bottom bar — gradient + title + arrows */}
+      <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-5 pb-4 pt-12"
+        style={{ background: "linear-gradient(to top, rgba(0,0,0,0.55) 0%, transparent 100%)" }}>
+        <span key={current} className="title-in text-sm font-medium text-white/90">
+          {SLIDES[current].title}
+        </span>
+        <div className="flex items-center gap-1">
           <button
-            key={i}
-            onClick={() => { setCurrent(i); startTimer(); }}
-            className={`h-1.5 rounded-full transition-all duration-300 ${
-              i === current ? "w-5 bg-white" : "w-1.5 bg-white/40"
-            }`}
-            aria-label={`Go to slide ${i + 1}`}
-          />
-        ))}
+            onClick={() => go(current - 1)}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+            aria-label="Previous slide"
+          >
+            <ChevronLeft className="size-4" />
+          </button>
+          <span className="min-w-[2.5rem] text-center text-xs tabular-nums text-white/60">
+            {current + 1} / {SLIDES.length}
+          </span>
+          <button
+            onClick={() => go(current + 1)}
+            className="flex h-7 w-7 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+            aria-label="Next slide"
+          >
+            <ChevronRight className="size-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

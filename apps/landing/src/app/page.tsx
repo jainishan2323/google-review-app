@@ -6,7 +6,7 @@ import {
   Zap,
   Shield,
   Mail,
-  Sparkles,
+  Bell,
 } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -28,21 +28,21 @@ const HOW_IT_WORKS_STEPS = [
     Icon: QrCode,
     title: "Scan.",
     description:
-      "Place a Jugnoo card at your counter, reception, or checkout. Customers scan to open a short feedback form — no app, no account, done in under a minute.",
+      "Put a Jugnoo card on the counter or table. Customer scans, gets a short form. No app. No signup. Takes them about a minute.",
   },
   {
     number: "02",
     Icon: Star,
     title: "Sort.",
     description:
-      "Happy customers get a ready-to-post Google review, written by our AI based on what they just told us. They just tap Post.",
+      "If they're happy, the AI writes the Google review for them. They read it, maybe tweak a word, and tap Post.",
   },
   {
     number: "03",
     Icon: BarChart3,
     title: "Save.",
     description:
-      "Low ratings prompt customers to share their feedback with you anonymously. You hear about problems directly — before they turn into a public post.",
+      "If something went wrong, they get a way to tell you privately. You hear about it first and can fix it before it goes anywhere.",
   },
 ];
 
@@ -92,7 +92,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── Hero ────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden pb-16 pt-20 sm:pb-24 sm:pt-28">
+      <section className="relative overflow-hidden pb-16 pt-20 sm:pt-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="flex flex-col items-center text-center">
             {/* Badge */}
@@ -103,17 +103,16 @@ export default function LandingPage() {
 
             {/* Headline */}
             <h1 className="mb-6 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Turn happy customers into{" "}
-              <span className="text-primary">5-star Google Reviews.</span>{" "}
-              Catch unhappy ones before they post.
+              Your happy customers want to leave a{" "}
+              <span className="text-primary">5-star Google review.</span>{" "}
+              They just don&apos;t know what to write.
             </h1>
 
             {/* Subheadline */}
             <p className="mb-8 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              Happy customers get an AI-drafted Google review ready to post in
-              seconds. Unhappy ones get a private, anonymous channel to share
-              feedback with you — so you hear about problems before they go
-              anywhere else.
+              We write the review for them. They read it, tap Post, and you get
+              another 5 stars. When someone had a bad time, they get a private
+              way to tell you first. Before they tell everyone else.
             </p>
 
             {/* CTAs */}
@@ -150,15 +149,6 @@ export default function LandingPage() {
           </div>
         </div>
 
-        {/* Hero carousel */}
-        <div className="mx-auto mt-16 max-w-5xl px-4 sm:px-6">
-          <div className="relative">
-            <ScreenshotCarousel />
-            <div className="absolute bottom-5 right-6 opacity-40">
-              <FireflyLogo size={22} />
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* ─── How It Works ────────────────────────────────────── */}
@@ -202,16 +192,28 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Screenshot Carousel ─────────────────────────────── */}
+      <div className="py-12 sm:py-16">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="relative">
+            <ScreenshotCarousel />
+            <div className="absolute bottom-5 right-6 opacity-40 pointer-events-none">
+              <FireflyLogo size={22} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ─── Features (Bento) ────────────────────────────────── */}
       <section id="features" className="py-20 sm:py-28">
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-14 text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Everything running while you run your business
+              Runs in the background while you run your business
             </h2>
             <p className="mt-3 text-muted-foreground">
-              More reviews from happy customers, private feedback from unhappy
-              ones, and AI-drafted replies to everything in between.
+              More Google reviews from the happy ones, private feedback from the
+              unhappy ones, and we write your replies too.
             </p>
           </div>
 
@@ -225,12 +227,13 @@ export default function LandingPage() {
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Shield className="size-5 text-primary" />
                 </div>
-                <CardTitle>Active Reputation Shield</CardTitle>
+                <CardTitle>Catch problems before they go public</CardTitle>
                 <CardDescription>
-                  When a customer has a bad experience, they usually go straight
-                  to Google. Jugnoo gives them a private, anonymous way to
-                  share that feedback with you instead — so you hear about it
-                  first and get the chance to make it right.
+                  The customers who keep coming back care about your place. When
+                  something goes wrong, they want to tell you, not post about
+                  it. Jugnoo gives them a private way to do that. You hear about
+                  it first, fix what needs fixing, and no one reads about it
+                  online.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -241,26 +244,27 @@ export default function LandingPage() {
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Mail className="size-5 text-primary" />
                 </div>
-                <CardTitle>The Monday Morning Pulse</CardTitle>
+                <CardTitle>Monday morning email</CardTitle>
                 <CardDescription>
-                  Every Monday at 9am we send you a short email: what complaints
-                  came in that week, any recurring issues, and how your rating
-                  is tracking. No login needed.
+                  Every Monday at 9am you get a short email. Every complaint
+                  from the past week, what kept coming up, and which way your
+                  rating is heading. Read it over coffee. No login.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            {/* Card 4 — 1-Click AI Replies */}
+            {/* Card 4 — Live alerts */}
             <Card>
               <CardHeader>
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Sparkles className="size-5 text-primary" />
+                  <Bell className="size-5 text-primary" />
                 </div>
-                <CardTitle>1-Click AI Replies</CardTitle>
+                <CardTitle>Instant alerts for low ratings</CardTitle>
                 <CardDescription>
-                  Replying to every review takes time you don&apos;t have. For every
-                  new review, we draft a reply that sounds like you — edit it
-                  if you want, or approve and send in one click.
+                  The moment a customer gives 1 or 2 stars, you get a
+                  notification. Not the next morning. Right then, while they
+                  might still be in the room. That&apos;s your window to fix it
+                  before they leave and go public.
                 </CardDescription>
               </CardHeader>
             </Card>
@@ -276,7 +280,7 @@ export default function LandingPage() {
               The cost of doing nothing
             </h2>
             <p className="mt-3 text-muted-foreground">
-              The numbers behind why online reputation isn&apos;t optional.
+              Why your Google rating actually matters.
             </p>
           </div>
 
@@ -330,8 +334,8 @@ export default function LandingPage() {
                   4.5
                 </p>
                 <p className="mt-5 text-sm leading-relaxed text-foreground">
-                  The optimal star rating for maximum trust. Perfect 5.0 ratings
-                  look fake. We help you build an authentic 4.2–4.5 profile.
+                  The sweet spot for trust. A perfect 5.0 looks suspicious. Aim
+                  for 4.2 to 4.5 and customers believe it.
                 </p>
                 <a
                   href="https://spiegel.medill.northwestern.edu/star-ratings-and-review-content/"
@@ -355,12 +359,11 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Be first through the door.
+              We&apos;re onboarding our first restaurants now.
             </h2>
             <p className="mt-3 text-muted-foreground">
-              We&apos;re onboarding our first businesses now. Connect your Google
-              Business account and start in minutes — or drop your email and
-              we&apos;ll reach out personally.
+              Sign in with Google below and you&apos;re up in about 10 minutes.
+              Or leave your email and I&apos;ll write to you directly.
             </p>
 
             {/* Primary CTA — Google sign in */}

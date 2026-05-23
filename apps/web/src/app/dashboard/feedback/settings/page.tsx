@@ -21,7 +21,7 @@ export default async function FeedbackSettingsPage() {
   ]);
 
   return (
-    <main className="p-8 space-y-8 max-w-3xl">
+    <main className="p-8 space-y-8 max-w-6xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Feedback Settings

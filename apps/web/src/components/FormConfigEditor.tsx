@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition, KeyboardEvent } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -18,8 +18,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { upsertFormConfig } from "@/actions/upsertFormConfig";
+import { FormPreview } from "@/components/FormPreview";
 
 const categorySchema = z.object({
   name: z.string().min(1, "Category name is required").max(50),
@@ -146,6 +147,9 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
     name: "categories",
   });
 
+  const watched = useWatch({ control: form.control });
+  const [previewScreen, setPreviewScreen] = useState<"stars" | "chips">("stars");
+
   const onSubmit = (values: FormValues) => {
     startTransition(async () => {
       const result = await upsertFormConfig(values);
@@ -160,13 +164,14 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)}>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-10">
+        <div className="space-y-6 self-start">
         {/* Branding */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-foreground">Branding</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        <div onFocus={() => setPreviewScreen("stars")}>
+          <p className="text-sm font-medium text-foreground mb-3">Branding</p>
+          <Card>
+          <CardContent className="space-y-4 pt-4">
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
@@ -216,15 +221,6 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
                 )}
               />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Welcome Message */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-foreground">Form Content</CardTitle>
-          </CardHeader>
-          <CardContent>
             <FormField
               control={form.control}
               name="welcomeMessage"
@@ -240,10 +236,11 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
               )}
             />
           </CardContent>
-        </Card>
+          </Card>
+        </div>
 
         {/* Categories */}
-        <div className="space-y-3">
+        <div className="space-y-3" onFocus={() => setPreviewScreen("chips")}>
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-foreground">Feedback Categories</p>
@@ -361,6 +358,21 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
             {isPending ? "Saving…" : "Save Configuration"}
           </Button>
         </div>
+        </div> {/* end left col */}
+        {/* Live preview — right column stretches full grid height so sticky can travel */}
+        <div className="hidden lg:block">
+          <div className="sticky top-8">
+            <FormPreview
+              brandColor={watched.brandColor ?? "#2563EB"}
+              logoUrl={watched.logoUrl ?? ""}
+              welcomeMessage={watched.welcomeMessage ?? ""}
+              categories={(watched.categories ?? []) as { name: string; positiveChips: string[]; negativeChips: string[] }[]}
+              screen={previewScreen}
+              onScreenChange={setPreviewScreen}
+            />
+          </div>
+        </div>
+        </div> {/* end grid */}
       </form>
     </Form>
   );

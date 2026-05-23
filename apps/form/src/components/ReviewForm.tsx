@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { Star, ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import { FireflyLogo } from "@/components/FireflyLogo";
 
 interface Category {
   name: string;
@@ -181,7 +182,7 @@ export default function ReviewForm({
   if (step === 1) {
     const displayRating = hovered || rating;
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-8 p-6">
+      <div className="relative flex min-h-svh flex-col items-center justify-center gap-8 p-6">
         {logoUrl && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logoUrl} alt={businessName} className="h-14 w-auto object-contain" />
@@ -212,6 +213,16 @@ export default function ReviewForm({
           ))}
         </div>
         <p className="text-sm text-muted-foreground">Tap a star to rate</p>
+
+        <a
+          href="https://jugnoo.olbaid.de"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-5 flex items-center gap-1.5"
+        >
+          <FireflyLogo size={16} />
+          <span className="text-xs text-muted-foreground">Powered by Jugnoo</span>
+        </a>
       </div>
     );
   }

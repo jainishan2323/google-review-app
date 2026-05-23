@@ -18,7 +18,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={cn("font-sans", nunitoSans.variable, notoSansHeading.variable)}>
-      <body className="bg-background">{children}</body>
+      <body className="bg-background">
+        {children}
+      </body>
     </html>
   );
 }

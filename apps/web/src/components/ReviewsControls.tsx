@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const RANGES = [
@@ -30,11 +30,13 @@ interface ReviewsControlsProps {
 export function ReviewsControls({ currentRange, currentRating }: ReviewsControlsProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
 
   function update(key: string, value: string) {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set(key, value);
+    const params = new URLSearchParams({
+      range: currentRange,
+      rating: currentRating,
+      [key]: value,
+    });
     router.push(`${pathname}?${params.toString()}`);
   }
 

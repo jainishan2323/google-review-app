@@ -51,8 +51,9 @@ export function ReviewCard({
   const [replied, setReplied] = useState(isReplied);
 
   const negSet = new Set(negativeTags);
-  const isLong = !!text && text.length > COLLAPSE_THRESHOLD;
-  const displayText = isLong && !expanded ? text!.slice(0, COLLAPSE_THRESHOLD).trimEnd() + "…" : text;
+  const chars = text ? [...text] : [];
+  const isLong = chars.length > COLLAPSE_THRESHOLD;
+  const displayText = isLong && !expanded ? chars.slice(0, COLLAPSE_THRESHOLD).join("").trimEnd() + "…" : text;
 
   async function handleDraftReply() {
     setLoadingDraft(true);

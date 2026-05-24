@@ -144,6 +144,16 @@ model FeedbackCategory {
   formConfig FormConfig @relation(fields: [formConfigId], references: [id], onDelete: Cascade)
 }
 
+// ── Waitlist ─────────────────────────────────────────────────
+
+model WaitlistEntry {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  message   String?
+  source    String   @default("landing")
+  createdAt DateTime @default(now())
+}
+
 // ── QR Codes ─────────────────────────────────────────────────
 
 model QrCode {

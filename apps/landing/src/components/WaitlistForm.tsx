@@ -10,17 +10,31 @@ import { cn } from "@/lib/utils";
 interface WaitlistFormProps {
   fullWidth?: boolean;
   showMessage?: boolean;
+  source?: string;
 }
 
-export function WaitlistForm({ fullWidth = false, showMessage = false }: WaitlistFormProps) {
+export function WaitlistForm({ fullWidth = false, showMessage = false, source = "landing" }: WaitlistFormProps) {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSubmitted(true);
-    toast.success("You're on the list! We'll be in touch shortly.");
+    setLoading(true);
+    try {
+      await fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/waitlist`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, message, source }),
+      });
+      setSubmitted(true);
+      toast.success("You're on the list! We'll be in touch shortly.");
+    } catch {
+      toast.error("Something went wrong. Try again?");
+    } finally {
+      setLoading(false);
+    }
   }
 
   if (submitted) {
@@ -65,8 +79,8 @@ export function WaitlistForm({ fullWidth = false, showMessage = false }: Waitlis
           onChange={(e) => setEmail(e.target.value)}
           className={cn("h-9", fullWidth && "flex-1")}
         />
-        <Button type="submit" size="lg" className={cn(fullWidth && "sm:shrink-0")}>
-          Join Waitlist
+        <Button type="submit" size="lg" disabled={loading} className={cn(fullWidth && "sm:shrink-0")}>
+          {loading ? "Joining…" : "Join Waitlist"}
         </Button>
       </div>
     </form>

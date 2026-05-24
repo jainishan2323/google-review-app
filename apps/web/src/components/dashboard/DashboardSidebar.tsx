@@ -11,6 +11,7 @@ import {
   MessageSquare,
   Settings,
   LogOut,
+  Users,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { FireflyLogo } from "@/components/FireflyLogo";
@@ -21,6 +22,7 @@ const navItems = [
   { href: "/dashboard/analytics",         label: "Analytics", icon: BarChart2 },
   { href: "/dashboard/feedback",          label: "Feedback",  icon: MessageSquare },
   { href: "/dashboard/feedback/settings", label: "Settings",  icon: Settings },
+  { href: "/dashboard/waitlist",          label: "Waitlist",  icon: Users },
 ];
 
 export function DashboardSidebar({ businessName }: { businessName: string }) {

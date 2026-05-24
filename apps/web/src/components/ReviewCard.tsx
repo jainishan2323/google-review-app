@@ -214,6 +214,20 @@ export function ReviewCard({
               {copied ? "Copied" : "Copy"}
             </Button>
             <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 text-xs"
+              onClick={handleDraftReply}
+              disabled={loadingDraft}
+            >
+              {loadingDraft ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <RefreshCw className="h-3.5 w-3.5" />
+              )}
+              {loadingDraft ? "Regenerating…" : "Regenerate"}
+            </Button>
+            <Button
               size="sm"
               className="h-7 gap-1.5 text-xs"
               onClick={handlePostReply}

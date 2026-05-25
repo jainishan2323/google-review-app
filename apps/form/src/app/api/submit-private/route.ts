@@ -7,7 +7,7 @@ const schema = z.object({
   rating: z.number().int().min(1).max(5),
   text: z.string().max(500).optional(),
   generatedReview: z.string().max(1000).optional(),
-  tags: z.array(z.string().max(50)).max(5).default([]),
+  tags: z.array(z.string().max(50)).max(20).default([]),
   source: z.enum(["private", "google_redirect"]).default("private"),
 });
 
@@ -22,6 +22,13 @@ export async function POST(req: NextRequest) {
 
     const { businessId, rating, text, generatedReview, tags, source } = parsed.data;
 
+    const categories = await prisma.feedbackCategory.findMany({
+      where: { formConfig: { businessId } },
+      select: { negativeChips: true },
+    });
+    const allNegativeChips = categories.flatMap((c) => c.negativeChips);
+    const negativeTags = tags.filter((t) => allNegativeChips.includes(t));
+
     await prisma.anonymousFeedback.create({
       data: {
         businessId,
@@ -29,6 +36,7 @@ export async function POST(req: NextRequest) {
         text: text?.trim() || null,
         generatedReview: generatedReview?.trim() || null,
         tags,
+        negativeTags,
         source,
         status: "unread",
       },

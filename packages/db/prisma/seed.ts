@@ -180,6 +180,7 @@ async function main() {
         businessId: business.id,
         rating: row.rating,
         tags: [...row.tags],
+        negativeTags: row.tags.filter((t) => NEGATIVE_TAGS.includes(t)),
         source: row.source,
         status: row.daysBack <= 7 ? "unread" : "read",
         text: pick(SAMPLE_TEXTS) ?? null,

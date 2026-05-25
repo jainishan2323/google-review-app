@@ -14,10 +14,10 @@ function sanitize(s: string): string {
 const schema = z.object({
   businessId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
-  tags: z.array(z.string().max(50).transform(sanitize)).max(5).default([]),
+  tags: z.array(z.string().max(50).transform(sanitize)).max(20).default([]),
   customText: z
     .string()
-    .max(150)
+    .max(500)
     .transform(sanitize)
     .optional(),
 });

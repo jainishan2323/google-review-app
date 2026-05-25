@@ -102,10 +102,15 @@ export default function ReviewForm({
     setStep(2);
   }
 
-  function toggleChip(chip: string) {
-    setSelectedChips((prev) =>
-      prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]
-    );
+  const MAX_CHIPS_PER_CATEGORY = 3;
+
+  function toggleChip(chip: string, categoryChips: string[]) {
+    setSelectedChips((prev) => {
+      if (prev.includes(chip)) return prev.filter((c) => c !== chip);
+      const selectedInCategory = prev.filter((c) => categoryChips.includes(c)).length;
+      if (selectedInCategory >= MAX_CHIPS_PER_CATEGORY) return prev;
+      return [...prev, chip];
+    });
   }
 
   function handlePostToGoogle() {
@@ -266,6 +271,8 @@ export default function ReviewForm({
               ? cat.positiveChips
               : [...cat.positiveChips, ...cat.negativeChips];
             if (chips.length === 0) return null;
+            const selectedInCategory = selectedChips.filter((c) => chips.includes(c)).length;
+            const limitReached = selectedInCategory >= MAX_CHIPS_PER_CATEGORY;
             return (
               <div key={cat.name} className="space-y-3">
                 {categories.length > 1 && (
@@ -274,14 +281,17 @@ export default function ReviewForm({
                 <div className="flex flex-wrap gap-2">
                   {chips.map((chip) => {
                     const selected = selectedChips.includes(chip);
+                    const disabled = !selected && limitReached;
                     return (
                       <button
                         key={chip}
                         type="button"
-                        onClick={() => toggleChip(chip)}
+                        onClick={() => toggleChip(chip, chips)}
+                        disabled={disabled}
                         className={cn(
                           "rounded-full border px-4 py-2.5 text-sm font-medium transition-all touch-manipulation active:scale-95",
-                          selected ? "border-transparent text-white" : "border-border bg-background text-foreground"
+                          selected ? "border-transparent text-white" : "border-border bg-background text-foreground",
+                          disabled && "opacity-40 cursor-not-allowed"
                         )}
                         style={selected ? { backgroundColor: brandColor } : undefined}
                       >
@@ -300,6 +310,7 @@ export default function ReviewForm({
           onChange={(e) => setCustomText(e.target.value)}
           placeholder="Tell us a bit more (optional)..."
           className="min-h-28 resize-none"
+          maxLength={500}
         />
 
         <div className="mt-auto">

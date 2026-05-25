@@ -5,7 +5,7 @@ import { prisma } from "@repo/db";
 import { Star, MessageSquare, Clock, TrendingUp } from "lucide-react";
 import { ReviewCTA } from "@/components/ReviewCTA";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 30;
 
 const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
 

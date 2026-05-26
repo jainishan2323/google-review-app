@@ -365,7 +365,7 @@ export default function LandingPage() {
         <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mx-auto max-w-xl text-center">
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              We&apos;re onboarding our first restaurants now.
+              We&apos;re onboarding our first customers now.
             </h2>
             <p className="mt-3 mb-6 text-muted-foreground">
               {signInEnabled

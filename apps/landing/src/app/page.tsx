@@ -367,10 +367,10 @@ export default function LandingPage() {
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
               We&apos;re onboarding our first restaurants now.
             </h2>
-            <p className="mt-3 text-muted-foreground">
+            <p className="mt-3 mb-6 text-muted-foreground">
               {signInEnabled
                 ? "Sign in with Google below and you’re up in about 10 minutes. Or leave your email and I’ll write to you directly."
-                : "Drop your email and I’ll write to you directly when your spot is ready."}
+                : "Drop your email and we will write to you directly when your spot is ready."}
             </p>
 
             {signInEnabled && (

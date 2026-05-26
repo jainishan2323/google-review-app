@@ -89,13 +89,13 @@ export function AIReviewCard() {
               >
                 {reviewAction === "anonymous" ? (
                   <>
-                    <Check className="size-3 text-green-500" />
+                    <Check className="size-3 text-primary" />
                     Submitted privately
                   </>
                 ) : (
                   <>
                     <Lock className="size-3" />
-                    Post anonymous
+                    Submit to Manager
                   </>
                 )}
               </button>

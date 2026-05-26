@@ -312,7 +312,7 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
                           chips={chipsField.value}
                           onChange={chipsField.onChange}
                           placeholder="Type and press Enter…"
-                          chipClass="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          chipClass="bg-chart-3/15 text-chart-5 dark:text-chart-2"
                         />
                       </FormControl>
                       <FormDescription className="text-xs">Shown when customer gives 4–5 stars.</FormDescription>
@@ -331,7 +331,7 @@ export function FormConfigEditor({ businessId, defaultValues }: Props) {
                           chips={chipsField.value}
                           onChange={chipsField.onChange}
                           placeholder="Type and press Enter…"
-                          chipClass="bg-red-500/15 text-red-600 dark:text-red-400"
+                          chipClass="bg-destructive/15 text-destructive"
                         />
                       </FormControl>
                       <FormDescription className="text-xs">Shown when customer gives 1–3 stars.</FormDescription>

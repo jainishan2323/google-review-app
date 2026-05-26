@@ -70,7 +70,7 @@ export interface TagCount {
 }
 
 const tagChartConfig = {
-  positive: { label: "Positive", color: "#22c55e" },
+  positive: { label: "Positive", color: "var(--chart-3)" },
   negative: { label: "Negative (from low ratings)", color: "#f87171" },
 } satisfies ChartConfig;
 
@@ -121,7 +121,7 @@ export function DivergentTagChart({ data }: { data: TagCount[] }) {
             name === "positive" ? "Positive" : "Negative",
           ]}
         />
-        <Bar dataKey="positive" fill="#22c55e" radius={[0, 3, 3, 0]} />
+        <Bar dataKey="positive" fill="var(--chart-3)" radius={[0, 3, 3, 0]} />
         <Bar dataKey="negative" fill="#f87171" radius={[3, 0, 0, 3]} />
       </BarChart>
     </ChartContainer>

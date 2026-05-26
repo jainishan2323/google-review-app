@@ -37,7 +37,7 @@ function DeltaPill({ delta }: { delta: number | undefined }) {
       className={`ml-1.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
         isPositive
           ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-          : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+          : "bg-chart-1/30 text-chart-5 dark:bg-chart-5/30 dark:text-chart-2"
       }`}
     >
       {isPositive ? "↑" : "↓"} {abs}%
@@ -74,7 +74,7 @@ function CustomYAxisTick(props: {
               className={`inline-flex items-center gap-0.5 rounded-full px-1 py-0 text-[9px] font-bold shrink-0 ${
                 isPositive
                   ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                  : "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                  : "bg-chart-1/30 text-chart-5 dark:bg-chart-5/30 dark:text-chart-2"
               }`}
             >
               {isPositive ? "↑" : "↓"}{Math.abs(delta)}%
@@ -87,12 +87,12 @@ function CustomYAxisTick(props: {
 }
 
 const ZONE_COLORS: Record<string, string> = {
-  Kitchen: "oklch(0.45 0.18 145)",       // emerald-ish
+  Kitchen: "var(--chart-4)",
   "Front of House": "oklch(0.45 0.18 250)", // blue-ish
   Atmosphere: "oklch(0.45 0.18 30)",     // orange-ish
 };
 
-const POS_COLOR = "#22c55e";
+const POS_COLOR = "var(--chart-3)";
 const NEG_COLOR = "#f87171";
 
 function absFormatter(value: unknown) {
@@ -240,7 +240,7 @@ export function OperationalZonesChart({ data, businessId, zoneOrder, deltas }: O
           Negative (&lt;4★)
         </span>
         <span className="ml-auto flex items-center gap-3 text-[10px] text-muted-foreground">
-          <span className="inline-flex items-center gap-0.5 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded-full px-1.5 py-0.5 font-semibold">↓ 15%</span>
+          <span className="inline-flex items-center gap-0.5 bg-chart-1/30 text-chart-5 dark:bg-chart-5/30 dark:text-chart-2 rounded-full px-1.5 py-0.5 font-semibold">↓ 15%</span>
           <span>= improving vs. last period</span>
           <span className="inline-flex items-center gap-0.5 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full px-1.5 py-0.5 font-semibold">↑ 10%</span>
           <span>= worsening</span>

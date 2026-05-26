@@ -10,13 +10,13 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
         }
         @keyframes jff-ring-glow {
           0%, 100% {
-            filter: drop-shadow(0 0 3px #feff00)
-                    drop-shadow(0 0 8px #ffe000);
+            filter: drop-shadow(0 0 3px #b8e835)
+                    drop-shadow(0 0 8px #82ab36);
           }
           50% {
-            filter: drop-shadow(0 0 6px #feff00)
-                    drop-shadow(0 0 16px #ffe000)
-                    drop-shadow(0 0 28px #ffd000);
+            filter: drop-shadow(0 0 6px #b8e835)
+                    drop-shadow(0 0 16px #82ab36)
+                    drop-shadow(0 0 28px #6a8a2c);
           }
         }
         .jff-wrap {
@@ -37,7 +37,7 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
           style={{ overflow: "visible" }}
         >
           <defs>
-            {/* Wing fill — orange→transparent */}
+            {/* Wing fill — mid green→transparent */}
             <linearGradient
               id="jff-wg1"
               gradientUnits="userSpaceOnUse"
@@ -45,10 +45,10 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
               x1="83.291481" y1="144.63643"
               x2="-9.9875755" y2="148.8064"
             >
-              <stop offset="0" stopColor="#ff9900" stopOpacity="1" />
-              <stop offset="1" stopColor="#feff00" stopOpacity="0" />
+              <stop offset="0" stopColor="#82ab36" stopOpacity="1" />
+              <stop offset="1" stopColor="#b8e835" stopOpacity="0" />
             </linearGradient>
-            {/* Wing sheen — yellow→transparent */}
+            {/* Wing sheen — bright lime→transparent */}
             <linearGradient
               id="jff-wg2"
               gradientUnits="userSpaceOnUse"
@@ -56,18 +56,18 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
               x1="21.454363" y1="173.84612"
               x2="-87.64196" y2="163.78394"
             >
-              <stop offset="0" stopColor="#feff00" stopOpacity="0.61" />
-              <stop offset="1" stopColor="#feff00" stopOpacity="0" />
+              <stop offset="0" stopColor="#b8e835" stopOpacity="0.61" />
+              <stop offset="1" stopColor="#b8e835" stopOpacity="0" />
             </linearGradient>
-            {/* Body spot highlight */}
+            {/* Body spot highlight — lime */}
             <radialGradient
               id="jff-spot"
               gradientUnits="userSpaceOnUse"
               cx="-16.997471" cy="220.97517"
               r="9.9322033"
             >
-              <stop offset="0" stopColor="#ffff06" stopOpacity="1" />
-              <stop offset="1" stopColor="#ffff06" stopOpacity="0" />
+              <stop offset="0" stopColor="#b8e835" stopOpacity="1" />
+              <stop offset="1" stopColor="#b8e835" stopOpacity="0" />
             </radialGradient>
             {/* Soft blur for wing sheen */}
             <filter id="jff-blur" colorInterpolationFilters="sRGB">
@@ -80,7 +80,7 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
             {/* ── Body spot 1 ── */}
             <g transform="translate(183.47923,-84.277541)">
               <path
-                fill="#660806"
+                fill="#3a4022"
                 transform="matrix(1.203125,0,0,1.203125,-70.440389,-111.8757)"
                 d="m -6.518,223.164 c 0,5.485 -4.447,9.932 -9.932,9.932 -5.485,0 -9.932,-4.447 -9.932,-9.932 0,-5.485 4.447,-9.932 9.932,-9.932 5.485,0 9.932,4.447 9.932,9.932 z"
               />
@@ -95,7 +95,7 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
             {/* ── Body spot 2 ── */}
             <g transform="translate(183.47923,-84.277541)">
               <path
-                fill="#660806"
+                fill="#3a4022"
                 transform="matrix(1.203125,0,0,1.203125,-90.82261,-97.082338)"
                 d="m -6.518,223.164 c 0,5.485 -4.447,9.932 -9.932,9.932 -5.485,0 -9.932,-4.447 -9.932,-9.932 0,-5.485 4.447,-9.932 9.932,-9.932 5.485,0 9.932,4.447 9.932,9.932 z"
               />
@@ -109,14 +109,14 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
 
             {/* ── Main body ── */}
             <path
-              fill="#660806"
+              fill="#3a4022"
               d="m 155.073,88.816 c -45.231,0.375 -96.757,40.634 -104.054,85.326 -4.170,25.538 5.043,61.088 19.086,80.611 17.685,-4.420 36.847,-16.614 44.750,-26.875 -7.737,-9.256 -12.406,-21.180 -12.406,-34.188 0,-29.454 23.858,-53.344 53.313,-53.344 15.184,0 28.881,6.379 38.594,16.563 15.653,-6.309 34.189,-15.380 53.972,-26.037 -14.043,-19.523 -48.371,-36.418 -73.910,-40.588 -6.385,-1.042 -12.882,-1.522 -19.344,-1.469 z"
             />
 
             {/* ── Right wing ── */}
             <g transform="translate(177.47923,-96.277541)">
               <path
-                fill="#660806"
+                fill="#3a4022"
                 d="m -86.387,179.978 c 24.884,-15.456 43.014,-20.939 72.038,-22.054 13.987,-0.538 70.559,13.009 65.714,26.142 -12.475,33.812 -35.751,46.023 -59.342,46.877 C -46.721,232.345 -79.855,202.679 -86.387,179.978 z"
               />
               <path
@@ -135,7 +135,7 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
             {/* ── Left wing ── */}
             <g transform="matrix(-0.51977344,0.85430414,0.85430414,0.51977344,-107.28242,62.835169)">
               <path
-                fill="#660806"
+                fill="#3a4022"
                 d="m -86.387,179.978 c 24.884,-15.456 43.014,-20.939 72.038,-22.054 13.987,-0.538 70.559,13.009 65.714,26.142 -12.475,33.812 -35.751,46.023 -59.342,46.877 C -46.721,232.345 -79.855,202.679 -86.387,179.978 z"
               />
               <path
@@ -155,7 +155,7 @@ export function FireflyLogo({ size = 48 }: { size?: number }) {
             <path
               className="jff-ring"
               opacity="0.85"
-              fill="#feff00"
+              fill="#b8e835"
               fillRule="evenodd"
               d="m 155.760,111.722 c -45.267,0 -81.938,36.701 -81.938,81.969 0,45.267 36.670,81.969 81.938,81.969 45.267,0 81.969,-36.701 81.969,-81.969 0,-45.267 -36.701,-81.969 -81.969,-81.969 z m 0.031,28.656 c 29.454,0 53.313,23.858 53.313,53.313 0,29.454 -23.858,53.344 -53.313,53.344 -29.454,0 -53.344,-23.889 -53.344,-53.344 0,-29.454 23.889,-53.313 53.344,-53.313 z"
             />

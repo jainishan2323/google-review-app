@@ -49,6 +49,7 @@ export default function ReviewForm({
   const [doneMessage, setDoneMessage] = useState("");
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
   const [generateCount, setGenerateCount] = useState(0);
+  const [appRatingSubmitted, setAppRatingSubmitted] = useState(false);
 
 
 
@@ -95,6 +96,23 @@ export default function ReviewForm({
     if (step === 3) void runGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
+
+  const APP_EMOJIS = [
+    { emoji: "😞", value: 1 },
+    { emoji: "😐", value: 2 },
+    { emoji: "🙂", value: 3 },
+    { emoji: "😃", value: 4 },
+    { emoji: "🤩", value: 5 },
+  ];
+
+  function handleAppRating(value: number) {
+    setAppRatingSubmitted(true);
+    fetch("/api/app-feedback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ rating: value, businessId }),
+    }).catch(() => { /* best-effort */ });
+  }
 
   function handleStarClick(star: number) {
     setRating(star);
@@ -176,9 +194,42 @@ export default function ReviewForm({
   // ── Done ─────────────────────────────────────────────────────
   if (isDone) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-6 p-6 text-center">
+      <div className="relative flex min-h-svh flex-col items-center justify-center gap-6 p-6 pb-12 text-center">
         <div className="text-6xl">🎉</div>
         <p className="text-lg font-semibold text-foreground max-w-xs">{doneMessage}</p>
+
+        <div className="w-full max-w-xs border-t pt-6">
+          {appRatingSubmitted ? (
+            <p className="text-sm text-muted-foreground">Thanks for the feedback! ✓</p>
+          ) : (
+            <>
+              <p className="text-sm font-medium text-muted-foreground mb-4">How was using Jugnoo?</p>
+              <div className="flex justify-center gap-4">
+                {APP_EMOJIS.map(({ emoji, value }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => handleAppRating(value)}
+                    className="text-3xl touch-manipulation transition-transform active:scale-90 hover:scale-110"
+                    aria-label={`Rate Jugnoo ${value} out of 5`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+
+        <a
+          href="https://jugnoo.olbaid.de"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-5 flex items-center gap-1.5"
+        >
+          <FireflyLogo size={16} />
+          <span className="text-xs text-muted-foreground">Powered by Jugnoo</span>
+        </a>
       </div>
     );
   }
@@ -313,7 +364,7 @@ export default function ReviewForm({
           maxLength={500}
         />
 
-        <div className="mt-auto">
+        <div className="mt-auto space-y-4">
           <button
             type="button"
             onClick={() => setStep(3)}
@@ -322,6 +373,15 @@ export default function ReviewForm({
           >
             Next
           </button>
+          <a
+            href="https://jugnoo.olbaid.de"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5"
+          >
+            <FireflyLogo size={16} />
+            <span className="text-xs text-muted-foreground">Powered by Jugnoo</span>
+          </a>
         </div>
       </div>
     );
@@ -416,6 +476,15 @@ export default function ReviewForm({
             </button>
           </>
         )}
+        <a
+          href="https://jugnoo.olbaid.de"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-center gap-1.5 pt-1"
+        >
+          <FireflyLogo size={16} />
+          <span className="text-xs text-muted-foreground">Powered by Jugnoo</span>
+        </a>
       </div>
     </div>
   );

@@ -166,3 +166,12 @@ model QrCode {
 
   business Business @relation(fields: [businessId], references: [id])
 }
+
+// ── App Feedback ─────────────────────────────────────────────
+
+model AppFeedback {
+  id         String   @id @default(cuid())
+  createdAt  DateTime @default(now())
+  rating     Int      // 1–5 emoji rating for the Jugnoo app experience
+  businessId String?  // context only, not a foreign key relation
+}

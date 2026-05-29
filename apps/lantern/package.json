@@ -8,6 +8,9 @@
     "lint": "next lint",
     "type-check": "tsc --noEmit"
   },
+  "devDependencies": {
+    "prisma": "^5.22.0"
+  },
   "dependencies": {
     "@repo/db": "workspace:*",
     "@tailwindcss/postcss": "^4.3.0",

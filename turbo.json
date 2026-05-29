@@ -16,7 +16,8 @@
         "GOOGLE_CLIENT_ID",
         "GOOGLE_CLIENT_SECRET",
         "RESEND_API_KEY",
-        "ALERT_FROM_EMAIL"
+        "ALERT_FROM_EMAIL",
+        "ADMIN_EMAILS"
       ]
     },
     "dev": {

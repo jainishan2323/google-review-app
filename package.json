@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev",
+    "dev": "fuser -k 3000/tcp 3001/tcp 3002/tcp 3003/tcp 2>/dev/null; turbo run dev",
     "lint": "turbo run lint",
     "type-check": "turbo run type-check",
     "db:generate": "turbo run db:generate",

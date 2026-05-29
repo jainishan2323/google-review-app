@@ -7,7 +7,7 @@ export default function LoginPage() {
     <div className="flex min-h-svh items-center justify-center">
       <div className="flex flex-col items-center gap-6 rounded-2xl border border-border bg-card p-10 text-center">
         <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-foreground">Jugnoo Admin</h1>
+          <h1 className="text-2xl font-bold text-foreground">Jugnoo Lantern</h1>
           <p className="text-sm text-muted-foreground">Internal operator panel</p>
         </div>
         <button

@@ -5,7 +5,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-svh">
       <aside className="w-56 shrink-0 border-r border-border p-6">
         <p className="mb-6 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-          Jugnoo Admin
+          Jugnoo Lantern
         </p>
         <AdminNav />
       </aside>

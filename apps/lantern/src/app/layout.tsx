@@ -7,8 +7,8 @@ import { Providers } from "@/components/providers";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  title: "Jugnoo Admin",
-  description: "Internal admin panel for Jugnoo",
+  title: "Jugnoo Lantern",
+  description: "Internal operator panel for Jugnoo",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

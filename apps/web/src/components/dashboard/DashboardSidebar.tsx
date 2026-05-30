@@ -31,7 +31,7 @@ export function DashboardSidebar({ businessName }: { businessName: string }) {
     <aside className="w-60 shrink-0 flex flex-col border-r border-sidebar-border bg-sidebar">
       {/* Logo */}
       <div className="px-6 py-5 flex items-center gap-2.5">
-        <FireflyLogo size={28} />
+        <FireflyLogo size={40} />
         <div>
           <span className="text-lg font-bold tracking-tight text-sidebar-foreground">
             Jugnoo

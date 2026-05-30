@@ -59,8 +59,8 @@ export default function LandingPage() {
             href="/"
             className="flex items-center gap-2 text-base font-semibold tracking-tight text-foreground"
           >
-            <FireflyLogo size={28} />
-            Jugnoo
+            <FireflyLogo size={36} />
+            <span className="leading-none">Jugnoo</span>
           </Link>
 
           <div className="hidden items-center gap-6 md:flex">
@@ -204,7 +204,7 @@ export default function LandingPage() {
           <div className="relative">
             <ScreenshotCarousel />
             <div className="absolute bottom-5 right-6 opacity-40 pointer-events-none">
-              <FireflyLogo size={22} />
+              <FireflyLogo size={32} />
             </div>
           </div>
         </div>

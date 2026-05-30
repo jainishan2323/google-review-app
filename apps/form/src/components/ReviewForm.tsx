@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { Star, ArrowLeft, RefreshCw, Loader2 } from "lucide-react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Star, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Copy, ExternalLink } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { FireflyLogo } from "@/components/FireflyLogo";
+import { PasteCoachmark } from "@/components/PasteCoachmark";
 
 interface Category {
   name: string;
@@ -24,9 +25,10 @@ interface Props {
 }
 
 // TODO: replace with real Place ID from Business.googlePlaceId once onboarding is built
-const DEV_PLACE_ID = "ChIJU6S7CYpPqEcReRGBbxw0PRI";
+const DEV_PLACE_ID = "ChIJQ9oatEZRqEcRlRVb2Cpqx1w";
 
 const MAX_GENERATIONS = 3;
+const GOOGLE_REDIRECT_DELAY_MS = 6000;
 
 export default function ReviewForm({
   businessId,
@@ -47,7 +49,9 @@ export default function ReviewForm({
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [doneMessage, setDoneMessage] = useState("");
-  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  // "idle" → step-3 editor; "copied"/"error" → guided handoff screen before Google.
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [generateCount, setGenerateCount] = useState(0);
   const [appRatingSubmitted, setAppRatingSubmitted] = useState(false);
 
@@ -131,12 +135,41 @@ export default function ReviewForm({
     });
   }
 
-  function handlePostToGoogle() {
-    const placeId = googlePlaceId ?? DEV_PLACE_ID;
-    const reviewUrl = `https://search.google.com/local/writereview?placeid=${placeId}`;
+  // Google's review box can't be pre-filled (no API/URL param), so the customer
+  // must paste. We copy + show a guided handoff screen, then hand off on their tap.
+  const reviewUrl = `https://search.google.com/local/writereview?placeid=${googlePlaceId ?? DEV_PLACE_ID}`;
 
-    // Fire-and-forget: record that the customer was redirected to Google.
-    // Does NOT block the clipboard/redirect flow.
+  // Auto-redirect after GOOGLE_REDIRECT_DELAY_MS. Cancelled if user taps the button first.
+  useEffect(() => {
+    if (copyState !== "copied") return;
+    redirectTimerRef.current = setTimeout(() => {
+      window.location.href = reviewUrl;
+    }, GOOGLE_REDIRECT_DELAY_MS);
+    return () => {
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    };
+  // reviewUrl derives from stable props — intentionally omitted to avoid resetting on re-renders
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [copyState]);
+
+  /**
+   * Copy the review to the clipboard. MUST be called synchronously from a click
+   * handler so mobile browsers (iOS/Android) grant clipboard access via the user
+   * gesture. Drives the handoff screen via copyState ("copied" | "error").
+   */
+  function copyReview() {
+    const clipboardPromise =
+      typeof navigator !== "undefined" && navigator.clipboard?.writeText
+        ? navigator.clipboard.writeText(generatedReview)
+        : Promise.reject(new Error("Clipboard API unavailable"));
+
+    clipboardPromise
+      .then(() => setCopyState("copied"))
+      .catch(() => setCopyState("error"));
+  }
+
+  function handlePostToGoogle() {
+    // Fire-and-forget: record that the customer chose to post to Google.
     fetch("/api/submit-private", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -150,26 +183,12 @@ export default function ReviewForm({
       }),
     }).catch(() => { /* best-effort */ });
 
-    // Must call clipboard.writeText() synchronously inside the click handler
-    // so mobile browsers (iOS/Android) grant permission via the user gesture.
-    const clipboardPromise =
-      typeof navigator !== "undefined" && navigator.clipboard?.writeText
-        ? navigator.clipboard.writeText(generatedReview)
-        : Promise.reject(new Error("Clipboard API unavailable"));
+    copyReview();
+  }
 
-    clipboardPromise
-      .then(() => {
-        setCopyState("copied");
-        setTimeout(() => {
-          window.location.href = reviewUrl;
-        }, 1500);
-      })
-      .catch(() => {
-        window.alert(
-          `Please copy your review below, then tap OK to open Google Maps:\n\n${generatedReview}`
-        );
-        window.location.href = reviewUrl;
-      });
+  function handleOpenGoogle() {
+    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    window.location.href = reviewUrl;
   }
 
   async function handleSendPrivately() {
@@ -387,6 +406,94 @@ export default function ReviewForm({
     );
   }
 
+  // ── Step 3 handoff: guide the paste before sending to Google ─
+  if (copyState !== "idle") {
+    const failed = copyState === "error";
+    return (
+      <div className="flex min-h-svh flex-col p-6 pb-8 gap-6">
+        <button
+          type="button"
+          onClick={() => setCopyState("idle")}
+          className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation"
+        >
+          <ArrowLeft className="size-4" />
+          Back to edit
+        </button>
+
+        {failed ? (
+          <div className="space-y-1">
+            <p className="text-base font-semibold text-foreground">Almost there — copy your review</p>
+            <p className="text-sm text-muted-foreground">
+              We couldn&apos;t copy it automatically. Tap the button below (or select the text), then
+              open Google and paste.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1">
+            <p className="flex items-center gap-2 text-base font-semibold text-foreground">
+              <CheckCircle2 className="size-5" style={{ color: brandColor }} />
+              Review copied!
+            </p>
+            <p className="text-sm text-muted-foreground">
+              On the next screen, tap the review box and <strong>hold to Paste</strong>. Don&apos;t forget to add photos too!
+            </p>
+          </div>
+        )}
+
+        {failed ? (
+          <Textarea
+            value={generatedReview}
+            readOnly
+            onFocus={(e) => e.currentTarget.select()}
+            className="min-h-36 resize-none text-sm leading-relaxed"
+          />
+        ) : (
+          <PasteCoachmark brandColor={brandColor} />
+        )}
+
+        <div className="mt-auto space-y-3">
+          {failed && (
+            <button
+              type="button"
+              onClick={copyReview}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border py-4 text-base font-medium text-foreground transition-colors hover:bg-muted active:bg-muted"
+            >
+              <Copy className="size-4" />
+              Copy review text
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={handleOpenGoogle}
+            className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80"
+            style={{ backgroundColor: brandColor }}
+          >
+            Open Google Reviews
+            <ExternalLink className="size-4" />
+          </button>
+          {!failed && (
+            <button
+              type="button"
+              onClick={copyReview}
+              className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
+            >
+              Copy again
+            </button>
+          )}
+          <a
+            href="https://jugnoo.olbaid.de"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-1.5 pt-1"
+          >
+            <FireflyLogo size={16} />
+            <span className="text-xs text-muted-foreground">Powered by Jugnoo</span>
+          </a>
+        </div>
+      </div>
+    );
+  }
+
   // ── Step 3: Review + actions ─────────────────────────────────
   return (
     <div className="flex min-h-svh flex-col p-6 pb-8 gap-6">
@@ -440,11 +547,11 @@ export default function ReviewForm({
             <button
               type="button"
               onClick={handlePostToGoogle}
-              disabled={isGenerating || copyState === "copied"}
+              disabled={isGenerating}
               className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
               style={{ backgroundColor: brandColor }}
             >
-              {copyState === "copied" ? "Copied! Redirecting to Google Maps…" : "Copy & Post to Google"}
+              Copy &amp; Post to Google
             </button>
             <button
               type="button"
@@ -469,10 +576,10 @@ export default function ReviewForm({
             <button
               type="button"
               onClick={handlePostToGoogle}
-              disabled={isGenerating || copyState === "copied"}
+              disabled={isGenerating}
               className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 touch-manipulation"
             >
-              {copyState === "copied" ? "Copied! Redirecting…" : "Still want to post to Google →"}
+              Still want to post to Google →
             </button>
           </>
         )}

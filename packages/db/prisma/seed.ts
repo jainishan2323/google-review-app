@@ -290,12 +290,12 @@ async function main() {
   const saravanaa = await prisma.business.upsert({
     where: { googleLocationId: "saravanaa-bhavan-001" },
     update: {
-      googlePlaceId: "0x47a85146b41ada43%3A0x5cc76a2ad85b1595",
+      googlePlaceId: "ChIJQ9oatEZRqEcRlRVb2Cpqx1w",
     },
     create: {
       name: "Saravanaa Bhavan",
       googleLocationId: "saravanaa-bhavan-001",
-      googlePlaceId: "0x47a85146b41ada43%3A0x5cc76a2ad85b1595",
+      googlePlaceId: "ChIJQ9oatEZRqEcRlRVb2Cpqx1w",
       ownerId: user.id,
     },
   });

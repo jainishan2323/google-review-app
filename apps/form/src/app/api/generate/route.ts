@@ -20,6 +20,7 @@ const schema = z.object({
     .max(500)
     .transform(sanitize)
     .optional(),
+  attempt: z.number().int().min(0).max(10).default(0),
 });
 
 export async function POST(req: NextRequest) {
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { businessId, rating, tags, customText } = parsed.data;
+    const { businessId, rating, tags, customText, attempt } = parsed.data;
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
@@ -45,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const input = { rating, tags, customText };
+    const input = { rating, tags, customText, attempt };
 
     if (STREAMING_ENABLED) {
       const stream = await streamReviewText(input, business.name);

@@ -64,7 +64,7 @@ export default function ReviewForm({
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessId, rating, tags: selectedChips, customText }),
+        body: JSON.stringify({ businessId, rating, tags: selectedChips, customText, attempt: generateCount }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -94,7 +94,7 @@ export default function ReviewForm({
     } finally {
       setIsGenerating(false);
     }
-  }, [businessId, rating, selectedChips, customText]);
+  }, [businessId, rating, selectedChips, customText, generateCount]);
 
   useEffect(() => {
     if (step === 3) void runGenerate();

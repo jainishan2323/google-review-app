@@ -15,6 +15,8 @@ export interface ReviewGenerateInput {
   tags: string[];
   /** Optional free-text note from the customer, max 100 chars. */
   customText?: string;
+  /** 0-indexed regeneration attempt; drives output variety and temperature ramp. */
+  attempt?: number;
 }
 
 export interface GeneratedReview {

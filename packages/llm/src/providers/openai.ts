@@ -29,10 +29,13 @@ export class OpenAIProvider implements LLMProvider {
     return response.choices[0]?.message?.content?.trim() ?? "";
   }
 
-  async stream(prompt: string, opts: LLMOptions): Promise<ReadableStream<string>> {
+  async stream(prompt: string, opts: LLMOptions, systemPrompt?: string): Promise<ReadableStream<string>> {
+    const messages: OpenAI.Chat.ChatCompletionMessageParam[] = [];
+    if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
+    messages.push({ role: "user", content: prompt });
     const openaiStream = await this.client.chat.completions.create({
       model: this.defaultModel,
-      messages: [{ role: "user", content: prompt }],
+      messages,
       max_tokens: opts.maxTokens,
       temperature: opts.temperature,
       stream: true,

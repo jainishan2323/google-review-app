@@ -1,11 +1,19 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
 import { Star, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Copy, ExternalLink } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { FireflyLogo } from "@/components/FireflyLogo";
-import { PasteCoachmark } from "@/components/PasteCoachmark";
+
+// Only rendered on the post-copy handoff screen — keep its animation code out of
+// the initial bundle so the step-1 star screen stays as light as possible.
+const PasteCoachmark = dynamic(
+  () => import("@/components/PasteCoachmark").then((m) => m.PasteCoachmark),
+  { ssr: false }
+);
 
 interface Category {
   name: string;
@@ -64,7 +72,7 @@ export default function ReviewForm({
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessId, rating, tags: selectedChips, customText }),
+        body: JSON.stringify({ businessId, rating, tags: selectedChips, customText, attempt: generateCount }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -94,7 +102,7 @@ export default function ReviewForm({
     } finally {
       setIsGenerating(false);
     }
-  }, [businessId, rating, selectedChips, customText]);
+  }, [businessId, rating, selectedChips, customText, generateCount]);
 
   useEffect(() => {
     if (step === 3) void runGenerate();
@@ -259,8 +267,18 @@ export default function ReviewForm({
     return (
       <div className="relative flex min-h-svh flex-col items-center justify-center gap-8 p-6">
         {logoUrl && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={logoUrl} alt={businessName} className="h-14 w-auto object-contain" />
+          // Explicit width/height reserve layout space (no CLS) and satisfy the
+          // "image elements have explicit dimensions" audit; h-14 w-auto keeps the
+          // logo's real aspect ratio. next/image resizes + serves WebP/AVIF;
+          // `priority` preloads it as the first-screen hero.
+          <Image
+            src={logoUrl}
+            alt={businessName}
+            width={160}
+            height={56}
+            priority
+            className="h-14 w-auto object-contain"
+          />
         )}
         <p className="text-center text-lg font-medium text-foreground max-w-xs leading-snug">
           {welcomeMessage}

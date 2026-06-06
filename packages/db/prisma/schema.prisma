@@ -21,6 +21,13 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Google OAuth tokens captured at login. Used for offline/dev testing of the
+  // Google Business Profile API against real data — the refresh token is the
+  // durable credential. TODO(pre-public): encrypt at rest or move to a secret store.
+  googleAccessToken    String?
+  googleRefreshToken   String?
+  googleTokenExpiresAt DateTime?
+
   businesses Business[]
 }
 

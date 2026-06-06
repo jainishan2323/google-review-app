@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import ahaaReviews from "../../../apps/web/src/mock/ahaa-indisches-restaurant.json";
 import saravanaaReviews from "../../../apps/web/src/mock/sarvanaa-bhavan.json";
+import agniReviews from "../../../apps/web/src/mock/agni-berlin.json";
 
 const prisma = new PrismaClient();
 
@@ -371,6 +372,100 @@ async function main() {
   console.log(`✅ Business seeded: ${saravanaa.id} — ${saravanaa.name}`);
   console.log(`   Seeded ${saravanaaSeeded} Google Review rows (${saravanaaReviews.filter((r: SaravanaaReview) => r.ownerReply).length} with owner replies).`);
   console.log(`   Use this businessId in your API calls: ${saravanaa.id}`);
+
+  // ── Agni (Moabit, Berlin) ─────────────────────────────────
+
+  const agni = await prisma.business.upsert({
+    where: { googleLocationId: "agni-berlin-001" },
+    update: {
+      googlePlaceId: "ChIJ9fc8fxFRqEcRMwkzsTU2yRU",
+      googleMapsReviewUrl: "https://www.google.com/maps/search/?api=1&query=Agni&query_place_id=ChIJ9fc8fxFRqEcRMwkzsTU2yRU",
+    },
+    create: {
+      name: "Agni",
+      googleLocationId: "agni-berlin-001",
+      googlePlaceId: "ChIJ9fc8fxFRqEcRMwkzsTU2yRU",
+      googleMapsReviewUrl: "https://www.google.com/maps/search/?api=1&query=Agni&query_place_id=ChIJ9fc8fxFRqEcRMwkzsTU2yRU",
+      ownerId: user.id,
+    },
+  });
+
+  const agniFormConfig = await prisma.formConfig.upsert({
+    where: { businessId: agni.id },
+    create: {
+      businessId: agni.id,
+      brandColor: "#c2410c",
+      welcomeMessage: "Thanks for visiting Agni! We'd love to hear about your meal.",
+    },
+    update: {},
+  });
+
+  await prisma.feedbackCategory.deleteMany({ where: { formConfigId: agniFormConfig.id } });
+  await prisma.feedbackCategory.createMany({
+    data: [
+      {
+        formConfigId: agniFormConfig.id,
+        name: "Food",
+        positiveChips: ["Authentic Taste", "Delicious Food", "Great Value", "Good Vegan Options"],
+        negativeChips: ["Bland Taste", "Overpriced", "Small Portions"],
+        order: 0,
+      },
+      {
+        formConfigId: agniFormConfig.id,
+        name: "Service",
+        positiveChips: ["Friendly Staff", "Warm Hosts", "Fast Service"],
+        negativeChips: ["Unfriendly Staff", "Long Wait", "Order Mix-up"],
+        order: 1,
+      },
+      {
+        formConfigId: agniFormConfig.id,
+        name: "Atmosphere",
+        positiveChips: ["Cozy Spot", "Clean Space", "Hidden Gem"],
+        negativeChips: ["Cramped Space", "Limited Seating", "Noisy"],
+        order: 2,
+      },
+    ],
+  });
+
+  await prisma.review.deleteMany({ where: { businessId: agni.id } });
+
+  type AgniReview = {
+    stars: number;
+    name: string;
+    reviewUrl: string;
+    text: string | null;
+  };
+
+  // The scraped file contains duplicate reviewUrls — dedupe on the unique key.
+  const seenAgni = new Set<string>();
+  const agniReviewData = (agniReviews as AgniReview[]).filter((r) => {
+    if (seenAgni.has(r.reviewUrl)) return false;
+    seenAgni.add(r.reviewUrl);
+    return true;
+  });
+
+  let agniSeeded = 0;
+  for (let i = 0; i < agniReviewData.length; i++) {
+    const r = agniReviewData[i];
+    // Spread reviews over the past 180 days, newest first
+    const publishedAt = daysAgo(Math.floor((i / agniReviewData.length) * 180));
+    await prisma.review.create({
+      data: {
+        businessId: agni.id,
+        googleReviewId: r.reviewUrl,
+        authorName: r.name,
+        rating: r.stars,
+        text: r.text ?? null,
+        publishedAt,
+      },
+    });
+    agniSeeded++;
+  }
+
+  console.log(`✅ Business seeded: ${agni.id} — ${agni.name}`);
+  console.log(`   Seeded 3 FeedbackCategory rows (Food, Service, Atmosphere).`);
+  console.log(`   Seeded ${agniSeeded} Google Review rows.`);
+  console.log(`   Use this businessId in your API calls: ${agni.id}`);
 }
 
 main()

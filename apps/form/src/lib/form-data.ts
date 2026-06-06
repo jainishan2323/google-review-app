@@ -1,5 +1,6 @@
 import { unstable_cache } from "next/cache";
 import { prisma, type FeedbackCategory } from "@repo/db";
+import { normalizePlaceId } from "./place-id";
 
 export interface FormCategory {
   name: string;
@@ -48,7 +49,7 @@ export const getFormData = (businessId: string): Promise<FormData | null> =>
       return {
         business: {
           name: business.name,
-          googlePlaceId: business.googlePlaceId ?? null,
+          googlePlaceId: normalizePlaceId(business.googlePlaceId),
           googleMapsReviewUrl: business.googleMapsReviewUrl ?? null,
         },
         config: config

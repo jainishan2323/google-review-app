@@ -1,9 +1,9 @@
 import { prisma } from "@repo/db";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { getActiveBusiness } from "@/lib/active-business";
 
-export const revalidate = 30;
-
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
+// Per-session (private feedback belongs to the active business), so render dynamically.
+export const dynamic = "force-dynamic";
 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -19,8 +19,9 @@ function StarDisplay({ rating }: { rating: number }) {
 }
 
 export default async function FeedbackPage() {
+  const { businessId } = await getActiveBusiness();
   const feedbackList = await prisma.anonymousFeedback.findMany({
-    where: { businessId: DEV_BUSINESS_ID, source: "private" },
+    where: { businessId, source: "private" },
     orderBy: { createdAt: "desc" },
   });
 

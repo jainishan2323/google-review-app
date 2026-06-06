@@ -61,7 +61,8 @@ export function ReviewCard({
       const res = await fetch("/api/generate-reply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewId: id }),
+        // Send the review fields so live (Google) reviews with no DB row can still be drafted.
+        body: JSON.stringify({ reviewId: id, text, rating, authorName }),
       });
       const data = await res.json();
       if (data.draft) setDraft(data.draft);
@@ -75,7 +76,7 @@ export function ReviewCard({
     setPosting(true);
     setPostError(null);
     try {
-      const res = await fetch(`/api/reviews/${id}/reply`, {
+      const res = await fetch(`/api/reviews/${encodeURIComponent(id)}/reply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ replyText: draft }),

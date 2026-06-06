@@ -4,10 +4,10 @@ import { Separator } from "@/components/ui/separator";
 import { prisma } from "@repo/db";
 import { Star, MessageSquare, Clock, TrendingUp } from "lucide-react";
 import { ReviewCTA } from "@/components/ReviewCTA";
+import { getActiveBusiness, getActiveReviews } from "@/lib/active-business";
 
-export const revalidate = 30;
-
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
+// Per-session (live reviews depend on the signed-in user), so render dynamically.
+export const dynamic = "force-dynamic";
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -36,46 +36,38 @@ function RatingBar({ star, count, max }: { star: number; count: number; max: num
 }
 
 export default async function DashboardPage() {
-  const [business, recentReviews, feedbackList, totalFeedback, unreadCount] = await Promise.all([
-    prisma.business.findUnique({
-      where: { id: DEV_BUSINESS_ID },
-      select: { name: true },
-    }),
-    prisma.review.findMany({
-      where: { businessId: DEV_BUSINESS_ID },
-      orderBy: { publishedAt: "desc" },
-      take: 8,
-      select: { id: true, authorName: true, rating: true, text: true, publishedAt: true, isReplied: true },
-    }),
+  const business = await getActiveBusiness();
+
+  const [reviews, feedbackList, totalFeedback, unreadCount] = await Promise.all([
+    getActiveReviews(business),
+    // Private feedback is the app's own data (not in Google), so it stays DB-backed.
     prisma.anonymousFeedback.findMany({
-      where: { businessId: DEV_BUSINESS_ID, source: "private" },
+      where: { businessId: business.businessId, source: "private" },
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
-    prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID } }),
-    prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID, status: "unread" } }),
+    prisma.anonymousFeedback.count({ where: { businessId: business.businessId } }),
+    prisma.anonymousFeedback.count({ where: { businessId: business.businessId, status: "unread" } }),
   ]);
 
-  // Compute stats from real reviews
-  const totalReviews = await prisma.review.count({ where: { businessId: DEV_BUSINESS_ID } });
-  const pendingReplies = await prisma.review.count({ where: { businessId: DEV_BUSINESS_ID, isReplied: false } });
-  const allRatings = await prisma.review.findMany({
-    where: { businessId: DEV_BUSINESS_ID },
-    select: { rating: true },
-  });
-  const avgRating = allRatings.length
-    ? (allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length).toFixed(1)
+  const recentReviews = reviews.slice(0, 8);
+
+  // Compute stats from the resolved reviews (live Google data or seeded DB data).
+  const totalReviews = reviews.length;
+  const pendingReplies = reviews.filter((r) => !r.isReplied).length;
+  const avgRating = reviews.length
+    ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
     : "—";
   const distribution = [5, 4, 3, 2, 1].map((star) => ({
     star,
-    count: allRatings.filter((r) => r.rating === star).length,
+    count: reviews.filter((r) => r.rating === star).length,
   }));
   const maxCount = Math.max(...distribution.map((d) => d.count), 1);
 
   return (
     <div className="p-8 space-y-8">
       {/* Gamified CTA */}
-      <ReviewCTA unreadCount={unreadCount} businessId={DEV_BUSINESS_ID} />
+      <ReviewCTA unreadCount={unreadCount} businessId={business.businessId} />
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -84,12 +76,16 @@ export default async function DashboardPage() {
             Overview
           </h1>
           <p className="text-sm mt-1 text-muted-foreground">
-            {business?.name ?? "aahaa Indisches Restaurant"}
+            {business.businessName}
           </p>
         </div>
         <Badge variant="secondary" className="gap-1">
-          <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
-          Live
+          <span
+            className={`w-1.5 h-1.5 rounded-full inline-block ${
+              business.isSampleData ? "bg-amber-500" : "bg-green-500"
+            }`}
+          />
+          {business.isSampleData ? "Sample data" : "Live"}
         </Badge>
       </div>
 

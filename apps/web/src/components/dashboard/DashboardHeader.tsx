@@ -3,7 +3,7 @@
 import { useRef, useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { LogOut, Building2, ChevronDown } from "lucide-react";
+import { LogOut, Building2, ChevronDown, AlertTriangle } from "lucide-react";
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":                   "Overview",
@@ -17,9 +17,11 @@ const PAGE_TITLES: Record<string, string> = {
 export function DashboardHeader({
   businessName,
   googleLocationId,
+  isSampleData,
 }: {
   businessName: string;
   googleLocationId: string;
+  isSampleData: boolean;
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -44,6 +46,18 @@ export function DashboardHeader({
       <h1 className="text-sm font-semibold text-foreground">{title}</h1>
 
       <div className="flex items-center gap-4">
+        {/* Sample-data notice: shown when signed in but the real Google business
+            couldn't be linked/read (e.g. Business Profile API quota not yet approved). */}
+        {isSampleData && (
+          <div
+            className="hidden sm:flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-1.5 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-400"
+            title="Showing seeded sample data. Your Google Business Profile API access isn't approved yet, so real reviews and details can't be fetched."
+          >
+            <AlertTriangle className="h-3.5 w-3.5 shrink-0" />
+            <span className="text-[10px] font-medium leading-none">Sample data</span>
+          </div>
+        )}
+
         {/* Business badge */}
         <div className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5">
           <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />

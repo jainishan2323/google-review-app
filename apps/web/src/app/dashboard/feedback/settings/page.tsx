@@ -2,9 +2,13 @@ import { prisma } from "@repo/db";
 import { Separator } from "@/components/ui/separator";
 import { FormConfigEditor } from "@/components/FormConfigEditor";
 import { QrCodeCard } from "@/components/QrCodeCard";
+import { getActiveBusiness } from "@/lib/active-business";
 
-// Dev: use the seeded business. Replace with session.user.businessId when auth is active.
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmp7n349t0002rhz58a4hinnt";
+export const dynamic = "force-dynamic";
+
+// Dev fallback: the seeded business that has a form config. A live signed-in business
+// resolves to its own id below.
+const DEV_FORM_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmp7n349t0002rhz58a4hinnt";
 const FORM_BASE_URL =
   process.env.NEXT_PUBLIC_FORM_URL ??
   (process.env.NODE_ENV === "production"
@@ -12,6 +16,10 @@ const FORM_BASE_URL =
     : "http://localhost:3001");
 
 export default async function FeedbackSettingsPage() {
+  const active = await getActiveBusiness();
+  const DEV_BUSINESS_ID =
+    active.mode === "live" ? active.businessId : DEV_FORM_BUSINESS_ID;
+
   const [business, existingConfig] = await Promise.all([
     prisma.business.findUnique({ where: { id: DEV_BUSINESS_ID }, select: { name: true } }),
     prisma.formConfig.findUnique({

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@repo/db";
 import { postReply } from "@/lib/google-business";
+import { getActiveBusiness } from "@/lib/active-business";
 
 export async function POST(
   req: NextRequest,
@@ -22,7 +23,22 @@ export async function POST(
     );
   }
 
-  const { reviewId } = await params;
+  const { reviewId } = await params; // decoded by Next from the encoded path segment
+
+  // Live path: the id is the full Google resource name (e.g.
+  // "accounts/123/locations/456/reviews/abc"). Verify it belongs to the active
+  // business's location, then post straight to the Google API (no DB row exists).
+  if (reviewId.includes("/reviews/")) {
+    const active = await getActiveBusiness();
+    if (active.mode !== "live" || !reviewId.startsWith(active.googleLocationId)) {
+      return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    await postReply(session.accessToken, reviewId, replyText);
+    return NextResponse.json({ success: true });
+  }
+
+  // DB path: seeded review identified by its Prisma id.
   const review = await prisma.review.findUnique({
     where: { id: reviewId },
     include: { business: true },

@@ -1,17 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@repo/db";
 import { draftReply } from "@repo/llm";
-
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID;
+import { getActiveBusiness } from "@/lib/active-business";
 
 export async function POST(req: NextRequest) {
-  // TODO: re-enable auth + ownership check once Google Business Profile API is approved
-  // and session.userId reliably maps to the Prisma User.id (not the Google OAuth sub).
-
   const body = await req.json();
   const reviewId: string = body?.reviewId ?? "";
+
+  // Live reviews have no DB row, so the client sends the review fields directly.
+  const directText: string | null = body?.text ?? null;
+  const directRating: number | undefined = body?.rating;
+  const directAuthor: string = body?.authorName ?? "";
+
+  if (directText) {
+    const active = await getActiveBusiness();
+    const draft = await draftReply(
+      { rating: directRating ?? 0, text: directText, authorName: directAuthor },
+      active.businessName
+    );
+    return NextResponse.json({ draft });
+  }
+
+  // Fallback: look the review up in the DB by its Prisma id (test/seeded data).
   if (!reviewId) {
     return NextResponse.json({ error: "reviewId is required" }, { status: 400 });
   }

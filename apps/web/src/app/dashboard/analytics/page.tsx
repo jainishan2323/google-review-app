@@ -8,10 +8,9 @@ import { OperationalZonesChart } from "@/components/OperationalZonesChart";
 import type { ZoneTagBar } from "@/components/OperationalZonesChart";
 import { ReviewCTA } from "@/components/ReviewCTA";
 import { UnmappedInsightsPanel } from "@/components/UnmappedInsightsPanel";
+import { getActiveBusiness } from "@/lib/active-business";
 
 export const dynamic = "force-dynamic";
-
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
 
 type Range = "30d" | "90d" | "180d" | "all";
 
@@ -117,6 +116,10 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       : "30d";
 
   const since = getDateRange(range);
+
+  // Analytics is built on AI-analyzed DB data, so it targets the active business's DB row.
+  // For a freshly linked live business these will be empty until a sync/analysis job exists.
+  const { businessId: DEV_BUSINESS_ID } = await getActiveBusiness();
 
   const now = new Date();
   const prevSince = since

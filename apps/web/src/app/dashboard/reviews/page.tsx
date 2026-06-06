@@ -1,13 +1,11 @@
-import { prisma } from "@repo/db";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Star } from "lucide-react";
 import { ReviewsControls } from "@/components/ReviewsControls";
 import { ReviewCard } from "@/components/ReviewCard";
+import { getActiveBusiness, getActiveReviews } from "@/lib/active-business";
 
 export const dynamic = "force-dynamic";
-
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
 
 type Range = "7d" | "30d" | "90d" | "ytd" | "all";
 type RatingFilter = "all" | "5" | "4" | "3" | "lte2";
@@ -23,13 +21,13 @@ function getDateSince(range: Range): Date | null {
   }
 }
 
-function getRatingFilter(rating: RatingFilter): { gte?: number; lte?: number } | number | undefined {
-  switch (rating) {
-    case "5":    return 5;
-    case "4":    return 4;
-    case "3":    return 3;
-    case "lte2": return { lte: 2 };
-    default:     return undefined;
+function matchesRating(rating: number, filter: RatingFilter): boolean {
+  switch (filter) {
+    case "5":    return rating === 5;
+    case "4":    return rating === 4;
+    case "3":    return rating === 3;
+    case "lte2": return rating <= 2;
+    default:     return true;
   }
 }
 
@@ -52,24 +50,15 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
       : "all";
 
   const since = getDateSince(range);
-  const ratingWhere = getRatingFilter(ratingFilter);
 
-  const [reviews, business] = await Promise.all([
-    prisma.review.findMany({
-      where: {
-        businessId: DEV_BUSINESS_ID,
-        ...(since ? { publishedAt: { gte: since } } : {}),
-        ...(ratingWhere !== undefined
-          ? { rating: typeof ratingWhere === "number" ? ratingWhere : ratingWhere }
-          : {}),
-      },
-      orderBy: { publishedAt: "desc" },
-    }),
-    prisma.business.findUnique({
-      where: { id: DEV_BUSINESS_ID },
-      select: { name: true },
-    }),
-  ]);
+  const business = await getActiveBusiness();
+  const allReviews = await getActiveReviews(business);
+
+  // Filter in-memory so the same path serves live (Google) and DB (test) reviews.
+  const reviews = allReviews.filter(
+    (r) =>
+      (!since || r.publishedAt >= since) && matchesRating(r.rating, ratingFilter)
+  );
 
   const pendingCount = reviews.filter((r) => !r.isReplied).length;
 
@@ -87,7 +76,7 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Google Reviews</h1>
           <p className="text-sm mt-1 text-muted-foreground">
-            {RANGE_LABELS[range]} · {business?.name} · {reviews.length} review{reviews.length !== 1 ? "s" : ""}
+            {RANGE_LABELS[range]} · {business.businessName} · {reviews.length} review{reviews.length !== 1 ? "s" : ""}
           </p>
         </div>
         <div className="flex items-center gap-3 flex-wrap">

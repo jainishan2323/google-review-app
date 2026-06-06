@@ -22,14 +22,33 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user }) {
+    async signIn({ user, account }) {
       if (!user.email) return false;
 
-      await prisma.user.upsert({
-        where: { email: user.email },
-        update: { name: user.name, image: user.image },
-        create: { email: user.email, name: user.name, image: user.image },
-      });
+      // Persist the Google OAuth tokens so they can be reused later (offline/dev
+      // testing of the Business Profile API). The refresh token is the durable
+      // credential; access tokens expire in ~1h. refresh_token is only present on
+      // a consent grant — guard so a token-only refresh never clobbers it. This is
+      // best-effort: a write failure must never block the owner's login.
+      const tokenFields = account
+        ? {
+            googleAccessToken: account.access_token ?? null,
+            ...(account.refresh_token ? { googleRefreshToken: account.refresh_token } : {}),
+            googleTokenExpiresAt: account.expires_at
+              ? new Date(account.expires_at * 1000)
+              : null,
+          }
+        : {};
+
+      try {
+        await prisma.user.upsert({
+          where: { email: user.email },
+          update: { name: user.name, image: user.image, ...tokenFields },
+          create: { email: user.email, name: user.name, image: user.image, ...tokenFields },
+        });
+      } catch (err) {
+        console.error("signIn: failed to upsert user / persist tokens", err);
+      }
 
       return true;
     },

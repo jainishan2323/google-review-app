@@ -3,10 +3,12 @@ import ReviewForm from "@/components/ReviewForm";
 import { FormSkeleton } from "@/components/FormSkeleton";
 import { getFormData } from "@/lib/form-data";
 
-// ISR: render each business on first hit, then serve from the CDN for 5 min
-// (stale-while-revalidate). Keeps the DB round-trip off the critical path for
-// virtually all QR scans. Staleness of a few minutes after a config edit is OK.
-export const revalidate = 300;
+// TODO(perf, pre-public): restore ISR before launch — `export const revalidate = 300`
+// (render each business once, then serve from the CDN for 5 min via
+// stale-while-revalidate, keeping the DB round-trip off the QR-scan critical path).
+// Disabled during testing so config/data edits show up instantly. Pairs with the
+// caching TODO in lib/form-data.ts.
+export const revalidate = 0;
 
 interface PageProps {
   params: Promise<{ businessId: string }>;

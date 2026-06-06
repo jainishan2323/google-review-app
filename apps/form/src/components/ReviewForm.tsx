@@ -36,7 +36,8 @@ interface Props {
 const DEV_PLACE_ID = "ChIJQ9oatEZRqEcRlRVb2Cpqx1w";
 
 const MAX_GENERATIONS = 3;
-const GOOGLE_REDIRECT_DELAY_MS = 6000;
+const GOOGLE_REDIRECT_DELAY_MS = 10000;
+const REDIRECT_SECONDS = Math.round(GOOGLE_REDIRECT_DELAY_MS / 1000);
 
 export default function ReviewForm({
   businessId,
@@ -59,7 +60,8 @@ export default function ReviewForm({
   const [doneMessage, setDoneMessage] = useState("");
   // "idle" → step-3 editor; "copied"/"error" → guided handoff screen before Google.
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
-  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [secondsLeft, setSecondsLeft] = useState(REDIRECT_SECONDS);
+  const redirectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [generateCount, setGenerateCount] = useState(0);
   const [appRatingSubmitted, setAppRatingSubmitted] = useState(false);
 
@@ -147,14 +149,26 @@ export default function ReviewForm({
   // must paste. We copy + show a guided handoff screen, then hand off on their tap.
   const reviewUrl = `https://search.google.com/local/writereview?placeid=${googlePlaceId ?? DEV_PLACE_ID}`;
 
-  // Auto-redirect after GOOGLE_REDIRECT_DELAY_MS. Cancelled if user taps the button first.
+  // After a successful copy, count down once per second and auto-redirect at zero.
+  // The visible timer tells the customer the handoff is coming so it isn't a
+  // surprise. Cancelled if they tap "Open Google Reviews" or go back to edit.
   useEffect(() => {
-    if (copyState !== "copied") return;
-    redirectTimerRef.current = setTimeout(() => {
-      window.location.href = reviewUrl;
-    }, GOOGLE_REDIRECT_DELAY_MS);
+    if (copyState !== "copied") {
+      setSecondsLeft(REDIRECT_SECONDS);
+      return;
+    }
+    redirectTimerRef.current = setInterval(() => {
+      setSecondsLeft((s) => {
+        if (s <= 1) {
+          if (redirectTimerRef.current) clearInterval(redirectTimerRef.current);
+          window.location.href = reviewUrl;
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
     return () => {
-      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+      if (redirectTimerRef.current) clearInterval(redirectTimerRef.current);
     };
   // reviewUrl derives from stable props — intentionally omitted to avoid resetting on re-renders
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -195,7 +209,7 @@ export default function ReviewForm({
   }
 
   function handleOpenGoogle() {
-    if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
+    if (redirectTimerRef.current) clearInterval(redirectTimerRef.current);
     window.location.href = reviewUrl;
   }
 
@@ -479,6 +493,11 @@ export default function ReviewForm({
               <Copy className="size-4" />
               Copy review text
             </button>
+          )}
+          {!failed && (
+            <p className="text-center text-xs text-muted-foreground" aria-live="polite">
+              Taking you to Google in {secondsLeft}s…
+            </p>
           )}
           <button
             type="button"

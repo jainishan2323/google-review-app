@@ -1,0 +1,33 @@
+#!/bin/sh
+# Non-blocking reminder: nudges you to refresh the docs when you stage changes to
+# high-signal files (schema, build/commands, routes/pages, env) without also
+# staging CLAUDE.md / docs/ARCHITECTURE.md. It NEVER blocks a commit.
+#
+# Shared via core.hooksPath -> .githooks (run once per clone):
+#   git config core.hooksPath .githooks
+
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+# Files whose changes usually invalidate the docs.
+signal=$(printf '%s\n' "$staged" | grep -E \
+  -e 'packages/db/prisma/schema\.prisma$' \
+  -e '(^|/)package\.json$' \
+  -e '(^|/)turbo\.json$' \
+  -e '(^|/)pnpm-workspace\.yaml$' \
+  -e '(^|/)\.env\.example$' \
+  -e 'apps/[^/]+/src/app/.*/route\.ts$' \
+  -e 'apps/[^/]+/src/app/.*/page\.tsx$')
+
+[ -z "$signal" ] && exit 0
+
+# Docs already staged? Then you're on it — stay quiet.
+printf '%s\n' "$staged" | grep -qE '^(CLAUDE\.md|docs/ARCHITECTURE\.md)$' && exit 0
+
+printf '\n\033[33m⚠  Docs reminder\033[0m — these staged files often affect the docs:\n'
+printf '%s\n' "$signal" | sed 's/^/     /'
+printf '   …but CLAUDE.md / docs/ARCHITECTURE.md are not staged.\n'
+printf '   Update them if this change touched commands, env, schema, routes, or structure.\n'
+printf '   (reminder only — commit continues)\n\n'
+
+exit 0

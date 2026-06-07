@@ -23,7 +23,7 @@ export default function PrivacyPage() {
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
         <h1 className="text-3xl font-bold tracking-tight">Privacy Policy</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: May 2025 · Datenschutzerklärung gemäß DSGVO
+          Last updated: June 2026 · Datenschutzerklärung gemäß DSGVO
         </p>
 
         <div className="mt-10 space-y-10 text-sm leading-relaxed text-foreground/90">
@@ -65,7 +65,7 @@ export default function PrivacyPage() {
 
             <h3 className="mb-2 mt-5 font-medium text-foreground">2.3 Google API Data</h3>
             <p>
-              Jugnoo uses the Google My Business API to fetch your Google reviews and, where
+              Jugnoo uses the Google Business Profile API to fetch your Google reviews and, where
               authorised by you, to post replies. Our use of data received from Google APIs complies
               with the{" "}
               <a
@@ -96,6 +96,23 @@ export default function PrivacyPage() {
               deployed to Vercel&apos;s Frankfurt (EU) region. Vercel is certified under the
               EU–US Data Privacy Framework and appropriate Standard Contractual Clauses (SCCs)
               are in place.
+            </p>
+
+            <h3 className="mb-2 mt-5 font-medium text-foreground">2.6 AI Text Generation (OpenAI)</h3>
+            <p>
+              To draft review text for customers and reply suggestions for business owners, Jugnoo
+              sends the relevant input — the star rating, the selected feedback tags, any free text
+              entered, and (for reply drafting) the text of the Google review being answered — to
+              OpenAI, L.L.C. in the United States. This text may contain personal data where a user
+              chooses to include it (for example, a name mentioned in a review). OpenAI processes
+              this data only to return the generated text to us. Under the OpenAI API terms, data
+              submitted via the API is not used to train OpenAI&apos;s models and is retained only for a
+              limited period for abuse monitoring before deletion. The legal basis is performance of
+              our contract with the business user (Art. 6(1)(b) GDPR) and our legitimate interest in
+              providing AI-assisted drafting (Art. 6(1)(f) GDPR). Because this processing takes place
+              in the United States, it constitutes a transfer to a third country, safeguarded by the
+              EU Standard Contractual Clauses (Art. 46 GDPR) incorporated into our data processing
+              agreement with OpenAI.
             </p>
           </section>
 
@@ -129,10 +146,12 @@ export default function PrivacyPage() {
               </div>
             </div>
             <p className="mt-4">
-              We do not transfer your personal data to third countries outside the EEA except where
-              strictly necessary for the service (e.g. Google OAuth authentication, which is governed
-              by Google&apos;s own GDPR compliance framework). In all such cases, appropriate safeguards
-              under Art. 46 GDPR (Standard Contractual Clauses) are in place.
+              Your data is stored exclusively within the EU. Two limited processing operations,
+              however, take place outside the EEA: Google OAuth authentication (governed by Google&apos;s
+              own compliance framework) and AI text generation by OpenAI in the United States (see
+              section 2.6). These are transient — no personal data is stored permanently outside the
+              EEA. In each case, appropriate safeguards under Art. 46 GDPR (Standard Contractual
+              Clauses) are in place.
             </p>
           </section>
 
@@ -145,6 +164,16 @@ export default function PrivacyPage() {
                   Used for authentication and review management. Privacy policy:{" "}
                   <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer" className="underline">
                     policies.google.com/privacy
+                  </a>
+                </p>
+              </div>
+              <div className="rounded-lg border border-border bg-muted/30 p-4">
+                <p className="font-medium">OpenAI, L.L.C. (AI text generation — United States)</p>
+                <p className="mt-1 text-muted-foreground">
+                  Used to draft reviews and reply suggestions. Data transferred under EU Standard
+                  Contractual Clauses; not used to train OpenAI&apos;s models. Privacy policy:{" "}
+                  <a href="https://openai.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer" className="underline">
+                    openai.com/policies/privacy-policy
                   </a>
                 </p>
               </div>
@@ -210,22 +239,22 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">7. Right to Lodge a Complaint</h2>
             <p>
-              You have the right to lodge a complaint with a supervisory authority. The competent authority
-              in Germany is the Federal Commissioner for Data Protection and Freedom of Information:
+              You have the right to lodge a complaint with a supervisory authority. As our
+              establishment is in Berlin, the competent authority is:
             </p>
             <div className="mt-3 rounded-lg border border-border bg-muted/30 p-4">
-              <p className="font-medium">Bundesbeauftragte für den Datenschutz und die Informationsfreiheit (BfDI)</p>
-              <p className="mt-1 text-muted-foreground">Graurheindorfer Str. 153, 53117 Bonn</p>
+              <p className="font-medium">Berliner Beauftragte für Datenschutz und Informationsfreiheit (BlnBDI)</p>
+              <p className="mt-1 text-muted-foreground">Alt-Moabit 59–61, 10555 Berlin</p>
               <p className="text-muted-foreground">
                 Website:{" "}
-                <a href="https://www.bfdi.bund.de" target="_blank" rel="noopener noreferrer" className="underline">
-                  bfdi.bund.de
+                <a href="https://www.datenschutz-berlin.de" target="_blank" rel="noopener noreferrer" className="underline">
+                  datenschutz-berlin.de
                 </a>
               </p>
             </div>
             <p className="mt-3 text-muted-foreground">
-              Alternatively, you may contact the data protection authority of the German federal state
-              in which you reside.
+              You may also complain to the supervisory authority of the EU member state where you
+              reside or work.
             </p>
           </section>
 
@@ -235,7 +264,7 @@ export default function PrivacyPage() {
               This landing page does not set any tracking or advertising cookies. The dashboard
               application uses a single session cookie strictly necessary for authentication. No
               consent is required for this cookie as it is essential for the service to function
-              (§ 25 Abs. 2 TTDSG).
+              (§ 25 Abs. 2 TDDDG).
             </p>
           </section>
 

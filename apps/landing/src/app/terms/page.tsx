@@ -23,7 +23,7 @@ export default function TermsPage() {
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
         <h1 className="text-3xl font-bold tracking-tight">Terms of Service</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Last updated: May 2025 · Governed by German law
+          Last updated: June 2026 · Governed by German law
         </p>
 
         <div className="mt-10 space-y-10 text-sm leading-relaxed text-foreground/90">
@@ -116,9 +116,10 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">6. Subscription and Payment</h2>
             <p>
-              Jugnoo is offered on a subscription basis. Pricing is displayed on the website and
-              confirmed at checkout. Subscriptions renew automatically unless cancelled before the
-              renewal date. Invoices are issued in EUR and include applicable German VAT (Mehrwertsteuer).
+              Jugnoo is offered on a subscription basis. Subscriptions renew automatically unless
+              cancelled before the renewal date. Jugnoo is currently in a pilot phase and offered
+              free of charge. Once paid plans are introduced, pricing and any applicable taxes will
+              be presented before you subscribe.
             </p>
             <p className="mt-3">
               As a business customer (B2B), the statutory 14-day right of withdrawal (Widerrufsrecht)

@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Impressum — Jugnoo",
-  description: "Pflichtangaben gemäß § 5 TMG.",
+  description: "Pflichtangaben gemäß § 5 DDG.",
 };
 
 export default function ImpressumPage() {
@@ -23,13 +23,13 @@ export default function ImpressumPage() {
       <main className="mx-auto max-w-3xl px-4 py-16 sm:px-6 sm:py-24">
         <h1 className="text-3xl font-bold tracking-tight">Impressum</h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Pflichtangaben gemäß § 5 TMG und § 55 RStV
+          Pflichtangaben gemäß § 5 DDG und § 18 Abs. 2 MStV
         </p>
 
         <div className="mt-10 space-y-10 text-sm leading-relaxed text-foreground/90">
 
           <section>
-            <h2 className="mb-3 text-base font-semibold text-foreground">Angaben gemäß § 5 TMG</h2>
+            <h2 className="mb-3 text-base font-semibold text-foreground">Angaben gemäß § 5 DDG</h2>
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-1">
               <p className="font-medium">Ishan Jain · Olbaid.de</p>
               <p className="text-muted-foreground">Wilhelmstrasse 45</p>
@@ -75,7 +75,7 @@ export default function ImpressumPage() {
 
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">
-              Verantwortlich für den Inhalt nach § 55 Abs. 2 RStV
+              Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV
             </h2>
             <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-1">
               <p className="font-medium">Ishan Jain</p>
@@ -107,8 +107,8 @@ export default function ImpressumPage() {
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">Haftung für Inhalte</h2>
             <p>
-              Als Diensteanbieter sind wir gemäß § 7 Abs. 1 TMG für eigene Inhalte auf diesen Seiten
-              nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 TMG sind wir als
+              Als Diensteanbieter sind wir gemäß § 7 Abs. 1 DDG für eigene Inhalte auf diesen Seiten
+              nach den allgemeinen Gesetzen verantwortlich. Nach §§ 8 bis 10 DDG sind wir als
               Diensteanbieter jedoch nicht verpflichtet, übermittelte oder gespeicherte fremde
               Informationen zu überwachen oder nach Umständen zu forschen, die auf eine rechtswidrige
               Tätigkeit hinweisen.

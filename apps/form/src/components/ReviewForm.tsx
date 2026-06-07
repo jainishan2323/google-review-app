@@ -281,18 +281,21 @@ export default function ReviewForm({
     return (
       <div className="relative flex min-h-svh flex-col items-center justify-center gap-8 p-6">
         {logoUrl && (
-          // Explicit width/height reserve layout space (no CLS) and satisfy the
-          // "image elements have explicit dimensions" audit; h-14 w-auto keeps the
-          // logo's real aspect ratio. next/image resizes + serves WebP/AVIF;
-          // `priority` preloads it as the first-screen hero.
-          <Image
-            src={logoUrl}
-            alt={businessName}
-            width={160}
-            height={56}
-            priority
-            className="h-14 w-auto object-contain"
-          />
+          // Fixed h-14 w-40 box (matching FormSkeleton's logo placeholder) is painted
+          // immediately with a subtle fill, so the logo area is never empty — the image
+          // resolves *into* the reserved box instead of popping in and shifting layout.
+          // `priority` preloads it as the first-screen hero; next/image serves WebP/AVIF.
+          <div className="flex h-14 w-40 items-center justify-center overflow-hidden rounded-md bg-muted/40">
+            <Image
+              src={logoUrl}
+              alt={businessName}
+              width={160}
+              height={56}
+              priority
+              sizes="160px"
+              className="h-14 w-auto object-contain"
+            />
+          </div>
         )}
         <p className="text-center text-lg font-medium text-foreground max-w-xs leading-snug">
           {welcomeMessage}

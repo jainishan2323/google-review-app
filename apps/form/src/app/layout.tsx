@@ -3,8 +3,11 @@ import { Nunito_Sans, Noto_Sans } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const notoSansHeading = Noto_Sans({ subsets: ["latin"], variable: "--font-heading" });
-const nunitoSans = Nunito_Sans({ subsets: ["latin"], variable: "--font-sans" });
+// display:swap shows a metric-adjusted fallback immediately (next/font keeps
+// adjustFontFallback on by default), so the welcome text paints with the rest of
+// the first screen instead of popping in after the web font downloads.
+const notoSansHeading = Noto_Sans({ subsets: ["latin"], variable: "--font-heading", display: "swap" });
+const nunitoSans = Nunito_Sans({ subsets: ["latin"], variable: "--font-sans", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Leave a Review",

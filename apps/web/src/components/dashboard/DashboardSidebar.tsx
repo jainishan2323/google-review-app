@@ -9,6 +9,7 @@ import {
   Star,
   BarChart2,
   MessageSquare,
+  QrCode,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -20,6 +21,7 @@ const navItems = [
   { href: "/dashboard/reviews",           label: "Reviews",   icon: Star },
   { href: "/dashboard/analytics",         label: "Analytics", icon: BarChart2 },
   { href: "/dashboard/feedback",          label: "Feedback",  icon: MessageSquare },
+  { href: "/dashboard/qr-code",           label: "QR Code",   icon: QrCode },
   { href: "/dashboard/feedback/settings", label: "Settings",  icon: Settings },
 ];
 

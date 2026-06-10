@@ -7,16 +7,16 @@ export const authOptions: NextAuthOptions = {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      // Phase 1: identity only. We ask Google to confirm who the owner is
+      // (name + email) and nothing more — no `business.manage` scope, no
+      // offline refresh token, no forced consent screen. This is a light,
+      // warning-free sign-in. The heavier "let Jugnoo read and reply to your
+      // reviews" permission is deferred to Phase 2 as an explicit "Connect
+      // Google" step on the same account (incremental authorization).
+      // See docs/adr/0003-google-signin-split-identity-then-authorization.md
       authorization: {
         params: {
-          access_type: "offline",
-          prompt: "consent",
-          scope: [
-            "openid",
-            "email",
-            "profile",
-            "https://www.googleapis.com/auth/business.manage",
-          ].join(" "),
+          scope: "openid email profile",
         },
       },
     }),

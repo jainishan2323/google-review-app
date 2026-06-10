@@ -23,8 +23,7 @@ export default function LoginPage() {
         </Button>
 
         <p className="text-center text-xs text-gray-400">
-          By signing in you authorise access to your Google Business Profile to
-          read reviews and post replies on your behalf.
+          We only use Google to confirm your name and email — nothing more.
         </p>
       </div>
     </main>

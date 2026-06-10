@@ -2,21 +2,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { prisma } from "@repo/db";
-import { Star, MessageSquare, Clock, TrendingUp } from "lucide-react";
+import { Star, MessageSquare, Inbox, ArrowUpRight } from "lucide-react";
 import { ReviewCTA } from "@/components/ReviewCTA";
+import { requireCurrentBusiness } from "@/lib/current-business";
 
-export const revalidate = 30;
+export const dynamic = "force-dynamic";
 
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmpabfbxs001np8qjvk5l6s14";
-
-function StarDisplay({ rating }: { rating: number }) {
-  return (
-    <span className="text-xs tracking-tight">
-      <span className="text-yellow-400">{"★".repeat(rating)}</span>
-      <span className="text-muted-foreground">{"★".repeat(5 - rating)}</span>
-    </span>
-  );
-}
+// Phase 1 Overview is private-feedback-first: it surfaces the metrics that
+// actually have data during the pilot (the form → AnonymousFeedback funnel).
+// Google-review stats (average rating, total reviews, pending replies) are
+// deferred to Phase 2 along with the Reviews/Analytics tabs.
+// See docs/adr/0003-google-signin-split-identity-then-authorization.md
 
 function RatingBar({ star, count, max }: { star: number; count: number; max: number }) {
   const pct = max > 0 ? (count / max) * 100 : 0;
@@ -36,46 +32,36 @@ function RatingBar({ star, count, max }: { star: number; count: number; max: num
 }
 
 export default async function DashboardPage() {
-  const [business, recentReviews, feedbackList, totalFeedback, unreadCount] = await Promise.all([
-    prisma.business.findUnique({
-      where: { id: DEV_BUSINESS_ID },
-      select: { name: true },
-    }),
-    prisma.review.findMany({
-      where: { businessId: DEV_BUSINESS_ID },
-      orderBy: { publishedAt: "desc" },
+  const business = await requireCurrentBusiness();
+
+  const [feedbackList, allFeedback, unreadCount, googleRedirectCount] = await Promise.all([
+    prisma.anonymousFeedback.findMany({
+      where: { businessId: business.id, source: "private" },
+      orderBy: { createdAt: "desc" },
       take: 8,
-      select: { id: true, authorName: true, rating: true, text: true, publishedAt: true, isReplied: true },
     }),
     prisma.anonymousFeedback.findMany({
-      where: { businessId: DEV_BUSINESS_ID, source: "private" },
-      orderBy: { createdAt: "desc" },
-      take: 5,
+      where: { businessId: business.id },
+      select: { rating: true },
     }),
-    prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID } }),
-    prisma.anonymousFeedback.count({ where: { businessId: DEV_BUSINESS_ID, status: "unread" } }),
+    prisma.anonymousFeedback.count({ where: { businessId: business.id, status: "unread" } }),
+    prisma.anonymousFeedback.count({ where: { businessId: business.id, source: "google_redirect" } }),
   ]);
 
-  // Compute stats from real reviews
-  const totalReviews = await prisma.review.count({ where: { businessId: DEV_BUSINESS_ID } });
-  const pendingReplies = await prisma.review.count({ where: { businessId: DEV_BUSINESS_ID, isReplied: false } });
-  const allRatings = await prisma.review.findMany({
-    where: { businessId: DEV_BUSINESS_ID },
-    select: { rating: true },
-  });
-  const avgRating = allRatings.length
-    ? (allRatings.reduce((sum, r) => sum + r.rating, 0) / allRatings.length).toFixed(1)
+  const totalFeedback = allFeedback.length;
+  const avgRating = totalFeedback
+    ? (allFeedback.reduce((sum, f) => sum + f.rating, 0) / totalFeedback).toFixed(1)
     : "—";
   const distribution = [5, 4, 3, 2, 1].map((star) => ({
     star,
-    count: allRatings.filter((r) => r.rating === star).length,
+    count: allFeedback.filter((f) => f.rating === star).length,
   }));
   const maxCount = Math.max(...distribution.map((d) => d.count), 1);
 
   return (
     <div className="p-8 space-y-8">
       {/* Gamified CTA */}
-      <ReviewCTA unreadCount={unreadCount} businessId={DEV_BUSINESS_ID} />
+      <ReviewCTA unreadCount={unreadCount} businessId={business.id} />
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -83,9 +69,7 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold tracking-tight text-foreground">
             Overview
           </h1>
-          <p className="text-sm mt-1 text-muted-foreground">
-            {business?.name ?? "aahaa Indisches Restaurant"}
-          </p>
+          <p className="text-sm mt-1 text-muted-foreground">{business.name}</p>
         </div>
         <Badge variant="secondary" className="gap-1">
           <span className="w-1.5 h-1.5 rounded-full bg-green-500 inline-block" />
@@ -95,7 +79,7 @@ export default async function DashboardPage() {
 
       <Separator />
 
-      {/* Stat cards */}
+      {/* Stat cards — all from private feedback (AnonymousFeedback) */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -113,39 +97,39 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Reviews
-            </CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-foreground">{totalReviews}</p>
-            <p className="text-xs mt-1 text-muted-foreground">on Google</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending Replies
-            </CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-foreground">{pendingReplies}</p>
-            <p className="text-xs mt-1 text-muted-foreground">awaiting response</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Private Feedback
+              Feedback Collected
             </CardTitle>
             <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <p className="text-3xl font-bold text-foreground">{totalFeedback}</p>
-            <p className="text-xs mt-1 text-muted-foreground">responses collected</p>
+            <p className="text-xs mt-1 text-muted-foreground">responses</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Unread
+            </CardTitle>
+            <Inbox className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-foreground">{unreadCount}</p>
+            <p className="text-xs mt-1 text-muted-foreground">awaiting review</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Sent to Google
+            </CardTitle>
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold text-foreground">{googleRedirectCount}</p>
+            <p className="text-xs mt-1 text-muted-foreground">happy customers redirected</p>
           </CardContent>
         </Card>
       </div>
@@ -163,76 +147,45 @@ export default async function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Recent reviews */}
+        {/* Recent private feedback */}
         <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-sm font-medium text-foreground">Recent Reviews</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {recentReviews.map((review) => (
-              <div key={review.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-0.5 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-medium text-foreground">
-                        {review.authorName}
-                      </span>
-                      <StarDisplay rating={review.rating} />
-                      <span className="text-xs text-muted-foreground">
-                        {review.publishedAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                      </span>
-                    </div>
-                    {review.text && (
-                      <p className="text-sm line-clamp-2 text-muted-foreground">
-                        {review.text}
-                      </p>
-                    )}
-                  </div>
-                  <Badge variant={review.isReplied ? "secondary" : "destructive"} className="shrink-0 text-xs">
-                    {review.isReplied ? "Replied" : "Pending"}
-                  </Badge>
-                </div>
-                <Separator className="mt-3" />
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Recent private feedback */}
-      {feedbackList.length > 0 && (
-        <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium text-foreground">Recent Private Feedback</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {feedbackList.map((item) => (
-              <div key={item.id}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-0.5 flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs tracking-tight">
-                        <span className="text-yellow-400">{"★".repeat(item.rating)}</span>
-                        <span className="text-muted-foreground">{"★".repeat(5 - item.rating)}</span>
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        {item.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
-                      </span>
+            {feedbackList.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-6 text-center">
+                No feedback collected yet. Share your QR code to start gathering responses.
+              </p>
+            ) : (
+              feedbackList.map((item) => (
+                <div key={item.id}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="space-y-0.5 flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs tracking-tight">
+                          <span className="text-yellow-400">{"★".repeat(item.rating)}</span>
+                          <span className="text-muted-foreground">{"★".repeat(5 - item.rating)}</span>
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {item.createdAt.toLocaleDateString("en-GB", { day: "numeric", month: "short" })}
+                        </span>
+                      </div>
+                      {item.text && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">{item.text}</p>
+                      )}
                     </div>
-                    {item.text && (
-                      <p className="text-sm text-muted-foreground line-clamp-2">{item.text}</p>
+                    {item.status === "unread" && (
+                      <Badge variant="destructive" className="shrink-0 text-xs">New</Badge>
                     )}
                   </div>
-                  {item.status === "unread" && (
-                    <Badge variant="destructive" className="shrink-0 text-xs">New</Badge>
-                  )}
+                  <Separator className="mt-3" />
                 </div>
-                <Separator className="mt-3" />
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
-      )}
+      </div>
     </div>
   );
 }

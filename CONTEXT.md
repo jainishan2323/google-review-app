@@ -12,6 +12,26 @@ _Avoid_: scansrc (no longer a DB field), source (means something else — see be
 The routing *outcome* of a feedback submission — `private` (kept for the business only) or `google_redirect` (the customer was sent on to post to Google). Distinct from [src]: `source` is *where the feedback went*, `src` is *how the customer got here*.
 _Avoid_: using this for acquisition channel
 
+## Google identifiers
+
+**Place ID** (`googlePlaceId`):
+The public Google **Maps** identifier for a business (e.g. `ChIJ9fc8fxFRqEcRMwkzsTU2yRU`). Anyone can look it up without owning the listing; no authentication. Drives the form funnel's "write a review" redirect (`…/writereview?placeid=…`). Available and used in Phase 1.
+_Avoid_: location id (different system — see below), maps id, gmb id
+
+**Location ID** (`googleLocationId`):
+The Google **Business Profile API** management resource name for a location the owner manages (e.g. `accounts/123/locations/456`). Only obtainable *after* the owner grants the `business.manage` scope (Phase 2 "Connect Google"); used to read reviews and post replies via the API. Not derivable from a [Place ID] — it takes an authorized API call to discover. In Phase 1 it holds a unique **placeholder** value (set by the Operator at onboarding), overwritten with the real value in Phase 2.
+_Avoid_: place id (the public Maps id, not this), resource name (too generic)
+
+## People & apps
+
+**Owner**:
+A customer of Jugnoo — the proprietor of a pilot business who signs into the customer dashboard (`apps/web`). Modelled as a `User` with `role = OWNER`, linked to one or more `Business` rows via `ownerId`. An owner is identified by their **verified Google email**; that email is the single key that ties a person to their business(es) across both phases of Google sign-in.
+_Avoid_: user (too generic — an Operator is also a User), customer (use for the human/relationship, "Owner" for the modelled role), account
+
+**Operator**:
+The Jugnoo team (currently just the app's creator) who runs the internal admin app, **Lantern**. Modelled as a `User` with `role = ADMIN`. The Operator hand-onboards pilots: creates each `Business` ahead of time and records the future Owner's email on it.
+_Avoid_: admin (fine as the role value, but "Operator" for the person), app owner (collides with [Owner])
+
 ## Cards
 
 **Card Template**:

@@ -1,0 +1,15 @@
+# Owner Google sign-in is split into Phase 1 (identity) and Phase 2 (authorization)
+
+**Context.** The customer dashboard (`apps/web`) authenticated owners with Google while requesting the `https://www.googleapis.com/auth/business.manage` scope (plus `access_type: offline` and `prompt: consent`). Two problems: (1) the app is not yet approved for the Business Profile API, so the scope grants nothing usable and the project returns 429s; (2) requesting a sensitive, unverified scope triggers Google's "unverified app" warning on every login — heavy friction for a pilot that only needs to know *who* the owner is. Onboarding is operator-driven (a handful of hand-created pilots), so the dashboard's job during the pilot is to prove the private-feedback loop, not to read or reply to Google reviews.
+
+**Options considered.**
+- **A — Keep full scope now:** one sign-in grants identity + Business Profile access. Live reviews work the day the API is approved, but every pilot login shows the unverified-app warning, and the granted token is useless until approval anyway.
+- **B — Split: identity now, authorization later.** Phase 1 requests only `openid email profile` (no warning, silent returning sign-in). Phase 2 adds `business.manage` as an explicit, owner-initiated "Connect Google" step (incremental authorization on the **same** Google account), built when the feature and API approval actually exist.
+
+**Decision.** Take **Option B**. For Phase 1, strip all three heavy parameters from `apps/web` Google sign-in — the `business.manage` scope, `access_type: offline`, and `prompt: consent` — leaving the same light config Lantern already uses (`scope: "openid email profile"`). Owner→business linking keys off the **verified email**, never the OAuth `sub`/`session.userId` (which, with no NextAuth DB adapter, is currently the Google `sub` and does not equal the Prisma `User.id`). Because Phase 2 re-requests the heavy scope on the same email-identified account, it is purely additive — no Phase 1 work is redone.
+
+The Reviews and Analytics tabs (which depend on Google review data) are **kept in the nav but rendered as "coming soon"** rather than removed or filled with sample data, so the surface that Phase 2 lights up already exists.
+
+**Why.** A warning-free, frictionless login matters more for a hand-onboarded pilot than live Google data we cannot fetch yet. Deferring the sensitive scope also defers Google's verification burden until we genuinely need it. Keying linking off the verified email sidesteps the `session.userId` mismatch entirely.
+
+**Consequences.** During the pilot the owner dashboard has no live Google reviews/analytics; those tabs say "coming soon." `access_type: offline` is dropped, so no refresh token is banked — Phase 2 must request one at connect-time. The OAuth token fields currently live on `Business`; a `business.manage` grant actually belongs to the **person**, so Phase 2 may want a small migration (tokens → `User`) — deferred, harmless while pilots are 1 owner : 1 business. Re-enabling the scope later will surface Google's verification/consent flow that this decision postpones.

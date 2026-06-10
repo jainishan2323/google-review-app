@@ -49,6 +49,7 @@ model Business {
   anonymousFeedback AnonymousFeedback[]
   alertConfigs      AlertConfig[]
   qrCodes           QrCode[]
+  printOrders       PrintOrder[]
   formConfig        FormConfig?
 }
 
@@ -163,6 +164,25 @@ model QrCode {
   label      String?
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
+
+  business Business @relation(fields: [businessId], references: [id])
+}
+
+// ── Print Orders ─────────────────────────────────────────────
+// A business's request for Jugnoo to produce + ship physical review cards.
+// Pilot: free, fulfilled manually from the Lantern admin app (no shipping
+// address captured — operator contacts the business directly).
+
+model PrintOrder {
+  id          String    @id @default(cuid())
+  businessId  String
+  quantity    Int // 1–5 physical cards (paper + NFC share this pool)
+  hasNfc      Boolean   @default(false) // NFC cards are order-only (cannot be self-printed)
+  theme       String    @default("green-black") // colour arrangement: "green-black" | "black-green"
+  logoUrl     String? // Snapshot of the logo used on the card at order time
+  status      String    @default("pending") // "pending" | "fulfilled"
+  createdAt   DateTime  @default(now())
+  fulfilledAt DateTime?
 
   business Business @relation(fields: [businessId], references: [id])
 }

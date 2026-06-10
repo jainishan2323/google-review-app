@@ -3,13 +3,18 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@repo/db";
 import { postReply } from "@/lib/google-business";
+import { resolveCurrentBusiness } from "@/lib/current-business";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ reviewId: string }> }
 ) {
+  // Posting a reply needs the `business.manage` access token — a Phase 2
+  // capability that only exists once the owner has connected Google. The
+  // accessToken will be absent in Phase 1, so this route 401s until then.
   const session = await getServerSession(authOptions);
-  if (!session?.userId || !session?.accessToken) {
+  const resolved = await resolveCurrentBusiness();
+  if (resolved.status !== "ok" || !session?.accessToken) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -28,7 +33,10 @@ export async function POST(
     include: { business: true },
   });
 
-  if (!review || review.business.ownerId !== session.userId) {
+  // Ownership: the review's business must belong to the signed-in owner.
+  const ownsReview =
+    review && resolved.businesses.some((b) => b.id === review.businessId);
+  if (!ownsReview) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

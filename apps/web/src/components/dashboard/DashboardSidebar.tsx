@@ -17,12 +17,12 @@ import { Separator } from "@/components/ui/separator";
 import { FireflyLogo } from "@/components/FireflyLogo";
 
 const navItems = [
-  { href: "/dashboard",                   label: "Overview",  icon: LayoutDashboard },
-  { href: "/dashboard/reviews",           label: "Reviews",   icon: Star },
-  { href: "/dashboard/analytics",         label: "Analytics", icon: BarChart2 },
-  { href: "/dashboard/feedback",          label: "Feedback",  icon: MessageSquare },
-  { href: "/dashboard/cards",             label: "Cards",     icon: QrCode },
-  { href: "/dashboard/feedback/settings", label: "Settings",  icon: Settings },
+  { href: "/dashboard",                   label: "Overview",  icon: LayoutDashboard, soon: false },
+  { href: "/dashboard/reviews",           label: "Reviews",   icon: Star,            soon: true },
+  { href: "/dashboard/analytics",         label: "Analytics", icon: BarChart2,       soon: true },
+  { href: "/dashboard/feedback",          label: "Feedback",  icon: MessageSquare,   soon: false },
+  { href: "/dashboard/cards",             label: "Cards",     icon: QrCode,          soon: false },
+  { href: "/dashboard/feedback/settings", label: "Settings",  icon: Settings,        soon: false },
 ];
 
 export function DashboardSidebar({ businessName }: { businessName: string }) {
@@ -46,7 +46,7 @@ export function DashboardSidebar({ businessName }: { businessName: string }) {
 
       {/* Nav */}
       <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {navItems.map(({ href, label, icon: Icon }) => {
+        {navItems.map(({ href, label, icon: Icon, soon }) => {
           const active = pathname === href;
           return (
             <Link
@@ -60,7 +60,12 @@ export function DashboardSidebar({ businessName }: { businessName: string }) {
               )}
             >
               <Icon className="h-4 w-4 shrink-0" />
-              {label}
+              <span className="flex-1">{label}</span>
+              {soon && (
+                <span className="rounded-full bg-sidebar-accent px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Soon
+                </span>
+              )}
             </Link>
           );
         })}

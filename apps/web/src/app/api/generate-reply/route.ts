@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@repo/db";
 import { draftReply } from "@repo/llm";
-
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID;
+import { resolveCurrentBusiness } from "@/lib/current-business";
 
 export async function POST(req: NextRequest) {
-  // TODO: re-enable auth + ownership check once Google Business Profile API is approved
-  // and session.userId reliably maps to the Prisma User.id (not the Google OAuth sub).
+  // Auth + ownership re-enabled: now that owner→business resolution keys off the
+  // verified email (not the unreliable session.userId / Google sub), we can
+  // safely scope this to the signed-in owner's reviews.
+  // See docs/adr/0004-owner-business-linking-by-verified-email.md
+  const resolved = await resolveCurrentBusiness();
+  if (resolved.status !== "ok") {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
   const body = await req.json();
   const reviewId: string = body?.reviewId ?? "";
@@ -21,7 +24,9 @@ export async function POST(req: NextRequest) {
     include: { business: true },
   });
 
-  if (!review) {
+  const ownsReview =
+    review && resolved.businesses.some((b) => b.id === review.businessId);
+  if (!ownsReview) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 

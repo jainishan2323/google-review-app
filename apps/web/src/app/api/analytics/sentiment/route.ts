@@ -1,25 +1,19 @@
-import { NextRequest, NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
 import { prisma } from "@repo/db";
 import { analyzeReviews } from "@repo/llm";
+import { resolveCurrentBusiness } from "@/lib/current-business";
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.userId) {
+  const resolved = await resolveCurrentBusiness();
+  if (resolved.status === "unauthenticated") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const business = await prisma.business.findFirst({
-    where: { ownerId: session.userId },
-  });
-
-  if (!business) {
+  if (resolved.status === "unlinked") {
     return NextResponse.json({ error: "No business found" }, { status: 404 });
   }
 
   const reviews = await prisma.review.findMany({
-    where: { businessId: business.id },
+    where: { businessId: resolved.business.id },
     select: { text: true, rating: true },
   });
 

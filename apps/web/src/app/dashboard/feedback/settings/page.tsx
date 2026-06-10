@@ -1,18 +1,16 @@
 import { prisma } from "@repo/db";
 import { Separator } from "@/components/ui/separator";
 import { FormConfigEditor } from "@/components/FormConfigEditor";
+import { requireCurrentBusiness } from "@/lib/current-business";
 
-// Dev: use the seeded business. Replace with session.user.businessId when auth is active.
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmp7n349t0002rhz58a4hinnt";
+export const dynamic = "force-dynamic";
 
 export default async function FeedbackSettingsPage() {
-  const [business, existingConfig] = await Promise.all([
-    prisma.business.findUnique({ where: { id: DEV_BUSINESS_ID }, select: { name: true } }),
-    prisma.formConfig.findUnique({
-      where: { businessId: DEV_BUSINESS_ID },
-      include: { categories: { orderBy: { order: "asc" } } },
-    }),
-  ]);
+  const business = await requireCurrentBusiness();
+  const existingConfig = await prisma.formConfig.findUnique({
+    where: { businessId: business.id },
+    include: { categories: { orderBy: { order: "asc" } } },
+  });
 
   return (
     <main className="p-8 space-y-8 max-w-6xl">
@@ -21,14 +19,14 @@ export default async function FeedbackSettingsPage() {
           Feedback Settings
         </h1>
         <p className="text-sm mt-1 text-muted-foreground">
-          Customize the feedback form your customers see — {business?.name ?? "your business"}.
+          Customize the feedback form your customers see — {business.name}.
         </p>
       </div>
 
       <Separator />
 
       <FormConfigEditor
-        businessId={DEV_BUSINESS_ID}
+        businessId={business.id}
         defaultValues={
           existingConfig
             ? {

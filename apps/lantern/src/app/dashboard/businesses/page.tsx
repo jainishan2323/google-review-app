@@ -1,4 +1,5 @@
 import { prisma } from "@repo/db";
+import { OnboardBusinessForm } from "@/components/onboard-business-form";
 
 export const dynamic = "force-dynamic";
 
@@ -6,7 +7,14 @@ const RATING_EMOJI: Record<number, string> = { 1: "😞", 2: "😐", 3: "🙂", 
 
 export default async function BusinessesPage() {
   const businesses = await prisma.business.findMany({
-    select: { id: true, name: true, createdAt: true },
+    select: {
+      id: true,
+      name: true,
+      createdAt: true,
+      // `owner.name` is only filled in once the owner has actually signed in,
+      // so it doubles as a "has logged in yet?" signal.
+      owner: { select: { email: true, name: true } },
+    },
     orderBy: { name: "asc" },
   });
 
@@ -44,18 +52,32 @@ export default async function BusinessesPage() {
       <div>
         <h1 className="text-2xl font-bold text-foreground">Businesses</h1>
         <p className="text-sm text-muted-foreground mt-1">
-          {businesses.length} connected {businesses.length === 1 ? "business" : "businesses"}
+          {businesses.length} onboarded {businesses.length === 1 ? "business" : "businesses"}
         </p>
       </div>
+
+      <OnboardBusinessForm />
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {stats.map((b) => (
           <div key={b.id} className="rounded-xl border border-border bg-card p-5 space-y-4">
             <div>
               <p className="font-semibold text-foreground">{b.name}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Since {b.createdAt.toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
-              </p>
+              <p className="text-xs text-muted-foreground mt-0.5 truncate">{b.owner.email}</p>
+              <div className="mt-1.5 flex items-center gap-2">
+                <span
+                  className={
+                    b.owner.name
+                      ? "rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700"
+                      : "rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-700"
+                  }
+                >
+                  {b.owner.name ? "Signed in" : "Awaiting first sign-in"}
+                </span>
+                <span className="text-[11px] text-muted-foreground">
+                  Since {b.createdAt.toLocaleDateString("en-GB", { month: "short", year: "numeric" })}
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3 text-center">

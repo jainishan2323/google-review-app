@@ -2,11 +2,10 @@ import { prisma } from "@repo/db";
 import { Separator } from "@/components/ui/separator";
 import { CardStudio } from "@/components/cards/CardStudio";
 import { QrCodeCard } from "@/components/QrCodeCard";
+import { requireCurrentBusiness } from "@/lib/current-business";
 
 export const dynamic = "force-dynamic";
 
-// Dev: use the seeded business. Replace with session.user.businessId when auth is active.
-const DEV_BUSINESS_ID = process.env.DEV_BUSINESS_ID ?? "cmp7n349t0002rhz58a4hinnt";
 const FORM_BASE_URL =
   process.env.NEXT_PUBLIC_FORM_URL ??
   (process.env.NODE_ENV === "production"
@@ -20,13 +19,11 @@ const FORM_BASE_URL =
 const CARDS_STUDIO_ENABLED = process.env.NEXT_PUBLIC_CARDS_STUDIO === "true";
 
 export default async function CardsPage() {
-  const [business, formConfig] = await Promise.all([
-    prisma.business.findUnique({ where: { id: DEV_BUSINESS_ID }, select: { name: true } }),
-    prisma.formConfig.findUnique({
-      where: { businessId: DEV_BUSINESS_ID },
-      select: { logoUrl: true },
-    }),
-  ]);
+  const business = await requireCurrentBusiness();
+  const formConfig = await prisma.formConfig.findUnique({
+    where: { businessId: business.id },
+    select: { logoUrl: true },
+  });
 
   return (
     <main className="p-8 space-y-8 max-w-6xl">
@@ -36,8 +33,8 @@ export default async function CardsPage() {
         </h1>
         <p className="text-sm mt-1 text-muted-foreground">
           {CARDS_STUDIO_ENABLED
-            ? `Customize your review card, print it yourself, or order physical cards for ${business?.name ?? "your business"}.`
-            : `Download your QR code to print on table tents, receipts, or stickers for ${business?.name ?? "your business"}.`}
+            ? `Customize your review card, print it yourself, or order physical cards for ${business.name}.`
+            : `Download your QR code to print on table tents, receipts, or stickers for ${business.name}.`}
         </p>
       </div>
 
@@ -45,13 +42,13 @@ export default async function CardsPage() {
 
       {CARDS_STUDIO_ENABLED ? (
         <CardStudio
-          businessId={DEV_BUSINESS_ID}
-          businessName={business?.name ?? "Your business"}
-          formUrlBase={`${FORM_BASE_URL}/${DEV_BUSINESS_ID}`}
+          businessId={business.id}
+          businessName={business.name}
+          formUrlBase={`${FORM_BASE_URL}/${business.id}`}
           defaultLogoUrl={formConfig?.logoUrl ?? ""}
         />
       ) : (
-        <QrCodeCard formUrl={`${FORM_BASE_URL}/${DEV_BUSINESS_ID}?src=qr`} />
+        <QrCodeCard formUrl={`${FORM_BASE_URL}/${business.id}?src=qr`} />
       )}
     </main>
   );

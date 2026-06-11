@@ -126,7 +126,9 @@ model FormConfig {
   businessId     String   @unique
   brandColor     String   @default("#2563EB")
   logoUrl        String?
-  welcomeMessage String   @default("Thanks for visiting! We'd love your feedback.")
+  // Per-language greeting, e.g. { "en": "Thanks for visiting!", "de": "…" }.
+  // Resolved to defaultLanguage on the form (base-language fallback when blank).
+  welcomeMessage Json     @default("{}")
   // The single language the form renders in + the analyzer's canonical-label language.
   defaultLanguage String  @default("en")
   // Languages whose labels are auto-filled + editable in settings (ISO 639-1, lowercase).

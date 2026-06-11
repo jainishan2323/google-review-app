@@ -246,11 +246,21 @@ async function main() {
     create: {
       businessId: business.id,
       brandColor: "#16a34a",
-      welcomeMessage: "Thanks for visiting Spice Garden Berlin! We'd love your feedback.",
+      welcomeMessage: {
+        en: "Thanks for visiting Spice Garden Berlin! We'd love your feedback.",
+        de: "Danke für Ihren Besuch im Spice Garden Berlin! Wir freuen uns über Ihr Feedback.",
+      },
       defaultLanguage: DEFAULT_LANGUAGE,
       supportedLanguages: SUPPORTED_LANGUAGES,
     },
-    update: { defaultLanguage: DEFAULT_LANGUAGE, supportedLanguages: SUPPORTED_LANGUAGES },
+    update: {
+      welcomeMessage: {
+        en: "Thanks for visiting Spice Garden Berlin! We'd love your feedback.",
+        de: "Danke für Ihren Besuch im Spice Garden Berlin! Wir freuen uns über Ihr Feedback.",
+      },
+      defaultLanguage: DEFAULT_LANGUAGE,
+      supportedLanguages: SUPPORTED_LANGUAGES,
+    },
   });
 
   const spiceTags = await seedTaxonomy(formConfig.id, [
@@ -325,11 +335,21 @@ async function main() {
     create: {
       businessId: ahaaBusiness.id,
       brandColor: "#b45309",
-      welcomeMessage: "Thank you for visiting aahaa Indisches Restaurant! We'd love to hear from you.",
+      welcomeMessage: {
+        en: "Thank you for visiting aahaa Indisches Restaurant! We'd love to hear from you.",
+        de: "Danke für Ihren Besuch im aahaa Indisches Restaurant! Wir freuen uns von Ihnen zu hören.",
+      },
       defaultLanguage: DEFAULT_LANGUAGE,
       supportedLanguages: SUPPORTED_LANGUAGES,
     },
-    update: { defaultLanguage: DEFAULT_LANGUAGE, supportedLanguages: SUPPORTED_LANGUAGES },
+    update: {
+      welcomeMessage: {
+        en: "Thank you for visiting aahaa Indisches Restaurant! We'd love to hear from you.",
+        de: "Danke für Ihren Besuch im aahaa Indisches Restaurant! Wir freuen uns von Ihnen zu hören.",
+      },
+      defaultLanguage: DEFAULT_LANGUAGE,
+      supportedLanguages: SUPPORTED_LANGUAGES,
+    },
   });
 
   await seedTaxonomy(ahaaFormConfig.id, [
@@ -402,11 +422,21 @@ async function main() {
     create: {
       businessId: saravanaa.id,
       brandColor: "#15803d",
-      welcomeMessage: "Thank you for visiting Saravanaa Bhavan! We'd love your feedback.",
+      welcomeMessage: {
+        en: "Thank you for visiting Saravanaa Bhavan! We'd love your feedback.",
+        de: "Danke für Ihren Besuch im Saravanaa Bhavan! Wir freuen uns über Ihr Feedback.",
+      },
       defaultLanguage: DEFAULT_LANGUAGE,
       supportedLanguages: SUPPORTED_LANGUAGES,
     },
-    update: { defaultLanguage: DEFAULT_LANGUAGE, supportedLanguages: SUPPORTED_LANGUAGES },
+    update: {
+      welcomeMessage: {
+        en: "Thank you for visiting Saravanaa Bhavan! We'd love your feedback.",
+        de: "Danke für Ihren Besuch im Saravanaa Bhavan! Wir freuen uns über Ihr Feedback.",
+      },
+      defaultLanguage: DEFAULT_LANGUAGE,
+      supportedLanguages: SUPPORTED_LANGUAGES,
+    },
   });
 
   await seedTaxonomy(saravanaaFormConfig.id, [
@@ -484,11 +514,21 @@ async function main() {
     create: {
       businessId: agni.id,
       brandColor: "#c2410c",
-      welcomeMessage: "Thanks for visiting Agni! We'd love to hear about your meal.",
+      welcomeMessage: {
+        en: "Thanks for visiting Agni! We'd love to hear about your meal.",
+        de: "Danke für Ihren Besuch bei Agni! Wir freuen uns über Ihr Feedback zu Ihrem Essen.",
+      },
       defaultLanguage: DEFAULT_LANGUAGE,
       supportedLanguages: SUPPORTED_LANGUAGES,
     },
-    update: { defaultLanguage: DEFAULT_LANGUAGE, supportedLanguages: SUPPORTED_LANGUAGES },
+    update: {
+      welcomeMessage: {
+        en: "Thanks for visiting Agni! We'd love to hear about your meal.",
+        de: "Danke für Ihren Besuch bei Agni! Wir freuen uns über Ihr Feedback zu Ihrem Essen.",
+      },
+      defaultLanguage: DEFAULT_LANGUAGE,
+      supportedLanguages: SUPPORTED_LANGUAGES,
+    },
   });
 
   await seedTaxonomy(agniFormConfig.id, [

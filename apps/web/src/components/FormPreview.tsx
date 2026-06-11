@@ -1,53 +1,134 @@
 "use client";
 
-import { useState } from "react"; // selectedChips state stays local
+import { useState } from "react";
 import { Star, ArrowLeft } from "lucide-react";
+import { resolveLabel } from "@repo/types";
 
-interface Category {
-  name: string;
-  positiveChips: string[];
-  negativeChips: string[];
+type LabelMap = Record<string, string>;
+
+interface PreviewTag {
+  id: string;
+  labels: LabelMap;
+  active: boolean;
+}
+interface PreviewCategory {
+  id: string;
+  labels: LabelMap;
+  positive: PreviewTag[];
+  negative: PreviewTag[];
 }
 
 interface Props {
   brandColor: string;
   logoUrl: string;
-  welcomeMessage: string;
-  categories: Category[];
-  screen: "stars" | "chips";
-  onScreenChange: (s: "stars" | "chips") => void;
+  welcome: LabelMap;
+  categories: PreviewCategory[];
+  defaultLanguage: string;
+  languages: string[];
 }
 
-const DEMO_RATING = 3;
+const LANGUAGE_NAMES: Record<string, string> = { en: "English", de: "Deutsch" };
+type Band = "stars" | "high" | "low";
 
-function StarScreen({
+export function FormPreview({
   brandColor,
   logoUrl,
-  welcomeMessage,
-}: {
-  brandColor: string;
-  logoUrl: string;
-  welcomeMessage: string;
-}) {
+  welcome,
+  categories,
+  defaultLanguage,
+  languages,
+}: Props) {
+  const [band, setBand] = useState<Band>("low");
+  const [lang, setLang] = useState(defaultLanguage);
+
+  // Keep the preview language valid if it gets toggled off.
+  const activeLang = languages.includes(lang) ? lang : defaultLanguage;
+  const color = /^#[0-9A-Fa-f]{6}$/.test(brandColor) ? brandColor : "#2563EB";
+  const label = (m: LabelMap) => resolveLabel(m, { default: defaultLanguage, active: activeLang });
+
   return (
-    <div className="flex flex-col items-center justify-center gap-5 p-5 text-center h-full">
+    <div className="flex flex-col items-center gap-3 select-none">
+      <p className="self-start text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        Live preview
+      </p>
+
+      {/* Controls: rating band + language */}
+      <div className="flex w-full items-center justify-between gap-2">
+        <div className="flex gap-1 rounded-full bg-muted p-1 text-xs">
+          {([
+            ["stars", "Stars"],
+            ["high", "4–5★"],
+            ["low", "1–3★"],
+          ] as const).map(([b, txt]) => (
+            <button
+              key={b}
+              type="button"
+              onClick={() => setBand(b)}
+              className={`rounded-full px-3 py-1 transition-colors ${
+                band === b ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {txt}
+            </button>
+          ))}
+        </div>
+        {languages.length > 1 && (
+          <div className="flex gap-1 rounded-full bg-muted p-1 text-xs">
+            {languages.map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => setLang(l)}
+                className={`rounded-full px-2.5 py-1 transition-colors ${
+                  activeLang === l ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                }`}
+                title={LANGUAGE_NAMES[l] ?? l}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Phone frame */}
+      <div className="w-72 rounded-[2.5rem] bg-zinc-900 p-2.5 shadow-2xl ring-1 ring-white/10">
+        <div className="relative flex h-6 items-center justify-center rounded-t-[1.6rem] bg-white">
+          <div className="absolute left-1/2 top-0 h-4 w-14 -translate-x-1/2 rounded-b-xl bg-zinc-900" />
+        </div>
+        <div className="h-[min(560px,calc(100dvh-12rem))] overflow-hidden rounded-b-[1.6rem] bg-white">
+          {band === "stars" ? (
+            <StarScreen brandColor={color} logoUrl={logoUrl} welcome={label(welcome)} />
+          ) : (
+            <ChipsScreen brandColor={color} band={band} categories={categories} label={label} />
+          )}
+        </div>
+      </div>
+
+      <p className="text-[10px] text-muted-foreground/60">
+        {band === "stars" ? "Welcome screen" : band === "high" ? "Happy path (4–5★)" : "Improve path (1–3★)"} ·{" "}
+        {LANGUAGE_NAMES[activeLang] ?? activeLang}
+      </p>
+    </div>
+  );
+}
+
+function StarScreen({ brandColor, logoUrl, welcome }: { brandColor: string; logoUrl: string; welcome: string }) {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-5 p-5 text-center">
       {logoUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={logoUrl} alt="Logo" className="h-8 max-w-[120px] object-contain" />
       )}
-      <p className="text-[11px] font-medium text-gray-800 leading-snug max-w-[160px]">
-        {welcomeMessage || "Thanks for visiting!"}
+      <p className="max-w-[160px] text-[11px] font-medium leading-snug text-gray-800">
+        {welcome || "Thanks for visiting!"}
       </p>
       <div className="flex gap-1.5">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4, 5].map((s) => (
           <Star
-            key={star}
+            key={s}
             className="size-8"
-            style={{
-              fill: star <= DEMO_RATING ? brandColor : "transparent",
-              color: star <= DEMO_RATING ? brandColor : "#9ca3af",
-              strokeWidth: 1.5,
-            }}
+            style={{ fill: s <= 4 ? brandColor : "transparent", color: s <= 4 ? brandColor : "#9ca3af", strokeWidth: 1.5 }}
           />
         ))}
       </div>
@@ -58,87 +139,65 @@ function StarScreen({
 
 function ChipsScreen({
   brandColor,
+  band,
   categories,
-  selectedChips,
-  onToggle,
+  label,
 }: {
   brandColor: string;
-  categories: Category[];
-  selectedChips: string[];
-  onToggle: (chip: string) => void;
+  band: Exclude<Band, "stars">;
+  categories: PreviewCategory[];
+  label: (m: LabelMap) => string;
 }) {
-  const chips =
-    DEMO_RATING >= 4
-      ? (cat: Category) => cat.positiveChips
-      : (cat: Category) => [...cat.negativeChips, ...cat.positiveChips];
-
-  const heading = DEMO_RATING >= 4 ? "What did you love?" : "What can we improve?";
+  const rating = band === "high" ? 5 : 3;
+  const chipsFor = (c: PreviewCategory): PreviewTag[] =>
+    (band === "high" ? c.positive : [...c.positive, ...c.negative]).filter((t) => t.active);
+  const heading = band === "high" ? "What did you love?" : "What can we improve?";
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex flex-col gap-3 p-4 overflow-y-auto flex-1 pb-0">
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-4 pb-0">
         <div className="flex items-center gap-1 text-[10px] text-gray-400">
-          <ArrowLeft className="size-3" />
-          Back
+          <ArrowLeft className="size-3" /> Back
         </div>
-
         <div className="space-y-1">
           <div className="flex gap-0.5">
             {[1, 2, 3, 4, 5].map((s) => (
               <Star
                 key={s}
                 className="size-3.5"
-                style={{
-                  fill: s <= DEMO_RATING ? brandColor : "transparent",
-                  color: s <= DEMO_RATING ? brandColor : "#9ca3af",
-                  strokeWidth: 1.5,
-                }}
+                style={{ fill: s <= rating ? brandColor : "transparent", color: s <= rating ? brandColor : "#9ca3af", strokeWidth: 1.5 }}
               />
             ))}
           </div>
           <p className="text-[11px] font-semibold text-gray-800">{heading}</p>
         </div>
-
         <div className="space-y-3">
           {categories.map((cat) => {
-            const catChips = chips(cat);
-            if (catChips.length === 0) return null;
+            const chips = chipsFor(cat);
+            if (chips.length === 0) return null;
             return (
-              <div key={cat.name} className="space-y-1.5">
-                {categories.length > 1 && cat.name && (
-                  <p className="text-[10px] font-semibold text-gray-600">{cat.name}</p>
-                )}
+              <div key={cat.id} className="space-y-1.5">
+                <p className="text-[10px] font-semibold text-gray-600">{label(cat.labels)}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {catChips.slice(0, 6).map((chip) => {
-                    const selected = selectedChips.includes(chip);
-                    return (
-                      <button
-                        key={chip}
-                        type="button"
-                        onClick={() => onToggle(chip)}
-                        className="rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors"
-                        style={
-                          selected
-                            ? { backgroundColor: brandColor, borderColor: brandColor, color: "#fff" }
-                            : { borderColor: "#e5e7eb", color: "#374151" }
-                        }
-                      >
-                        {chip}
-                      </button>
-                    );
-                  })}
+                  {chips.map((t) => (
+                    <span
+                      key={t.id}
+                      className="rounded-full border px-2 py-0.5 text-[10px] font-medium"
+                      style={{ borderColor: "#e5e7eb", color: "#374151" }}
+                    >
+                      {label(t.labels)}
+                    </span>
+                  ))}
                 </div>
               </div>
             );
           })}
         </div>
-
-        <div className="rounded-lg border border-gray-200 p-2 min-h-[52px]">
+        <div className="min-h-[52px] rounded-lg border border-gray-200 p-2">
           <p className="text-[10px] text-gray-300">Tell us a bit more (optional)...</p>
         </div>
       </div>
-
-      <div className="p-4 pt-3 shrink-0">
+      <div className="shrink-0 p-4 pt-3">
         <div
           className="w-full rounded-lg py-2.5 text-center text-[11px] font-semibold text-white"
           style={{ backgroundColor: brandColor }}
@@ -146,68 +205,6 @@ function ChipsScreen({
           Next
         </div>
       </div>
-    </div>
-  );
-}
-
-export function FormPreview({ brandColor, logoUrl, welcomeMessage, categories, screen, onScreenChange }: Props) {
-  const [selectedChips, setSelectedChips] = useState<string[]>([]);
-
-  const toggleChip = (chip: string) =>
-    setSelectedChips((prev) =>
-      prev.includes(chip) ? prev.filter((c) => c !== chip) : [...prev, chip]
-    );
-
-  const color = /^#[0-9A-Fa-f]{6}$/.test(brandColor) ? brandColor : "#2563EB";
-
-  return (
-    <div className="flex flex-col items-center gap-3 select-none">
-      <p className="text-xs font-medium text-muted-foreground">Live preview</p>
-
-      {/* Screen toggle */}
-      <div className="flex gap-1 rounded-full bg-muted p-1 text-xs">
-        {(["stars", "chips"] as const).map((s) => (
-          <button
-            key={s}
-            type="button"
-            onClick={() => onScreenChange(s)}
-            className={`px-3 py-1 rounded-full transition-colors capitalize ${
-              screen === s
-                ? "bg-background text-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {s === "stars" ? "Stars" : "Form"}
-          </button>
-        ))}
-      </div>
-
-      {/* Phone frame */}
-      <div className="w-72 bg-zinc-900 rounded-[2.5rem] p-2.5 shadow-2xl ring-1 ring-white/10">
-        {/* Status bar + notch */}
-        <div className="h-6 bg-white rounded-t-[1.6rem] flex items-center justify-center relative">
-          <div className="w-14 h-4 bg-zinc-900 rounded-b-xl absolute top-0 left-1/2 -translate-x-1/2" />
-        </div>
-        {/* Screen */}
-        <div className="bg-white rounded-b-[1.6rem] overflow-hidden h-[580px]">
-          {screen === "stars" ? (
-            <StarScreen brandColor={color} logoUrl={logoUrl} welcomeMessage={welcomeMessage} />
-          ) : (
-            <ChipsScreen
-              brandColor={color}
-              categories={
-                categories.length > 0
-                  ? categories
-                  : [{ name: "", positiveChips: [], negativeChips: [] }]
-              }
-              selectedChips={selectedChips}
-              onToggle={toggleChip}
-            />
-          )}
-        </div>
-      </div>
-
-      <p className="text-[10px] text-muted-foreground/60">3-star demo · click chips to interact</p>
     </div>
   );
 }

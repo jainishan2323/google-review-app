@@ -70,7 +70,8 @@ export async function getFormData(businessId: string): Promise<FormData | null> 
       ? {
           brandColor: config.brandColor,
           logoUrl: config.logoUrl ?? null,
-          welcomeMessage: config.welcomeMessage,
+          // welcomeMessage is a per-language map; resolve to the default language.
+          welcomeMessage: resolveLabel(config.welcomeMessage, { default: defaultLanguage }),
           defaultLanguage,
           categories: config.categories.map((c) => ({
             name: resolveLabel(c.labels, { default: defaultLanguage }),

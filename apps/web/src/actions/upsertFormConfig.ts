@@ -7,26 +7,31 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const LABEL_MAX = 40;
+const WELCOME_MAX = 200;
 
-/** Strip markup characters and length-cap a label — it's user input that reaches the LLM. */
-function sanitizeLabel(s: string): string {
-  return s.replace(/[<>{}[\]]/g, "").trim().slice(0, LABEL_MAX);
+/** Strip markup characters and length-cap user text that also reaches the LLM. */
+function sanitizeText(s: string, max: number): string {
+  return s.replace(/[<>{}[\]]/g, "").trim().slice(0, max);
 }
 
-function sanitizeLabels(labels: Record<string, string>): LabelMap {
+function sanitizeMap(labels: Record<string, string>, max: number): LabelMap {
   const out: LabelMap = {};
   for (const [lang, text] of Object.entries(labels)) {
-    out[lang] = sanitizeLabel(text ?? "");
+    out[lang] = sanitizeText(text ?? "", max);
   }
   return out;
 }
 
-const labelMapSchema = z.record(z.string(), z.string().max(200));
+const labelMapSchema = z.record(z.string(), z.string().max(400));
 
 const tagSchema = z.object({
+  // Existing tags carry their cuid; newly-added chips carry a client temp id ("new:…").
   id: z.string().min(1),
   labels: labelMapSchema,
   active: z.boolean(),
+  order: z.number().int().min(0),
+  // Used only when creating a new chip (existing tags keep their immutable DB polarity).
+  polarity: z.enum(["positive", "negative"]),
 });
 
 const categorySchema = z.object({
@@ -39,9 +44,15 @@ const FormConfigSchema = z.object({
   businessId: z.string().min(1),
   brandColor: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Must be a valid hex color"),
   logoUrl: z.string().url("Must be a valid URL").or(z.literal("")).optional(),
-  welcomeMessage: z.string().min(1, "Welcome message is required").max(200),
+  // Per-language welcome map; the base language entry is required non-empty.
+  welcomeMessage: labelMapSchema,
+  supportedLanguages: z.array(z.string().min(2).max(8)).min(1),
   categories: z.array(categorySchema),
+  // Tag ids the owner permanently removed; server re-validates each is safe to hard-delete.
+  deletedIds: z.array(z.string().min(1)).default([]),
 });
+
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export type FormConfigInput = z.infer<typeof FormConfigSchema>;
 
@@ -49,11 +60,11 @@ export type FormConfigInput = z.infer<typeof FormConfigSchema>;
 const ACTIVE_CHIPS_CAP = 4;
 
 /**
- * Light-edits save: updates branding + per-language labels + active flags IN PLACE,
- * keyed by identity. It NEVER creates or deletes tags/categories — the template-seeded
- * set is frozen in v1 — so historical analytics references (which point at tag ids) are
- * always preserved. After applying edits, blank labels in supported languages are
- * auto-filled via translation (fill-blanks-only; existing labels are never overwritten).
+ * Light-edits save: updates branding, per-language labels, active flags, chip ORDER,
+ * the welcome map, and the supportedLanguages set — all IN PLACE, keyed by identity.
+ * Never creates/deletes tags or categories (the template-seeded set is frozen), so
+ * historical analytics references are always preserved. Newly-enabled languages get
+ * their blank labels auto-filled; the base language is always retained.
  */
 export async function upsertFormConfig(input: FormConfigInput) {
   const parsed = FormConfigSchema.safeParse(input);
@@ -61,10 +72,9 @@ export async function upsertFormConfig(input: FormConfigInput) {
     return { success: false, error: parsed.error.issues[0]?.message ?? "Validation error" };
   }
 
-  const { businessId, brandColor, logoUrl, welcomeMessage, categories } = parsed.data;
+  const { businessId, brandColor, logoUrl, welcomeMessage, supportedLanguages, categories, deletedIds } =
+    parsed.data;
 
-  // Authoritative current taxonomy — gives us polarity + ownership; we only ever touch ids
-  // that actually belong to this business (no create, no cross-business writes).
   const config = await prisma.formConfig.findUnique({
     where: { businessId },
     include: { categories: { include: { tags: true } } },
@@ -73,27 +83,67 @@ export async function upsertFormConfig(input: FormConfigInput) {
     return { success: false, error: "Form configuration not found." };
   }
 
-  const supportedLanguages =
-    config.supportedLanguages.length > 0 ? config.supportedLanguages : [config.defaultLanguage];
+  // The base language is immutable and always supported; dedupe the rest.
+  const langs = Array.from(new Set([config.defaultLanguage, ...supportedLanguages]));
+
+  const welcome = sanitizeMap(welcomeMessage, WELCOME_MAX);
+  if (!welcome[config.defaultLanguage]) {
+    return { success: false, error: "A welcome message in the base language is required." };
+  }
+
   const dbCategories = new Map(config.categories.map((c) => [c.id, c]));
   const dbTags = new Map(config.categories.flatMap((c) => c.tags).map((t) => [t.id, t]));
 
-  // Resolve the submitted edits against the DB, dropping unknown ids.
-  type ResolvedTag = { id: string; labels: LabelMap; active: boolean; polarity: "positive" | "negative"; categoryId: string };
+  // Re-validate hard-deletes server-side: a tag is deletable only if it belongs to this
+  // business, is < 7 days old, and is referenced by no feedback (never orphan history).
+  let toDelete: string[] = [];
+  if (deletedIds.length > 0) {
+    const [refReviews, refFeedback] = await Promise.all([
+      prisma.review.findMany({ where: { businessId }, select: { tags: true, negativeTags: true } }),
+      prisma.anonymousFeedback.findMany({ where: { businessId }, select: { tags: true, negativeTags: true } }),
+    ]);
+    const referenced = new Set<string>();
+    for (const r of [...refReviews, ...refFeedback]) {
+      for (const id of r.tags) referenced.add(id);
+      for (const id of r.negativeTags) referenced.add(id);
+    }
+    toDelete = deletedIds.filter((id) => {
+      const t = dbTags.get(id);
+      return !!t && Date.now() - t.createdAt.getTime() < WEEK_MS && !referenced.has(id);
+    });
+  }
+
+  type ResolvedTag = {
+    id: string;
+    isNew: boolean;
+    labels: LabelMap;
+    active: boolean;
+    order: number;
+    polarity: "positive" | "negative";
+    categoryId: string;
+  };
   const tagEdits: ResolvedTag[] = [];
   const categoryEdits: { id: string; labels: LabelMap }[] = [];
   for (const cat of categories) {
+    // Categories are never created here — only the template seeds them. Ignore unknown ids.
     if (!dbCategories.has(cat.id)) continue;
-    categoryEdits.push({ id: cat.id, labels: sanitizeLabels(cat.labels) });
+    categoryEdits.push({ id: cat.id, labels: sanitizeMap(cat.labels, LABEL_MAX) });
     for (const tag of cat.tags) {
       const dbTag = dbTags.get(tag.id);
-      if (!dbTag || dbTag.categoryId !== cat.id) continue;
+      const isNew = !dbTag;
+      // An existing tag must belong to this category; ignore cross-category mismatches.
+      if (dbTag && dbTag.categoryId !== cat.id) continue;
+      const labels = sanitizeMap(tag.labels, LABEL_MAX);
+      // A brand-new chip with no base-language label is an empty row the owner left — skip it.
+      if (isNew && !labels[config.defaultLanguage]) continue;
       tagEdits.push({
         id: tag.id,
-        labels: sanitizeLabels(tag.labels),
+        isNew,
+        labels,
         active: tag.active,
-        polarity: dbTag.polarity,
-        categoryId: dbTag.categoryId,
+        order: tag.order,
+        polarity: isNew ? tag.polarity : dbTag!.polarity,
+        categoryId: cat.id,
       });
     }
   }
@@ -114,7 +164,7 @@ export async function upsertFormConfig(input: FormConfigInput) {
   }
 
   // Guardrail: no two ACTIVE tags share the same label in the same language (business-wide).
-  for (const lang of supportedLanguages) {
+  for (const lang of langs) {
     const seen = new Map<string, string>();
     for (const t of tagEdits.filter((x) => x.active)) {
       const label = t.labels[lang]?.toLowerCase();
@@ -130,10 +180,17 @@ export async function upsertFormConfig(input: FormConfigInput) {
   }
 
   try {
+    // Real ids of every tag after the write (created ids for new chips) — fed to fill-blanks.
+    const persistedTags: { id: string; labels: LabelMap }[] = [];
     await prisma.$transaction(async (tx) => {
       await tx.formConfig.update({
         where: { businessId },
-        data: { brandColor, logoUrl: logoUrl || null, welcomeMessage },
+        data: {
+          brandColor,
+          logoUrl: logoUrl || null,
+          welcomeMessage: welcome as Prisma.InputJsonValue,
+          supportedLanguages: langs,
+        },
       });
       for (const cat of categoryEdits) {
         await tx.feedbackCategory.update({
@@ -141,17 +198,42 @@ export async function upsertFormConfig(input: FormConfigInput) {
           data: { labels: cat.labels as Prisma.InputJsonValue },
         });
       }
+      // Permanent deletes (already re-validated as young + unreferenced).
+      if (toDelete.length > 0) {
+        await tx.tag.deleteMany({ where: { id: { in: toDelete } } });
+      }
       for (const tag of tagEdits) {
-        await tx.tag.update({
-          where: { id: tag.id },
-          data: { labels: tag.labels as Prisma.InputJsonValue, active: tag.active },
-        });
+        if (tag.isNew) {
+          // Per-business CUSTOM chip — never touches the restaurant-level template.
+          const created = await tx.tag.create({
+            data: {
+              categoryId: tag.categoryId,
+              polarity: tag.polarity,
+              labels: tag.labels as Prisma.InputJsonValue,
+              active: tag.active,
+              order: tag.order,
+              source: "custom",
+              authoredLanguage: config.defaultLanguage,
+            },
+          });
+          persistedTags.push({ id: created.id, labels: tag.labels });
+        } else {
+          await tx.tag.update({
+            where: { id: tag.id },
+            data: {
+              labels: tag.labels as Prisma.InputJsonValue,
+              active: tag.active,
+              order: tag.order,
+            },
+          });
+          persistedTags.push({ id: tag.id, labels: tag.labels });
+        }
       }
     });
 
-    // Fill-blanks-only: for each supported language, translate the entries that have no
-    // label yet from the default language. Existing labels are never overwritten.
-    await fillBlankLabels(config.defaultLanguage, supportedLanguages, categoryEdits, tagEdits);
+    // Fill-blanks-only: translate labels missing in a supported language from the base
+    // language. Existing labels are never overwritten; welcome is excluded (base fallback).
+    await fillBlankLabels(config.defaultLanguage, langs, categoryEdits, persistedTags);
 
     revalidatePath("/dashboard/feedback/settings");
     return { success: true };
@@ -162,7 +244,7 @@ export async function upsertFormConfig(input: FormConfigInput) {
   }
 }
 
-/** Translate any labels left blank in a supported language from the default-language label. */
+/** Translate any labels left blank in a supported language from the base-language label. */
 async function fillBlankLabels(
   defaultLanguage: string,
   supportedLanguages: string[],
@@ -193,7 +275,7 @@ async function fillBlankLabels(
 
     await prisma.$transaction(
       targets.map((t, i) => {
-        const value = sanitizeLabel(translations[i] ?? t.source);
+        const value = sanitizeText(translations[i] ?? t.source, LABEL_MAX);
         return t.kind === "category"
           ? prisma.feedbackCategory.update({
               where: { id: t.id },

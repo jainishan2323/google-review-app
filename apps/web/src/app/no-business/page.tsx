@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import { signIn, signOut, useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 
 // Shown when someone signs in with a Google email we haven't pre-provisioned a
@@ -38,9 +38,17 @@ export default function NoBusinessPage() {
           Contact Jugnoo
         </a>
 
-        <div>
+        <div className="flex flex-col items-center gap-2">
           <Button
-            variant="ghost"
+            size="sm"
+            onClick={() =>
+              signIn("google", { callbackUrl: "/dashboard" }, { prompt: "select_account" })
+            }
+          >
+            Try a different account
+          </Button>
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => signOut({ callbackUrl: "/login" })}
           >

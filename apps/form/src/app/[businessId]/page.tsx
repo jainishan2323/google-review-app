@@ -43,17 +43,8 @@ async function FormLoader({ businessId }: { businessId: string }) {
       welcomeMessage={
         config?.welcomeMessage ?? "Thanks for visiting! We'd love your feedback."
       }
-      categories={
-        config?.categories.length
-          ? config.categories
-          : [
-              {
-                name: "General",
-                positiveChips: ["Great Service", "Friendly Staff"],
-                negativeChips: ["Long Wait", "Poor Communication"],
-              },
-            ]
-      }
+      defaultLanguage={config?.defaultLanguage ?? "en"}
+      categories={config?.categories ?? []}
     />
   );
 }

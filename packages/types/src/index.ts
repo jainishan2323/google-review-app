@@ -1,3 +1,49 @@
+// ── Taxonomy (multilingual tags) ─────────────────────────────
+
+/** A tag/category's per-language display strings, e.g. { en: "Long Wait", de: "Lange Wartezeit" }. */
+export type LabelMap = Record<string, string>;
+
+export type Polarity = "positive" | "negative";
+
+/** Inputs to the label fallback chain. */
+export interface LabelResolveOptions {
+  /** Preferred language (e.g. the form's render language). */
+  active?: string;
+  /** Business default language — second in the chain. */
+  default: string;
+  /** Language the tag was authored in — the anchor before "any available". */
+  authored?: string;
+}
+
+/**
+ * Resolve a label to a single string via the fallback chain:
+ * active language → business default → authored language → any available label → "".
+ * `labels` is the raw JSON map off a Tag/Category; tolerant of unknown shapes.
+ */
+export function resolveLabel(labels: unknown, opts: LabelResolveOptions): string {
+  const map: LabelMap =
+    labels && typeof labels === "object" ? (labels as LabelMap) : {};
+  const pick = (lang?: string): string | undefined => {
+    if (!lang) return undefined;
+    const v = map[lang];
+    return typeof v === "string" && v.length > 0 ? v : undefined;
+  };
+  return (
+    pick(opts.active) ??
+    pick(opts.default) ??
+    pick(opts.authored) ??
+    Object.values(map).find((v) => typeof v === "string" && v.length > 0) ??
+    ""
+  );
+}
+
+/** A tag as the form consumes it: identity + resolved label + polarity. */
+export interface FormTag {
+  id: string;
+  label: string;
+  polarity: Polarity;
+}
+
 // ── Review Form ────────────────────────────────────────────
 
 export interface ReviewFormData {
@@ -11,12 +57,17 @@ export interface ReviewFormData {
 /** Input shape for the chip-based AI review generator (form app). */
 export interface ReviewGenerateInput {
   rating: number;
-  /** Chips selected by the customer (e.g. ["Great Service", "Clean Environment"]). */
+  /**
+   * Tag labels resolved to the target language (e.g. ["Great Service", "Clean Environment"]).
+   * The form submits identities; the generate route resolves them to labels before calling.
+   */
   tags: string[];
   /** Optional free-text note from the customer, max 100 chars. */
   customText?: string;
   /** 0-indexed regeneration attempt; drives output variety and temperature ramp. */
   attempt?: number;
+  /** ISO 639-1 language to write the review in (the business default language). */
+  language?: string;
 }
 
 export interface GeneratedReview {

@@ -3,6 +3,8 @@ import { prisma } from "@repo/db";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
+  // `tag` is a tag IDENTITY — Review.tags / AnonymousFeedback.tags store identities,
+  // never display wording, so the `has` filter matches on the id directly.
   const tag = searchParams.get("tag");
   const businessId = searchParams.get("businessId");
 

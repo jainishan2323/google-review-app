@@ -14,6 +14,9 @@ import {
 import { TagDrillDownSheet } from "@/components/TagDrillDownSheet";
 
 export interface ZoneTagBar {
+  /** Tag IDENTITY — used for the drill-down query (stored on feedback). */
+  tagId: string;
+  /** Display label (resolved to the business default language) — the chart axis + chip text. */
   tag: string;
   zone: string;
   positive: number;
@@ -213,6 +216,9 @@ function ZoneChartSection({ zone, tags, onTagClick, activeTag, deltas }: ZoneCha
 }
 
 export function OperationalZonesChart({ data, businessId, zoneOrder, deltas }: OperationalZonesChartProps) {
+  // The chart keys on display labels; map back to identities for the drill-down query.
+  // Labels are business-wide unique per language (guardrail), so this is unambiguous.
+  const idByLabel = new Map(data.map((d) => [d.tag, d.tagId]));
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
   const handleTagClick = useCallback((tag: string) => {
@@ -267,7 +273,8 @@ export function OperationalZonesChart({ data, businessId, zoneOrder, deltas }: O
       )}
 
       <TagDrillDownSheet
-        tag={selectedTag}
+        tag={selectedTag ? idByLabel.get(selectedTag) ?? selectedTag : null}
+        displayLabel={selectedTag}
         businessId={businessId}
         open={!!selectedTag}
         onClose={() => setSelectedTag(null)}

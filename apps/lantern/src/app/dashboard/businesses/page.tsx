@@ -1,5 +1,6 @@
 import { prisma } from "@repo/db";
 import { OnboardBusinessForm } from "@/components/onboard-business-form";
+import { ReseedFormButton } from "@/components/reseed-form-button";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,8 @@ export default async function BusinessesPage() {
       id: true,
       name: true,
       createdAt: true,
+      // Presence of a FormConfig = the business has a feedback form seeded.
+      formConfig: { select: { id: true } },
       // `owner.name` is only filled in once the owner has actually signed in,
       // so it doubles as a "has logged in yet?" signal.
       owner: { select: { email: true, name: true } },
@@ -123,6 +126,13 @@ export default async function BusinessesPage() {
 
             {b.total === 0 && (
               <p className="text-xs text-muted-foreground text-center py-2">No feedback yet</p>
+            )}
+
+            {!b.formConfig && (
+              <div className="border-t border-border pt-3">
+                <p className="mb-1.5 text-[11px] text-amber-700">No feedback form yet.</p>
+                <ReseedFormButton businessId={b.id} />
+              </div>
             )}
           </div>
         ))}

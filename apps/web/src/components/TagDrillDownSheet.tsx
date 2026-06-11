@@ -18,7 +18,10 @@ interface FeedbackItem {
 }
 
 interface TagDrillDownSheetProps {
+  /** The query value sent to the API: a tag IDENTITY for zones, or an insight text for insights. */
   tag: string | null;
+  /** Human-readable text shown in the title (defaults to `tag` when omitted). */
+  displayLabel?: string | null;
   businessId: string;
   open: boolean;
   onClose: () => void;
@@ -36,6 +39,7 @@ function StarRow({ rating }: { rating: number }) {
 
 export function TagDrillDownSheet({
   tag,
+  displayLabel,
   businessId,
   open,
   onClose,
@@ -76,7 +80,7 @@ export function TagDrillDownSheet({
         <SheetHeader className="mb-4">
           <SheetTitle className="text-base">
             Reviews mentioning{" "}
-            <span className="font-semibold text-foreground">"{tag}"</span>
+            <span className="font-semibold text-foreground">"{displayLabel ?? tag}"</span>
           </SheetTitle>
         </SheetHeader>
 

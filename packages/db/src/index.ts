@@ -18,3 +18,10 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 export * from "@prisma/client";
+export {
+  applyTaxonomyTemplate,
+  TAXONOMY_TEMPLATES,
+  BUSINESS_TYPE_OPTIONS,
+  DEFAULT_BUSINESS_TYPE,
+  type TaxonomyTemplate,
+} from "./taxonomy-templates";

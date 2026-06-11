@@ -1,4 +1,5 @@
 import { prisma } from "@repo/db";
+import { resolveLabel } from "@repo/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireCurrentBusiness } from "@/lib/current-business";
 
@@ -19,10 +20,27 @@ function StarDisplay({ rating }: { rating: number }) {
 
 export default async function FeedbackPage() {
   const business = await requireCurrentBusiness();
-  const feedbackList = await prisma.anonymousFeedback.findMany({
-    where: { businessId: business.id, source: "private" },
-    orderBy: { createdAt: "desc" },
-  });
+  const [feedbackList, config] = await Promise.all([
+    prisma.anonymousFeedback.findMany({
+      where: { businessId: business.id, source: "private" },
+      orderBy: { createdAt: "desc" },
+    }),
+    prisma.formConfig.findUnique({
+      where: { businessId: business.id },
+      include: { categories: { include: { tags: true } } },
+    }),
+  ]);
+
+  // Stored tags/negativeTags are tag IDENTITIES — resolve each to a display label.
+  const language = config?.defaultLanguage ?? "en";
+  const labelById = new Map<string, string>();
+  for (const cat of config?.categories ?? []) {
+    for (const tag of cat.tags) {
+      labelById.set(tag.id, resolveLabel(tag.labels, { default: language, authored: tag.authoredLanguage }));
+    }
+  }
+  // Falls back to the raw id if a tag was hard-deleted out of band (shouldn't happen — we deactivate).
+  const labelFor = (id: string) => labelById.get(id) ?? id;
 
   const unreadCount = feedbackList.filter((f) => f.status === "unread").length;
 
@@ -91,16 +109,16 @@ export default async function FeedbackPage() {
                 )}
                 {(item.tags ?? []).length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-auto pt-2">
-                    {(item.tags ?? []).map((tag) => {
-                      const isNeg = (item.negativeTags ?? []).includes(tag);
+                    {(item.tags ?? []).map((tagId) => {
+                      const isNeg = (item.negativeTags ?? []).includes(tagId);
                       return (
                         <span
-                          key={tag}
+                          key={tagId}
                           className={`inline-flex items-center rounded-md border-l-2 bg-muted px-2 py-0.5 text-[11px] text-muted-foreground ${
                             isNeg ? "border-l-red-500" : "border-l-green-500"
                           }`}
                         >
-                          {tag}
+                          {labelFor(tagId)}
                         </span>
                       );
                     })}

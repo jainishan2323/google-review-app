@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { generateReviewText, streamReviewText } from "@repo/llm";
 import { prisma } from "@repo/db";
+import { resolveLabel } from "@repo/types";
 
 // Flip to true via AI_STREAMING=true in .env.local to enable token-by-token streaming.
 const STREAMING_ENABLED = process.env.AI_STREAMING === "true";
@@ -14,7 +15,8 @@ function sanitize(s: string): string {
 const schema = z.object({
   businessId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
-  tags: z.array(z.string().max(50).transform(sanitize)).max(20).default([]),
+  // The form submits tag IDENTITIES; the route resolves them to default-language labels.
+  tagIds: z.array(z.string().max(40)).max(20).default([]),
   customText: z
     .string()
     .max(500)
@@ -35,18 +37,40 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { businessId, rating, tags, customText, attempt } = parsed.data;
+    const { businessId, rating, tagIds, customText, attempt } = parsed.data;
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { name: true },
+      select: { name: true, formConfig: { select: { defaultLanguage: true } } },
     });
 
     if (!business) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const input = { rating, tags, customText, attempt };
+    const language = business.formConfig?.defaultLanguage ?? "en";
+
+    // Resolve identities → labels in the default language, preserving the
+    // customer's selection order. Sanitize since labels reach the LLM.
+    const tags = tagIds.length
+      ? await prisma.tag
+          .findMany({
+            where: { id: { in: tagIds } },
+            select: { id: true, labels: true, authoredLanguage: true },
+          })
+          .then((rows) => {
+            const byId = new Map(rows.map((r) => [r.id, r]));
+            return tagIds
+              .map((id) => byId.get(id))
+              .filter((r): r is NonNullable<typeof r> => r !== undefined)
+              .map((r) =>
+                sanitize(resolveLabel(r.labels, { default: language, authored: r.authoredLanguage }))
+              )
+              .filter((label) => label.length > 0);
+          })
+      : [];
+
+    const input = { rating, tags, customText, attempt, language };
 
     if (STREAMING_ENABLED) {
       const stream = await streamReviewText(input, business.name);

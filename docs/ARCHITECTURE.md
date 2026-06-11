@@ -65,30 +65,31 @@ google-review-app/
 
 ### apps/lantern — admin
 - `src/app/dashboard/` — `businesses/`, `waitlist/`, `app-feedback/` views. `src/lib/auth.ts` gates sign-in to `ADMIN_EMAILS`.
+- `src/actions/businesses.ts` — operator onboarding: creates the owner + `Business` and seeds its form from the Business Type's Taxonomy Template (`applyTaxonomyTemplate`) in one transaction. `reseedTaxonomy` re-seeds businesses that have no form.
 
 ### apps/landing — marketing
 - `src/app/page.tsx` + components (`WaitlistForm`, `ScreenshotCarousel`, `CookieBanner`), legal pages (`impressum`, `privacy`, `terms`), `robots.ts`, `sitemap.ts`. No DB/auth dependency beyond the waitlist write.
 
 ### packages
-- **db** — `prisma/schema.prisma` (Postgres), `prisma/migrations/`, `prisma/seed.ts`, and `src/index.ts` exporting the `prisma` singleton + all Prisma types.
-- **llm** — `client.ts` (`getLLMClient()` picks a provider by `LLM_PROVIDER`), `providers/openai.ts` + `providers/types.ts` (the `LLMProvider` interface: `complete` / `stream`), and feature helpers: `review-generator.ts`, `review-analyzer.ts`, `sentiment-analyzer.ts`, `reply-drafter.ts`. `index.ts` is the public surface.
-- **types** — `src/index.ts`: form/review/business/feedback interfaces plus the analyzer taxonomy types (`TaxonomyCategory`, `MappedTag`, `ReviewAnalysisResult`, …).
+- **db** — `prisma/schema.prisma` (Postgres), `prisma/migrations/`, `prisma/seed.ts`, `src/taxonomy-templates.ts` (code-defined Taxonomy Templates per Business Type + `applyTaxonomyTemplate`), and `src/index.ts` exporting the `prisma` singleton + all Prisma types + the template helpers.
+- **llm** — `client.ts` (`getLLMClient()` picks a provider by `LLM_PROVIDER`), `providers/openai.ts` + `providers/types.ts` (the `LLMProvider` interface: `complete` / `stream`), and feature helpers: `review-generator.ts`, `review-analyzer.ts`, `sentiment-analyzer.ts`, `reply-drafter.ts`, `label-translator.ts` (batched chip-label translation for fill-blanks auto-translate). `index.ts` is the public surface.
+- **types** — `src/index.ts`: form/review/business/feedback interfaces, the analyzer taxonomy types (`TaxonomyCategory`, `MappedTag`, `ReviewAnalysisResult`, …), and the multilingual-tag helpers (`resolveLabel` fallback chain, `FormTag`, `LabelMap`, `Polarity`).
 - **ui** — `button.tsx`, `card.tsx`, `star-rating.tsx`.
 
 ## 3. Core request flows
 
 ### A. Customer leaves feedback (the funnel)
-1. Customer opens `https://<form-host>/<businessId>` (from a QR code). `apps/form/src/app/[businessId]/page.tsx` calls `getFormData(businessId)` → `Business` + `FormConfig` + `FeedbackCategory[]` from Postgres.
-2. `ReviewForm` shows the welcome/branding and a star rating. The chip set shown depends on the rating: **≥4 → positive chips ("What did you love?")**, **<4 → negative chips ("What can we improve?")**.
-3. On generate, the client POSTs `{ businessId, rating, tags, customText, attempt }` to `apps/form/.../api/generate`. The route Zod-validates + sanitizes input, then calls `generateReviewText` (or `streamReviewText` if `AI_STREAMING=true`) from `@repo/llm`.
+1. Customer opens `https://<form-host>/<businessId>` (from a QR code). `apps/form/src/app/[businessId]/page.tsx` calls `getFormData(businessId)` → `Business` + `FormConfig` + active `Tag`s grouped by `FeedbackCategory`, with each label **resolved to the business `defaultLanguage`** via `resolveLabel`.
+2. `ReviewForm` shows the welcome/branding and a star rating. The chip set shown is driven by tag **polarity**: **≥4 → positive tags ("What did you love?")**, **<4 → all tags ("What can we improve?")**.
+3. On generate, the client POSTs `{ businessId, rating, tagIds, customText, attempt }` (tag **identities**) to `apps/form/.../api/generate`. The route Zod-validates, resolves the ids → labels in the default language, and calls `generateReviewText` with a "write in {language}" instruction (or `streamReviewText` if `AI_STREAMING=true`) from `@repo/llm`.
 4. **Rating ≥4:** the generated review is shown; the customer copies it and is sent to `https://search.google.com/local/writereview?placeid=…` (Place ID from the business, normalized by `place-id.ts`). The action is also recorded via `submit-private` with `source: "google_redirect"`.
-5. **Rating <4:** the customer's feedback is POSTed to `api/submit-private` and stored as `AnonymousFeedback` (`source: "private"`); negative chips are classified against the taxonomy and saved to `negativeTags`. Nothing goes to Google.
+5. **Rating <4:** the customer's selection (tag **identities**) is POSTed to `api/submit-private` and stored as `AnonymousFeedback` (`source: "private"`); `negativeTags` is derived from each selected tag's **polarity** (by identity), not by string-matching. Nothing goes to Google.
 
 ### B. Owner reviews data + AI analysis
 1. Owner hits `apps/web`; `/` redirects to `/dashboard`; `middleware.ts` requires a NextAuth Google session (`src/lib/auth.ts`).
 2. Dashboard pages query Postgres for the business identified by `DEV_BUSINESS_ID` (on `main`) — reviews, private feedback, and aggregates for the stat cards/charts.
 3. **Replying:** owner clicks draft → `api/generate-reply` calls `draftReply` (`@repo/llm`). Posting a reply → `api/reviews/[reviewId]/reply` → `postReply` in `google-business.ts` writes to the Google Business Profile API and flips `isReplied` in the DB.
-4. **Batch analysis:** `analyzeBatchOnce(businessId)` (`src/app/actions/analyzeReviews.ts`) pulls up to 15 un-analyzed reviews/feedback, builds a `TaxonomyCategory[]` from the business's `FeedbackCategory` rows, and calls `analyzeBatch` (`@repo/llm`). Results write `tags` / `negativeTags` / `unmappedInsights` and stamp `analyzedAt`. It's **idempotent** (the WHERE clause excludes already-analyzed rows) so the client loops it to completion. Analytics pages then read those tags.
+4. **Batch analysis:** `analyzeBatchOnce(businessId)` (`src/app/actions/analyzeReviews.ts`) pulls up to 15 un-analyzed reviews/feedback, builds a `TaxonomyCategory[]` from the active tags' **default-language labels**, and calls `analyzeBatch` (`@repo/llm`). The analyzer returns labels; the action maps them **back to tag identities** before writing `tags` / `negativeTags` / `unmappedInsights` and stamping `analyzedAt`. It's **idempotent** (the WHERE clause excludes already-analyzed rows) so the client loops it to completion. Analytics pages read those identities and resolve id→label for display.
 
 ## 4. Entry points & boot
 
@@ -103,10 +104,11 @@ google-review-app/
 Defined in `packages/db/prisma/schema.prisma`. Central entity is **`Business`** (one per location); most other rows hang off it.
 
 - **User** — owner/admin (`role`); owns `Business[]`.
-- **Business** — `googleLocationId` (unique), `googlePlaceId`, `googleMapsReviewUrl`, OAuth tokens; relations to reviews, feedback, alerts, QR codes, form config.
-- **Review** — a Google review (`googleReviewId` unique, `rating`, `text`, reply fields) plus analyzer output (`tags`, `negativeTags`, `unmappedInsights`, `analyzedAt`).
-- **AnonymousFeedback** — private/funnel feedback (`rating`, `text`, `generatedReview`, `tags`, `source` = `private` | `google_redirect`, `status`, `photos`, analyzer fields).
-- **FormConfig** + **FeedbackCategory** — per-business form branding and the chip **taxonomy** (positive/negative chips) that drives both the form and the analyzer.
+- **Business** — `businessType` (vertical → picks the Taxonomy Template at onboarding), `googleLocationId` (unique), `googlePlaceId`, `googleMapsReviewUrl`, OAuth tokens; relations to reviews, feedback, alerts, QR codes, form config.
+- **Review** — a Google review (`googleReviewId` unique, `rating`, `text`, reply fields) plus analyzer output (`tags`, `negativeTags`, `unmappedInsights`, `analyzedAt`). `tags`/`negativeTags` are `String[]` of **tag identities**, not wording.
+- **AnonymousFeedback** — private/funnel feedback (`rating`, `text`, `generatedReview`, `tags` = tag identities, `source` = `private` | `google_redirect`, `status`, `photos`, analyzer fields).
+- **FormConfig** — per-business form branding + `defaultLanguage` + `supportedLanguages`; owns `FeedbackCategory[]`.
+- **FeedbackCategory** + **Tag** — the **taxonomy**. A category ("zone") owns `Tag` rows; both carry per-language `labels` (JSON) and an optional `canonicalKey`. A `Tag` has a stable identity (`id`), fixed `polarity`, `active` flag, `source` (`template`/`custom`/`insight`), and `authoredLanguage`. Identity is what's stored on feedback; labels are display-only. See ADR-0005.
 - **AlertConfig** — `NEW_REVIEW` / `RATING_DROP` alert prefs per business (email send not yet wired).
 - **QrCode**, **WaitlistEntry** (landing), **AppFeedback** (product-level emoji rating).
 
@@ -127,7 +129,9 @@ Defined in `packages/db/prisma/schema.prisma`. Central entity is **`Business`** 
 | AI reply drafting / posting | `apps/web/src/app/api/generate-reply`, `apps/web/src/app/api/reviews/[reviewId]/reply`, `apps/web/src/lib/google-business.ts` |
 | Sentiment/taxonomy analytics | `apps/web/src/app/actions/analyzeReviews.ts`, `packages/llm/src/review-analyzer.ts`, `apps/web/src/app/dashboard/analytics` |
 | Prompts / LLM behavior / provider | `packages/llm/src/*` |
-| Form branding + chip taxonomy + QR | `apps/web/src/app/dashboard/feedback/settings`, `apps/web/src/actions/upsertFormConfig.ts` |
+| Form branding + label/active editing + QR | `apps/web/src/app/dashboard/feedback/settings`, `apps/web/src/actions/upsertFormConfig.ts` |
+| Tag identity / multilingual labels / fallback | `packages/db/prisma/schema.prisma` (`Tag`/`FeedbackCategory`), `packages/types/src/index.ts` (`resolveLabel`), `packages/llm/src/label-translator.ts` |
+| Starter form template / business onboarding | `packages/db/src/taxonomy-templates.ts`, `apps/lantern/src/actions/businesses.ts`, `apps/web/src/actions/seedStarterForm.ts` |
 | Auth / scopes / session | `apps/web/src/lib/auth.ts`, `apps/lantern/src/lib/auth.ts` |
 | Database schema | `packages/db/prisma/schema.prisma` (+ `prisma/seed.ts`) |
 | Waitlist / marketing | `apps/landing/src` |

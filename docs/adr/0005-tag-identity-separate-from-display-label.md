@@ -2,6 +2,25 @@
 
 **Status:** accepted
 
+> **Amendment (settings redesign):** the original "light edits only — no reorder" line is
+> relaxed. The settings editor now also supports **managing supported languages** (toggle a
+> language on → fill blank labels; off → hide but keep labels; the base language is
+> immutable), a **multilingual welcome message** (`FormConfig.welcomeMessage` is now
+> `Json {lang→text}`), and **adding per-business custom chips** via a modal (`source = custom`,
+> no canonical key — created on that business's category only; the restaurant-level Taxonomy
+> Template, ADR-0006, is never mutated; English required, other languages optional + blank-fill
+> translated).
+>
+> **Removal policy** (the chip `×`): a chip **younger than 7 days (`Tag.createdAt`) AND
+> referenced by no feedback** is **permanently deleted**; otherwise it is **deactivated**
+> (`active` off — hidden from the form, history preserved). This keeps the never-orphan-history
+> invariant while letting owners cleanly undo a just-added chip. The editor renders only active
+> chips (restore UI for deactivated chips is deferred).
+>
+> Drag-to-reorder was tried and **removed** (it made the form tall); `Tag.order` is retained
+> (seed/append order) but not user-editable for now. Still excluded: adding/removing
+> **categories**. The identity-vs-label core below is unchanged.
+
 A taxonomy tag now has a permanent **identity** (a cuid, never shown, never reused) distinct
 from its **display labels** (one editable string per supported language). Storage, analytics, AI
 generation, and the analyzer all operate on identity; only the form and the settings screen ever

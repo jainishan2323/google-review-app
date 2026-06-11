@@ -8,15 +8,30 @@ export const dynamic = "force-dynamic";
 
 export default async function FeedbackSettingsPage() {
   const business = await requireCurrentBusiness();
-  const existingConfig = await prisma.formConfig.findUnique({
-    where: { businessId: business.id },
-    include: {
-      categories: {
-        orderBy: { order: "asc" },
-        include: { tags: { orderBy: { order: "asc" } } },
+  const [existingConfig, reviews, feedback] = await Promise.all([
+    prisma.formConfig.findUnique({
+      where: { businessId: business.id },
+      include: {
+        categories: {
+          orderBy: { order: "asc" },
+          // The editor manages active chips only; deactivated ones are left untouched.
+          include: { tags: { where: { active: true }, orderBy: { order: "asc" } } },
+        },
       },
-    },
-  });
+    }),
+    prisma.review.findMany({ where: { businessId: business.id }, select: { tags: true, negativeTags: true } }),
+    prisma.anonymousFeedback.findMany({ where: { businessId: business.id }, select: { tags: true, negativeTags: true } }),
+  ]);
+
+  // A chip is permanently deletable only if it's < 7 days old AND no feedback references it.
+  const referenced = new Set<string>();
+  for (const r of [...reviews, ...feedback]) {
+    for (const id of r.tags) referenced.add(id);
+    for (const id of r.negativeTags) referenced.add(id);
+  }
+  const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+  const isDeletable = (id: string, createdAt: Date) =>
+    Date.now() - createdAt.getTime() < WEEK_MS && !referenced.has(id);
 
   return (
     <main className="p-8 space-y-8 max-w-6xl">
@@ -43,7 +58,7 @@ export default async function FeedbackSettingsPage() {
           defaultValues={{
             brandColor: existingConfig.brandColor,
             logoUrl: existingConfig.logoUrl ?? "",
-            welcomeMessage: existingConfig.welcomeMessage,
+            welcomeMessage: (existingConfig.welcomeMessage ?? {}) as Record<string, string>,
             categories: existingConfig.categories.map((c) => ({
               id: c.id,
               labels: (c.labels ?? {}) as Record<string, string>,
@@ -52,6 +67,8 @@ export default async function FeedbackSettingsPage() {
                 labels: (t.labels ?? {}) as Record<string, string>,
                 polarity: t.polarity,
                 active: t.active,
+                order: t.order,
+                deletable: isDeletable(t.id, t.createdAt),
               })),
             })),
           }}

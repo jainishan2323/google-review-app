@@ -42,6 +42,14 @@ _Avoid_: theme, chip (a chip is how a tag is *rendered*, not what it *is* — se
 A [tag] as rendered on the feedback form — its resolved [label] drawn as a tappable pill. "Chip" is the form-surface appearance; the underlying durable thing is the [tag].
 _Avoid_: using "chip" for the stored or identity concept
 
+**Custom chip**:
+A [tag] an owner adds to **their own** business's form (`source = custom`), as opposed to one seeded from the [Taxonomy Template]. Has no [canonical key] (it isn't part of the shared, benchmarkable base). Adding one never changes the template or any other business.
+_Avoid_: own tag, manual chip
+
+**Deactivate vs. permanent delete**:
+Two ways a [chip] leaves the form. **Deactivate** flips its `active` flag off — hidden from the form, but the [tag] and its [labels] stay, so historical feedback keeps resolving. **Permanent delete** removes the [tag] row entirely and is allowed **only** for a chip both younger than a week and never referenced by any feedback — so it can never orphan history.
+_Avoid_: delete (ambiguous — say which), archive, remove (ambiguous)
+
 **Label**:
 The per-language display string for a [tag] or [category] — the only part a human ever sees, freely editable. A tag has one label per supported language.
 _Avoid_: name, text, wording (when referring to the editable display string)
@@ -61,6 +69,14 @@ _Avoid_: slug, code, benchmark key
 **Authored language**:
 The language the owner originally typed a [tag] in — the last-resort anchor in the label fallback chain (active language → business default → authored language → any available label).
 _Avoid_: original language, source language
+
+**Base language**:
+A business's primary language (its `defaultLanguage`) — shown as "BASE" in settings. Always enabled, cannot be turned off, and is the language the form renders in and the analyzer maps against. Other [supported languages] are optional add-ons whose blank [labels] auto-fill from the base. Distinct from [authored language], which is per-tag.
+_Avoid_: primary language, master language, locale
+
+**Supported languages**:
+The set of languages a business's form is authored in (`supportedLanguages`); the [base language] plus any the owner has toggled on in settings. Toggling one on auto-fills its blank [labels] from the base; toggling one off hides it from the form but keeps its labels. Not the same as the (deferred) customer-facing language switcher — the form still renders only the [base language].
+_Avoid_: locales, enabled languages (fine informally), translations
 
 **Business Type**:
 The vertical a business belongs to — `restaurant` now, `dentist` / `doctor` later. Determines which [Taxonomy Template] seeds the business's form at onboarding. Strictly distinct from [Category]: a Business Type classifies the *whole business*, a Category groups [tags] *within one business's form*.

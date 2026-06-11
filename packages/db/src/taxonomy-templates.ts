@@ -129,7 +129,8 @@ export async function applyTaxonomyTemplate(
     data: {
       businessId,
       brandColor: template.brandColor,
-      welcomeMessage: template.welcomeMessage,
+      // Per-language map; the base-language copy seeds the default language.
+      welcomeMessage: { [template.defaultLanguage]: template.welcomeMessage },
       defaultLanguage: template.defaultLanguage,
       supportedLanguages: template.supportedLanguages,
     },

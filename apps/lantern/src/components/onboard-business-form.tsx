@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
+import { BUSINESS_TYPE_OPTIONS } from "@repo/db";
 import { onboardBusiness, type OnboardState } from "@/actions/businesses";
 
 const initialState: OnboardState = { ok: false };
@@ -68,6 +69,23 @@ export function OnboardBusinessForm() {
           name="name"
           placeholder="aahaa Indisches Restaurant"
         />
+        <label className="block space-y-1">
+          <span className="text-xs font-medium text-foreground">Business type</span>
+          <select
+            name="businessType"
+            defaultValue={BUSINESS_TYPE_OPTIONS[0]?.value}
+            className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
+          >
+            {BUSINESS_TYPE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.label}
+              </option>
+            ))}
+          </select>
+          <span className="block text-[11px] text-muted-foreground">
+            Seeds the starter feedback form (categories &amp; chips) for this vertical.
+          </span>
+        </label>
         <Field
           label="Google Place ID"
           name="googlePlaceId"

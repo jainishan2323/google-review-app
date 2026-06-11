@@ -32,6 +32,44 @@ _Avoid_: user (too generic — an Operator is also a User), customer (use for th
 The Jugnoo team (currently just the app's creator) who runs the internal admin app, **Lantern**. Modelled as a `User` with `role = ADMIN`. The Operator hand-onboards pilots: creates each `Business` ahead of time and records the future Owner's email on it.
 _Avoid_: admin (fine as the role value, but "Operator" for the person), app owner (collides with [Owner])
 
+## Taxonomy
+
+**Tag**:
+The stable, identity-bearing unit of a business's taxonomy. Carries a permanent internal identity (never shown, never reused), a fixed [polarity], an optional [canonical key], an [authored language], and a set of per-language [labels]. Stored on `Review.tags` / `AnonymousFeedback.tags` **by identity**, never by wording.
+_Avoid_: theme, chip (a chip is how a tag is *rendered*, not what it *is* — see below)
+
+**Chip**:
+A [tag] as rendered on the feedback form — its resolved [label] drawn as a tappable pill. "Chip" is the form-surface appearance; the underlying durable thing is the [tag].
+_Avoid_: using "chip" for the stored or identity concept
+
+**Label**:
+The per-language display string for a [tag] or [category] — the only part a human ever sees, freely editable. A tag has one label per supported language.
+_Avoid_: name, text, wording (when referring to the editable display string)
+
+**Polarity**:
+`positive` or `negative`, **fixed** per [tag] — a tag never flips. Drives which chips show at which rating and how `negativeTags` is derived on submission.
+_Avoid_: sentiment (that's the analyzer's per-review judgement), sign
+
+**Category** (zone):
+A grouping of [tags] shown on the form and fed to the analyzer (e.g. Kitchen / Front of House / Atmosphere). Modeled symmetrically to a tag: also carries per-language [labels] and an optional [canonical key].
+_Avoid_: section, group, tab
+
+**Canonical key**:
+An optional shared key inherited from a [category] template, letting the same operational concept ("long wait") be compared across businesses later. Custom or promoted tags have none. Carried now, not yet surfaced.
+_Avoid_: slug, code, benchmark key
+
+**Authored language**:
+The language the owner originally typed a [tag] in — the last-resort anchor in the label fallback chain (active language → business default → authored language → any available label).
+_Avoid_: original language, source language
+
+**Business Type**:
+The vertical a business belongs to — `restaurant` now, `dentist` / `doctor` later. Determines which [Taxonomy Template] seeds the business's form at onboarding. Strictly distinct from [Category]: a Business Type classifies the *whole business*, a Category groups [tags] *within one business's form*.
+_Avoid_: category (collides with the feedback zone), vertical, industry, segment, niche
+
+**Taxonomy Template**:
+A named, code-defined starter set of [categories] + [tags] (with per-language [labels] and [canonical keys]) for one [Business Type], seeded into a business's form **once at onboarding**. After seeding, the taxonomy is owned and edited per business — the template is not a live link. One template per Business Type.
+_Avoid_: template (bare — collides with [Card Template]), category template, preset, starter pack
+
 ## Cards
 
 **Card Template**:

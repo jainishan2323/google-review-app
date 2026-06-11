@@ -15,10 +15,11 @@ const PasteCoachmark = dynamic(
   { ssr: false }
 );
 
+import type { FormTag } from "@repo/types";
+
 interface Category {
   name: string;
-  positiveChips: string[];
-  negativeChips: string[];
+  tags: FormTag[];
 }
 
 interface Props {
@@ -29,6 +30,7 @@ interface Props {
   brandColor: string;
   logoUrl: string | null;
   welcomeMessage: string;
+  defaultLanguage: string;
   categories: Category[];
 }
 
@@ -47,12 +49,14 @@ export default function ReviewForm({
   brandColor,
   logoUrl,
   welcomeMessage,
+  defaultLanguage,
   categories,
 }: Props) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
-  const [selectedChips, setSelectedChips] = useState<string[]>([]);
+  // Tag IDENTITIES the customer selected (never display wording).
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [customText, setCustomText] = useState("");
   const [generatedReview, setGeneratedReview] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
@@ -74,7 +78,7 @@ export default function ReviewForm({
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessId, rating, tags: selectedChips, customText, attempt: generateCount }),
+        body: JSON.stringify({ businessId, rating, tagIds: selectedTagIds, customText, attempt: generateCount }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -104,7 +108,7 @@ export default function ReviewForm({
     } finally {
       setIsGenerating(false);
     }
-  }, [businessId, rating, selectedChips, customText, generateCount]);
+  }, [businessId, rating, selectedTagIds, customText, generateCount]);
 
   useEffect(() => {
     if (step === 3) void runGenerate();
@@ -130,18 +134,18 @@ export default function ReviewForm({
 
   function handleStarClick(star: number) {
     setRating(star);
-    setSelectedChips([]);
+    setSelectedTagIds([]);
     setStep(2);
   }
 
   const MAX_CHIPS_PER_CATEGORY = 3;
 
-  function toggleChip(chip: string, categoryChips: string[]) {
-    setSelectedChips((prev) => {
-      if (prev.includes(chip)) return prev.filter((c) => c !== chip);
-      const selectedInCategory = prev.filter((c) => categoryChips.includes(c)).length;
+  function toggleChip(tagId: string, categoryTagIds: string[]) {
+    setSelectedTagIds((prev) => {
+      if (prev.includes(tagId)) return prev.filter((id) => id !== tagId);
+      const selectedInCategory = prev.filter((id) => categoryTagIds.includes(id)).length;
       if (selectedInCategory >= MAX_CHIPS_PER_CATEGORY) return prev;
-      return [...prev, chip];
+      return [...prev, tagId];
     });
   }
 
@@ -198,7 +202,7 @@ export default function ReviewForm({
       body: JSON.stringify({
         businessId,
         rating,
-        tags: selectedChips,
+        tagIds: selectedTagIds,
         text: customText || undefined,
         generatedReview,
         source: "google_redirect",
@@ -223,7 +227,7 @@ export default function ReviewForm({
           rating,
           text: customText || undefined,
           generatedReview: generatedReview || undefined,
-          tags: selectedChips,
+          tagIds: selectedTagIds,
           source: "private",
         }),
       });
@@ -372,11 +376,13 @@ export default function ReviewForm({
         {/* Categories stacked vertically */}
         <div className="space-y-6">
           {categories.map((cat) => {
+            // Rating ≥4 shows positive chips; <4 shows all. Driven by polarity.
             const chips = rating >= 4
-              ? cat.positiveChips
-              : [...cat.positiveChips, ...cat.negativeChips];
+              ? cat.tags.filter((t) => t.polarity === "positive")
+              : cat.tags;
             if (chips.length === 0) return null;
-            const selectedInCategory = selectedChips.filter((c) => chips.includes(c)).length;
+            const chipIds = chips.map((t) => t.id);
+            const selectedInCategory = selectedTagIds.filter((id) => chipIds.includes(id)).length;
             const limitReached = selectedInCategory >= MAX_CHIPS_PER_CATEGORY;
             return (
               <div key={cat.name} className="space-y-3">
@@ -385,13 +391,13 @@ export default function ReviewForm({
                 )}
                 <div className="flex flex-wrap gap-2">
                   {chips.map((chip) => {
-                    const selected = selectedChips.includes(chip);
+                    const selected = selectedTagIds.includes(chip.id);
                     const disabled = !selected && limitReached;
                     return (
                       <button
-                        key={chip}
+                        key={chip.id}
                         type="button"
-                        onClick={() => toggleChip(chip, chips)}
+                        onClick={() => toggleChip(chip.id, chipIds)}
                         disabled={disabled}
                         className={cn(
                           "rounded-full border px-4 py-2.5 text-sm font-medium transition-all touch-manipulation active:scale-95",
@@ -400,7 +406,7 @@ export default function ReviewForm({
                         )}
                         style={selected ? { backgroundColor: brandColor } : undefined}
                       >
-                        {chip}
+                        {chip.label}
                       </button>
                     );
                   })}

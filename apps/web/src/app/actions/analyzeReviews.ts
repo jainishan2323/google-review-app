@@ -2,7 +2,7 @@
 
 import { prisma } from "@repo/db";
 import { analyzeBatch } from "@repo/llm";
-import type { ReviewAnalysisInput, TaxonomyCategory } from "@repo/types";
+import { resolveLabel, type ReviewAnalysisInput, type TaxonomyCategory } from "@repo/types";
 import { revalidatePath } from "next/cache";
 
 const BATCH_SIZE = 15;
@@ -24,15 +24,36 @@ export async function analyzeBatchOnce(businessId: string): Promise<{
 
   const formConfig = await prisma.formConfig.findUnique({
     where: { businessId },
-    include: { categories: { orderBy: { order: "asc" } } },
+    include: {
+      categories: {
+        orderBy: { order: "asc" },
+        // Inactive tags stay resolvable for history but are not offered to the analyzer.
+        include: { tags: { where: { active: true }, orderBy: { order: "asc" } } },
+      },
+    },
   });
 
+  const language = formConfig?.defaultLanguage ?? "en";
+
+  // Build the taxonomy dictionary from default-language labels, and a reverse map
+  // (canonical-language label → tag identity) so analyzer output maps back to ids.
+  // Labels are business-wide unique per language (guardrail), so label alone is unambiguous.
+  const labelToId = new Map<string, string>();
   const taxonomy: TaxonomyCategory[] =
-    formConfig?.categories.map((cat) => ({
-      name: cat.name,
-      positiveTags: cat.positiveChips,
-      negativeTags: cat.negativeChips,
-    })) ?? [];
+    formConfig?.categories.map((cat) => {
+      const byPolarity = { positive: [] as string[], negative: [] as string[] };
+      for (const tag of cat.tags) {
+        const label = resolveLabel(tag.labels, { default: language, authored: tag.authoredLanguage });
+        if (!label) continue;
+        labelToId.set(label, tag.id);
+        byPolarity[tag.polarity].push(label);
+      }
+      return {
+        name: resolveLabel(cat.labels, { default: language }),
+        positiveTags: byPolarity.positive,
+        negativeTags: byPolarity.negative,
+      };
+    }) ?? [];
 
   if (taxonomy.length === 0) {
     return { processed: 0, remaining: 0 };
@@ -72,9 +93,14 @@ export async function analyzeBatchOnce(businessId: string): Promise<{
 
   await Promise.all(
     out.results.map((r) => {
+      // Map the analyzer's label strings back to tag IDENTITIES before storage.
+      // A label with no match (e.g. edited away mid-batch) is dropped.
+      const mapped = r.mappedTags
+        .map((t) => ({ id: labelToId.get(t.tag), sentiment: t.sentiment }))
+        .filter((t): t is { id: string; sentiment: "positive" | "negative" } => t.id !== undefined);
       const data = {
-        tags: r.mappedTags.map((t) => t.tag),
-        negativeTags: r.mappedTags.filter((t) => t.sentiment === "negative").map((t) => t.tag),
+        tags: mapped.map((t) => t.id),
+        negativeTags: mapped.filter((t) => t.sentiment === "negative").map((t) => t.id),
         unmappedInsights: r.unmappedInsights,
         analyzedAt: now,
       };

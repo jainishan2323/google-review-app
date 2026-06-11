@@ -11,26 +11,133 @@ const DEV_GOOGLE_MAPS_REVIEW_URL = "https://g.page/r/dev-review-url";
 const DEV_BUSINESS_NAME = "Spice Garden Berlin";
 const DEV_USER_EMAIL = "dev@example.com";
 
-// ── Seed helpers ─────────────────────────────────────────────
+// ── Taxonomy seed helpers ────────────────────────────────────
+//
+// Tags now have a stable IDENTITY (the cuid) separate from their per-language
+// DISPLAY labels. Feedback stores identities, never wording. These helpers build
+// a template-seeded taxonomy (en + de labels, canonical keys) and return a
+// label→{id,polarity} map so feedback rows can be seeded by identity.
 
-const POSITIVE_TAGS = [
-  "Great Service",
-  "Clean Environment",
-  "Friendly Staff",
-  "Highly Recommend",
-  "Great Food",
-  "Fast Service",
-  "Good Value",
-];
+type Polarity = "positive" | "negative";
 
-const NEGATIVE_TAGS = [
-  "Long Wait",
-  "Poor Communication",
-  "Needs Improvement",
-  "Unprofessional",
-  "Overpriced",
-  "Noisy",
-];
+const SUPPORTED_LANGUAGES = ["en", "de"];
+const DEFAULT_LANGUAGE = "en";
+
+/** German equivalents for every English chip/category label used in the seed. */
+const DE: Record<string, string> = {
+  // categories
+  Kitchen: "Küche",
+  "Front of House": "Service",
+  Atmosphere: "Ambiente",
+  Food: "Essen",
+  Service: "Service",
+  // positive tags
+  "Great Food": "Tolles Essen",
+  "Good Value": "Gutes Preis-Leistungs-Verhältnis",
+  "Great Service": "Toller Service",
+  "Friendly Staff": "Freundliches Personal",
+  "Fast Service": "Schneller Service",
+  "Clean Environment": "Sauberes Ambiente",
+  "Highly Recommend": "Sehr empfehlenswert",
+  "Delicious Food": "Köstliches Essen",
+  "Authentic Taste": "Authentischer Geschmack",
+  "Great Portions": "Große Portionen",
+  "Attentive Service": "Aufmerksamer Service",
+  "Nice Ambiance": "Schönes Ambiente",
+  "Clean Space": "Sauberer Raum",
+  "Outdoor Seating": "Außensitzplätze",
+  "Fresh Ingredients": "Frische Zutaten",
+  "Comfortable Seating": "Bequeme Sitzplätze",
+  "Great Value": "Top Preis-Leistung",
+  "Good Vegan Options": "Gute vegane Optionen",
+  "Warm Hosts": "Herzliche Gastgeber",
+  "Cozy Spot": "Gemütlicher Ort",
+  "Hidden Gem": "Geheimtipp",
+  // negative tags
+  Overpriced: "Zu teuer",
+  "Long Wait": "Lange Wartezeit",
+  "Poor Communication": "Schlechte Kommunikation",
+  Unprofessional: "Unprofessionell",
+  Noisy: "Laut",
+  "Needs Improvement": "Verbesserungswürdig",
+  "Bland Taste": "Fader Geschmack",
+  "Small Portions": "Kleine Portionen",
+  "Order Mix-up": "Bestellfehler",
+  "Inattentive Staff": "Unaufmerksames Personal",
+  "Cramped Space": "Beengter Raum",
+  "Stale Food": "Altes Essen",
+  "Rude Staff": "Unhöfliches Personal",
+  "Slow Service": "Langsamer Service",
+  "Dirty Tables": "Schmutzige Tische",
+  "Unfriendly Staff": "Unfreundliches Personal",
+  "Limited Seating": "Wenige Sitzplätze",
+};
+
+/** Derive a cross-business canonical key from an English label. */
+function canonical(label: string): string {
+  return label
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_|_$/g, "");
+}
+
+/** Build the bilingual labels map for an English-authored label. */
+function labelsFor(en: string): { en: string; de: string } {
+  return { en, de: DE[en] ?? en };
+}
+
+interface CategorySpec {
+  en: string;
+  positive: string[];
+  negative: string[];
+}
+
+/**
+ * Replace a form's taxonomy with template-seeded categories + tags. Deleting the
+ * categories cascades to their tags (onDelete: Cascade), so re-seeding is idempotent.
+ * Returns an English-label → {id, polarity} map for seeding feedback by identity.
+ */
+async function seedTaxonomy(
+  formConfigId: string,
+  cats: CategorySpec[]
+): Promise<Map<string, { id: string; polarity: Polarity }>> {
+  await prisma.feedbackCategory.deleteMany({ where: { formConfigId } });
+  const map = new Map<string, { id: string; polarity: Polarity }>();
+
+  for (let ci = 0; ci < cats.length; ci++) {
+    const c = cats[ci];
+    const category = await prisma.feedbackCategory.create({
+      data: {
+        formConfigId,
+        labels: labelsFor(c.en),
+        canonicalKey: canonical(c.en),
+        order: ci,
+      },
+    });
+
+    const seedTags = async (labels: string[], polarity: Polarity, base: number) => {
+      for (let i = 0; i < labels.length; i++) {
+        const tag = await prisma.tag.create({
+          data: {
+            categoryId: category.id,
+            polarity,
+            labels: labelsFor(labels[i]),
+            canonicalKey: canonical(labels[i]),
+            authoredLanguage: "en",
+            order: base + i,
+            source: "template",
+          },
+        });
+        map.set(labels[i], { id: tag.id, polarity });
+      }
+    };
+
+    await seedTags(c.positive, "positive", 0);
+    await seedTags(c.negative, "negative", 100);
+  }
+
+  return map;
+}
 
 const SAMPLE_TEXTS = [
   "Really enjoyed my visit, will definitely come back!",
@@ -133,55 +240,51 @@ async function main() {
     },
   });
 
-  // Seed FormConfig + FeedbackCategories (idempotent)
+  // Seed FormConfig + taxonomy (idempotent)
   const formConfig = await prisma.formConfig.upsert({
     where: { businessId: business.id },
     create: {
       businessId: business.id,
       brandColor: "#16a34a",
       welcomeMessage: "Thanks for visiting Spice Garden Berlin! We'd love your feedback.",
+      defaultLanguage: DEFAULT_LANGUAGE,
+      supportedLanguages: SUPPORTED_LANGUAGES,
     },
-    update: {},
+    update: { defaultLanguage: DEFAULT_LANGUAGE, supportedLanguages: SUPPORTED_LANGUAGES },
   });
 
-  await prisma.feedbackCategory.deleteMany({ where: { formConfigId: formConfig.id } });
-  await prisma.feedbackCategory.createMany({
-    data: [
-      {
-        formConfigId: formConfig.id,
-        name: "Kitchen",
-        positiveChips: ["Great Food", "Good Value"],
-        negativeChips: ["Overpriced"],
-        order: 0,
-      },
-      {
-        formConfigId: formConfig.id,
-        name: "Front of House",
-        positiveChips: ["Great Service", "Friendly Staff", "Fast Service"],
-        negativeChips: ["Long Wait", "Poor Communication", "Unprofessional"],
-        order: 1,
-      },
-      {
-        formConfigId: formConfig.id,
-        name: "Atmosphere",
-        positiveChips: ["Clean Environment", "Highly Recommend"],
-        negativeChips: ["Noisy", "Needs Improvement"],
-        order: 2,
-      },
-    ],
-  });
+  const spiceTags = await seedTaxonomy(formConfig.id, [
+    { en: "Kitchen", positive: ["Great Food", "Good Value"], negative: ["Overpriced"] },
+    {
+      en: "Front of House",
+      positive: ["Great Service", "Friendly Staff", "Fast Service"],
+      negative: ["Long Wait", "Poor Communication", "Unprofessional"],
+    },
+    {
+      en: "Atmosphere",
+      positive: ["Clean Environment", "Highly Recommend"],
+      negative: ["Noisy", "Needs Improvement"],
+    },
+  ]);
 
   // Clear existing feedback so re-seeding is idempotent
   await prisma.anonymousFeedback.deleteMany({ where: { businessId: business.id } });
 
-  // Seed 25 feedback rows across past 90 days
+  // Seed 25 feedback rows across past 90 days. `tags` holds tag IDENTITIES;
+  // `negativeTags` is derived from each tag's polarity (by identity).
   for (const row of FEEDBACK_ROWS) {
+    const resolved = row.tags
+      .map((label) => spiceTags.get(label))
+      .filter((t): t is { id: string; polarity: Polarity } => t !== undefined);
+    const tagIds = resolved.map((t) => t.id);
+    const negativeTagIds = resolved.filter((t) => t.polarity === "negative").map((t) => t.id);
+
     await prisma.anonymousFeedback.create({
       data: {
         businessId: business.id,
         rating: row.rating,
-        tags: [...row.tags],
-        negativeTags: row.tags.filter((t) => NEGATIVE_TAGS.includes(t)),
+        tags: tagIds,
+        negativeTags: negativeTagIds,
         source: row.source,
         status: row.daysBack <= 7 ? "unread" : "read",
         text: pick(SAMPLE_TEXTS) ?? null,
@@ -195,7 +298,7 @@ async function main() {
   }
 
   console.log(`✅ Business seeded: ${business.id} — ${business.name}`);
-  console.log(`   Seeded 3 FeedbackCategory rows (Kitchen, Front of House, Atmosphere).`);
+  console.log(`   Seeded 3 categories + tags (Kitchen, Front of House, Atmosphere).`);
   console.log(`   Seeded ${FEEDBACK_ROWS.length} feedback rows across the past 90 days.`);
   console.log(`   Use this businessId in your API calls: ${business.id}`);
 
@@ -216,43 +319,36 @@ async function main() {
     },
   });
 
-  // FormConfig + FeedbackCategories for aahaa
+  // FormConfig + taxonomy for aahaa
   const ahaaFormConfig = await prisma.formConfig.upsert({
     where: { businessId: ahaaBusiness.id },
     create: {
       businessId: ahaaBusiness.id,
       brandColor: "#b45309",
       welcomeMessage: "Thank you for visiting aahaa Indisches Restaurant! We'd love to hear from you.",
+      defaultLanguage: DEFAULT_LANGUAGE,
+      supportedLanguages: SUPPORTED_LANGUAGES,
     },
-    update: {},
+    update: { defaultLanguage: DEFAULT_LANGUAGE, supportedLanguages: SUPPORTED_LANGUAGES },
   });
 
-  await prisma.feedbackCategory.deleteMany({ where: { formConfigId: ahaaFormConfig.id } });
-  await prisma.feedbackCategory.createMany({
-    data: [
-      {
-        formConfigId: ahaaFormConfig.id,
-        name: "Food",
-        positiveChips: ["Delicious Food", "Authentic Taste", "Great Portions", "Good Value"],
-        negativeChips: ["Bland Taste", "Overpriced", "Small Portions"],
-        order: 0,
-      },
-      {
-        formConfigId: ahaaFormConfig.id,
-        name: "Service",
-        positiveChips: ["Friendly Staff", "Attentive Service", "Fast Service"],
-        negativeChips: ["Long Wait", "Order Mix-up", "Inattentive Staff"],
-        order: 1,
-      },
-      {
-        formConfigId: ahaaFormConfig.id,
-        name: "Atmosphere",
-        positiveChips: ["Nice Ambiance", "Clean Space", "Outdoor Seating"],
-        negativeChips: ["Noisy", "Cramped Space"],
-        order: 2,
-      },
-    ],
-  });
+  await seedTaxonomy(ahaaFormConfig.id, [
+    {
+      en: "Food",
+      positive: ["Delicious Food", "Authentic Taste", "Great Portions", "Good Value"],
+      negative: ["Bland Taste", "Overpriced", "Small Portions"],
+    },
+    {
+      en: "Service",
+      positive: ["Friendly Staff", "Attentive Service", "Fast Service"],
+      negative: ["Long Wait", "Order Mix-up", "Inattentive Staff"],
+    },
+    {
+      en: "Atmosphere",
+      positive: ["Nice Ambiance", "Clean Space", "Outdoor Seating"],
+      negative: ["Noisy", "Cramped Space"],
+    },
+  ]);
 
   // Seed Google Reviews from JSON — skip dupes idempotently
   await prisma.review.deleteMany({ where: { businessId: ahaaBusiness.id } });
@@ -307,36 +403,29 @@ async function main() {
       businessId: saravanaa.id,
       brandColor: "#15803d",
       welcomeMessage: "Thank you for visiting Saravanaa Bhavan! We'd love your feedback.",
+      defaultLanguage: DEFAULT_LANGUAGE,
+      supportedLanguages: SUPPORTED_LANGUAGES,
     },
-    update: {},
+    update: { defaultLanguage: DEFAULT_LANGUAGE, supportedLanguages: SUPPORTED_LANGUAGES },
   });
 
-  await prisma.feedbackCategory.deleteMany({ where: { formConfigId: saravanaaFormConfig.id } });
-  await prisma.feedbackCategory.createMany({
-    data: [
-      {
-        formConfigId: saravanaaFormConfig.id,
-        name: "Food",
-        positiveChips: ["Authentic Taste", "Great Portions", "Good Value", "Fresh Ingredients"],
-        negativeChips: ["Bland Taste", "Overpriced", "Small Portions", "Stale Food"],
-        order: 0,
-      },
-      {
-        formConfigId: saravanaaFormConfig.id,
-        name: "Service",
-        positiveChips: ["Friendly Staff", "Attentive Service", "Fast Service"],
-        negativeChips: ["Long Wait", "Rude Staff", "Order Mix-up", "Slow Service"],
-        order: 1,
-      },
-      {
-        formConfigId: saravanaaFormConfig.id,
-        name: "Atmosphere",
-        positiveChips: ["Clean Space", "Nice Ambiance", "Comfortable Seating"],
-        negativeChips: ["Noisy", "Cramped Space", "Dirty Tables"],
-        order: 2,
-      },
-    ],
-  });
+  await seedTaxonomy(saravanaaFormConfig.id, [
+    {
+      en: "Food",
+      positive: ["Authentic Taste", "Great Portions", "Good Value", "Fresh Ingredients"],
+      negative: ["Bland Taste", "Overpriced", "Small Portions", "Stale Food"],
+    },
+    {
+      en: "Service",
+      positive: ["Friendly Staff", "Attentive Service", "Fast Service"],
+      negative: ["Long Wait", "Rude Staff", "Order Mix-up", "Slow Service"],
+    },
+    {
+      en: "Atmosphere",
+      positive: ["Clean Space", "Nice Ambiance", "Comfortable Seating"],
+      negative: ["Noisy", "Cramped Space", "Dirty Tables"],
+    },
+  ]);
 
   await prisma.review.deleteMany({ where: { businessId: saravanaa.id } });
 
@@ -396,36 +485,29 @@ async function main() {
       businessId: agni.id,
       brandColor: "#c2410c",
       welcomeMessage: "Thanks for visiting Agni! We'd love to hear about your meal.",
+      defaultLanguage: DEFAULT_LANGUAGE,
+      supportedLanguages: SUPPORTED_LANGUAGES,
     },
-    update: {},
+    update: { defaultLanguage: DEFAULT_LANGUAGE, supportedLanguages: SUPPORTED_LANGUAGES },
   });
 
-  await prisma.feedbackCategory.deleteMany({ where: { formConfigId: agniFormConfig.id } });
-  await prisma.feedbackCategory.createMany({
-    data: [
-      {
-        formConfigId: agniFormConfig.id,
-        name: "Food",
-        positiveChips: ["Authentic Taste", "Delicious Food", "Great Value", "Good Vegan Options"],
-        negativeChips: ["Bland Taste", "Overpriced", "Small Portions"],
-        order: 0,
-      },
-      {
-        formConfigId: agniFormConfig.id,
-        name: "Service",
-        positiveChips: ["Friendly Staff", "Warm Hosts", "Fast Service"],
-        negativeChips: ["Unfriendly Staff", "Long Wait", "Order Mix-up"],
-        order: 1,
-      },
-      {
-        formConfigId: agniFormConfig.id,
-        name: "Atmosphere",
-        positiveChips: ["Cozy Spot", "Clean Space", "Hidden Gem"],
-        negativeChips: ["Cramped Space", "Limited Seating", "Noisy"],
-        order: 2,
-      },
-    ],
-  });
+  await seedTaxonomy(agniFormConfig.id, [
+    {
+      en: "Food",
+      positive: ["Authentic Taste", "Delicious Food", "Great Value", "Good Vegan Options"],
+      negative: ["Bland Taste", "Overpriced", "Small Portions"],
+    },
+    {
+      en: "Service",
+      positive: ["Friendly Staff", "Warm Hosts", "Fast Service"],
+      negative: ["Unfriendly Staff", "Long Wait", "Order Mix-up"],
+    },
+    {
+      en: "Atmosphere",
+      positive: ["Cozy Spot", "Clean Space", "Hidden Gem"],
+      negative: ["Cramped Space", "Limited Seating", "Noisy"],
+    },
+  ]);
 
   await prisma.review.deleteMany({ where: { businessId: agni.id } });
 

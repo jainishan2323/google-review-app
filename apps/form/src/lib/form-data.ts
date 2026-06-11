@@ -1,11 +1,13 @@
 // TODO(perf, pre-public): re-add `unstable_cache` from "next/cache" — see getFormData.
-import { prisma, type FeedbackCategory } from "@repo/db";
+import { prisma } from "@repo/db";
+import { resolveLabel, type FormTag } from "@repo/types";
 import { normalizePlaceId } from "./place-id";
 
 export interface FormCategory {
+  /** Category display label resolved to the business default language. */
   name: string;
-  positiveChips: string[];
-  negativeChips: string[];
+  /** Active tags in this category, label resolved + polarity attached. */
+  tags: FormTag[];
 }
 
 export interface FormData {
@@ -18,6 +20,7 @@ export interface FormData {
     brandColor: string;
     logoUrl: string | null;
     welcomeMessage: string;
+    defaultLanguage: string;
     categories: FormCategory[];
   } | null;
 }
@@ -41,11 +44,21 @@ export async function getFormData(businessId: string): Promise<FormData | null> 
     }),
     prisma.formConfig.findUnique({
       where: { businessId },
-      include: { categories: { orderBy: { order: "asc" } } },
+      include: {
+        categories: {
+          orderBy: { order: "asc" },
+          include: {
+            // Only active tags render on the form; inactive stay resolvable for history.
+            tags: { where: { active: true }, orderBy: { order: "asc" } },
+          },
+        },
+      },
     }),
   ]);
 
   if (!business) return null;
+
+  const defaultLanguage = config?.defaultLanguage ?? "en";
 
   return {
     business: {
@@ -58,10 +71,17 @@ export async function getFormData(businessId: string): Promise<FormData | null> 
           brandColor: config.brandColor,
           logoUrl: config.logoUrl ?? null,
           welcomeMessage: config.welcomeMessage,
-          categories: config.categories.map((c: FeedbackCategory) => ({
-            name: c.name,
-            positiveChips: c.positiveChips,
-            negativeChips: c.negativeChips,
+          defaultLanguage,
+          categories: config.categories.map((c) => ({
+            name: resolveLabel(c.labels, { default: defaultLanguage }),
+            tags: c.tags.map((t) => ({
+              id: t.id,
+              label: resolveLabel(t.labels, {
+                default: defaultLanguage,
+                authored: t.authoredLanguage,
+              }),
+              polarity: t.polarity,
+            })),
           })),
         }
       : null,

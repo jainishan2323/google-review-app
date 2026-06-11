@@ -7,7 +7,8 @@ const schema = z.object({
   rating: z.number().int().min(1).max(5),
   text: z.string().max(500).optional(),
   generatedReview: z.string().max(1000).optional(),
-  tags: z.array(z.string().max(50)).max(20).default([]),
+  // Tag IDENTITIES selected by the customer (never display wording).
+  tagIds: z.array(z.string().max(40)).max(20).default([]),
   source: z.enum(["private", "google_redirect"]).default("private"),
 });
 
@@ -20,14 +21,21 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { businessId, rating, text, generatedReview, tags, source } = parsed.data;
+    const { businessId, rating, text, generatedReview, tagIds, source } = parsed.data;
 
-    const categories = await prisma.feedbackCategory.findMany({
-      where: { formConfig: { businessId } },
-      select: { negativeChips: true },
-    });
-    const allNegativeChips = categories.flatMap((c) => c.negativeChips);
-    const negativeTags = tags.filter((t) => allNegativeChips.includes(t));
+    // Keep only identities that belong to this business; derive negativeTags from
+    // each tag's polarity (by identity), not by string-matching a chip list.
+    const validTags = tagIds.length
+      ? await prisma.tag.findMany({
+          where: { id: { in: tagIds }, category: { formConfig: { businessId } } },
+          select: { id: true, polarity: true },
+        })
+      : [];
+    const validIds = new Set(validTags.map((t) => t.id));
+    const tags = tagIds.filter((id) => validIds.has(id));
+    const negativeTags = validTags
+      .filter((t) => t.polarity === "negative")
+      .map((t) => t.id);
 
     await prisma.anonymousFeedback.create({
       data: {

@@ -54,6 +54,18 @@ function temperatureFor(attempt: number): number {
   return TEMPERATURES[i] ?? 0.6;
 }
 
+/** Map an ISO 639-1 code to an English language name for the prompt instruction. */
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: "English",
+  de: "German",
+};
+
+function languageInstruction(language?: string): string {
+  if (!language || language === "en") return "";
+  const name = LANGUAGE_NAMES[language] ?? language;
+  return `Write the entire review in ${name}.\n\n`;
+}
+
 function buildPrompt(input: ReviewGenerateInput, businessName: string): string {
   const tags = input.tags.length > 0 ? input.tags.join(", ") : "the overall experience";
   const note = input.customText ? ` Their own words: "${input.customText}".` : "";
@@ -61,6 +73,7 @@ function buildPrompt(input: ReviewGenerateInput, businessName: string): string {
 
   return (
     `Write ONE first-person Google review for "${businessName}". Maximum 35 words.\n\n` +
+    languageInstruction(input.language) +
     `This customer gave ${input.rating}/5 stars. ${bandInstruction(input.rating)}\n\n` +
     `What they specifically mentioned: ${tags}.${note}\n` +
     `Build the review around those points — do not invent details they didn't raise.\n\n` +

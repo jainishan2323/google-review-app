@@ -34,6 +34,7 @@ enum Role {
 model Business {
   id                  String    @id @default(cuid())
   name                String
+  businessType        String    @default("restaurant") // vertical → picks the Taxonomy Template at onboarding
   googleLocationId    String    @unique // e.g. "accounts/123/locations/456"
   googlePlaceId       String?
   googleMapsReviewUrl String?
@@ -126,23 +127,65 @@ model FormConfig {
   brandColor     String   @default("#2563EB")
   logoUrl        String?
   welcomeMessage String   @default("Thanks for visiting! We'd love your feedback.")
+  // The single language the form renders in + the analyzer's canonical-label language.
+  defaultLanguage String  @default("en")
+  // Languages whose labels are auto-filled + editable in settings (ISO 639-1, lowercase).
+  supportedLanguages String[] @default(["en"])
   updatedAt      DateTime @updatedAt
 
   business   Business           @relation(fields: [businessId], references: [id])
   categories FeedbackCategory[]
 }
 
+// A grouping ("zone") of tags shown on the form + fed to the analyzer. Modeled
+// symmetrically to Tag: carries per-language labels and an optional canonical key.
 model FeedbackCategory {
   id           String   @id @default(cuid())
   formConfigId String
-  name         String
-  positiveChips String[] @default([])
-  negativeChips String[] @default([])
+  // Per-language display labels, e.g. { "en": "Front of House", "de": "Service" }.
+  labels       Json     @default("{}")
+  // Optional shared key inherited from a template, for future cross-business comparison.
+  canonicalKey String?
   order        Int      @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   formConfig FormConfig @relation(fields: [formConfigId], references: [id], onDelete: Cascade)
+  tags       Tag[]
+}
+
+// The stable, identity-bearing unit of the taxonomy. `id` is the identity stored
+// on Review.tags / AnonymousFeedback.tags — never the display wording. Display
+// lives in `labels`; storage/analytics/AI all operate on `id`.
+model Tag {
+  id           String    @id @default(cuid())
+  categoryId   String
+  polarity     Polarity
+  // Per-language display labels, e.g. { "en": "Long Wait", "de": "Lange Wartezeit" }.
+  labels       Json      @default("{}")
+  order        Int       @default(0)
+  // Inactive = hidden from the form, still resolvable for historical analytics.
+  active       Boolean   @default(true)
+  source       TagSource @default(template)
+  // The language the owner originally authored it in — the fallback-chain anchor.
+  authoredLanguage String @default("en")
+  // Optional shared key inherited from a template; custom/promoted tags have none.
+  canonicalKey String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  category FeedbackCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+}
+
+enum Polarity {
+  positive
+  negative
+}
+
+enum TagSource {
+  template
+  custom
+  insight
 }
 
 // ── Waitlist ─────────────────────────────────────────────────

@@ -15,6 +15,8 @@ interface ReviewCardProps {
   publishedAt: string;
   isReplied: boolean;
   replyText?: string | null;
+  // Display labels, already resolved by the caller. Review.tags / negativeTags store tag
+  // IDENTITIES (see ADR-0005); the page that renders this must resolve id→label first.
   tags: string[];
   negativeTags: string[];
   unmappedInsights: string[];

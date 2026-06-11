@@ -552,7 +552,20 @@ export default function ReviewForm({
         Back
       </button>
 
-      <div className="space-y-1">
+      <div className="space-y-1.5">
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((s) => (
+            <Star
+              key={s}
+              className="size-5"
+              style={{
+                fill: s <= rating ? brandColor : "transparent",
+                color: s <= rating ? brandColor : "var(--muted-foreground)",
+                strokeWidth: 1.5,
+              }}
+            />
+          ))}
+        </div>
         <p className="text-base font-semibold text-foreground">Your review is ready</p>
         <p className="text-sm text-muted-foreground">
           Edit it if you&apos;d like, then choose how to share.

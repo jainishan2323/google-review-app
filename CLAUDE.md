@@ -65,6 +65,8 @@ See `.env.example` for the canonical list. Used across apps (declared in `turbo.
 - **Jugnoo** — the product (firefly in Hindi). Marketing domain `jugnoo.olbaid.de`; form at `feedback.jugnoo.olbaid.de`.
 - **Review gating funnel** — the form's core flow: rating ≥4 → AI-drafted review + redirect to Google; rating <4 → captured privately (not sent to Google).
 - **Anonymous / private feedback** — customer feedback stored in `AnonymousFeedback` (not a public Google review). `source` is `private` or `google_redirect`.
-- **Taxonomy / categories** — per-business `FeedbackCategory` dictionary of positive/negative chips; drives both the form and the analyzer.
-- **Mapped tags vs unmapped insights** — the batch analyzer maps review text onto the taxonomy (mapped tags) and surfaces novel themes outside it (unmapped insights).
+- **Taxonomy / categories** — per-business `FeedbackCategory` (a "zone": Kitchen / Service) each owning `Tag` rows; drives both the form and the analyzer. Categories + tags carry per-language `labels` (JSON) and an optional `canonicalKey`.
+- **Tag identity vs display label** — a `Tag`'s identity is its cuid `id` (stable, never shown); its display is the per-language `labels`. **`Review.tags` / `AnonymousFeedback.tags` store identities, never wording** — storage/analytics/AI operate on identity, only the form + settings read a label. `negativeTags` is derived from each tag's fixed `polarity`. See `docs/adr/0005-tag-identity-separate-from-display-label.md` + the glossary in `CONTEXT.md`.
+- **Business Type / Taxonomy Template** — `Business.businessType` (`restaurant` now) picks a code-defined **Taxonomy Template** (`packages/db/src/taxonomy-templates.ts`) that `applyTaxonomyTemplate()` seeds into the form **once at onboarding**; create-only/idempotent, then owned per business. See `docs/adr/0006-taxonomy-templates-code-defined-applied-at-onboarding.md`.
+- **Mapped tags vs unmapped insights** — the batch analyzer maps review text onto the taxonomy (mapped tags, stored as identities) and surfaces novel themes outside it (unmapped insights, free strings).
 - **Lantern** — the internal admin app (`apps/lantern`).

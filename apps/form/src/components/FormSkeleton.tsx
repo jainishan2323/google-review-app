@@ -13,8 +13,9 @@ export function FormSkeleton() {
       {/* logo placeholder — reserves the same h-14 box the real logo uses */}
       <div className="h-14 w-40 animate-pulse rounded-md bg-muted" />
 
-      {/* welcome message placeholder */}
-      <div className="flex w-full max-w-xs flex-col items-center gap-2">
+      {/* welcome message placeholder — same min-h-14 slot the real welcome text
+          uses, so the skeleton→form swap doesn't reflow and shift the stars */}
+      <div className="flex min-h-14 w-full max-w-xs flex-col items-center justify-center gap-2">
         <div className="h-5 w-56 animate-pulse rounded bg-muted" />
         <div className="h-5 w-40 animate-pulse rounded bg-muted" />
       </div>

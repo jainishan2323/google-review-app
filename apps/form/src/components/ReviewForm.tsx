@@ -3,13 +3,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { Star, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Copy, ExternalLink } from "lucide-react";
+import { Star, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Copy, ExternalLink, Info, VenetianMask, Camera } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { FireflyLogo } from "@/components/FireflyLogo";
+import { GenerationInfoSheet } from "@/components/GenerationInfoSheet";
+import { GoogleLogo } from "@/components/GoogleLogo";
 
-// Only rendered on the post-copy handoff screen — keep its animation code out of
-// the initial bundle so the step-1 star screen stays as light as possible.
+// Paste-gesture demo, shown below the preview on the handoff screen. Lazy-loaded
+// (ssr:false) so its animation code stays out of the initial step-1 bundle.
 const PasteCoachmark = dynamic(
   () => import("@/components/PasteCoachmark").then((m) => m.PasteCoachmark),
   { ssr: false }
@@ -68,6 +70,7 @@ export default function ReviewForm({
   const redirectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [generateCount, setGenerateCount] = useState(0);
   const [appRatingSubmitted, setAppRatingSubmitted] = useState(false);
+  const [infoOpen, setInfoOpen] = useState(false);
 
 
 
@@ -301,9 +304,13 @@ export default function ReviewForm({
             />
           </div>
         )}
-        <p className="text-center text-lg font-medium text-foreground max-w-xs leading-snug">
-          {welcomeMessage}
-        </p>
+        {/* Reserve a fixed-height slot (fits ~2 lines) so the welcome text settling
+            in — font load, skeleton→form swap — never reflows and shifts the stars. */}
+        <div className="flex min-h-14 w-full max-w-xs items-center justify-center">
+          <p className="text-center text-lg font-medium text-foreground leading-snug">
+            {welcomeMessage}
+          </p>
+        </div>
         <div className="flex gap-3">
           {[1, 2, 3, 4, 5].map((star) => (
             <button
@@ -451,7 +458,7 @@ export default function ReviewForm({
   if (copyState !== "idle") {
     const failed = copyState === "error";
     return (
-      <div className="flex min-h-svh flex-col p-6 pb-8 gap-6">
+      <div className="flex min-h-svh flex-col gap-6 p-6">
         <button
           type="button"
           onClick={() => setCopyState("idle")}
@@ -476,23 +483,51 @@ export default function ReviewForm({
               Review copied!
             </p>
             <p className="text-sm text-muted-foreground">
-              On the next screen, tap the review box and <strong>hold to Paste</strong>. Don&apos;t forget to add photos too!
+              On the next screen, tap the review box and <strong>hold to Paste</strong>.
             </p>
           </div>
         )}
 
-        {failed ? (
-          <Textarea
-            value={generatedReview}
-            readOnly
-            onFocus={(e) => e.currentTarget.select()}
-            className="min-h-36 resize-none text-sm leading-relaxed"
-          />
-        ) : (
-          <PasteCoachmark brandColor={brandColor} />
-        )}
+        {/* Preview of what they're about to post: their rating + final review text.
+            Reminder only — Google doesn't receive these automatically; the stars are
+            re-picked and the text pasted on Google's own screen. */}
+        <div className="space-y-2">
+          <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map((s) => (
+              <Star
+                key={s}
+                className="size-5"
+                style={{
+                  fill: s <= rating ? brandColor : "transparent",
+                  color: s <= rating ? brandColor : "var(--muted-foreground)",
+                  strokeWidth: 1.5,
+                }}
+              />
+            ))}
+          </div>
+          {failed ? (
+            <Textarea
+              value={generatedReview}
+              readOnly
+              onFocus={(e) => e.currentTarget.select()}
+              className="min-h-36 resize-none text-sm leading-relaxed"
+            />
+          ) : (
+            <div className="rounded-xl border border-border p-4">
+              <p className="select-text whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+                {generatedReview}
+              </p>
+            </div>
+          )}
+          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+            <Camera className="size-4 shrink-0" style={{ color: brandColor }} />
+            Don&apos;t forget to add photos too!
+          </p>
+        </div>
 
-        <div className="mt-auto space-y-3">
+        {!failed && <PasteCoachmark brandColor={brandColor} />}
+
+        <div className="sticky bottom-0 -mx-6 mt-auto space-y-3 border-t border-border bg-background px-6 pb-8 pt-4">
           {failed && (
             <button
               type="button"
@@ -517,15 +552,6 @@ export default function ReviewForm({
             Open Google Reviews
             <ExternalLink className="size-4" />
           </button>
-          {!failed && (
-            <button
-              type="button"
-              onClick={copyReview}
-              className="w-full py-2 text-sm text-muted-foreground hover:text-foreground transition-colors touch-manipulation"
-            >
-              Copy again
-            </button>
-          )}
           <a
             href="https://jugnoo.olbaid.de"
             target="_blank"
@@ -572,6 +598,14 @@ export default function ReviewForm({
         </p>
       </div>
 
+      {infoOpen && (
+        <GenerationInfoSheet
+          rating={rating}
+          brandColor={brandColor}
+          onClose={() => setInfoOpen(false)}
+        />
+      )}
+
       {isGenerating ? (
         <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
           <Loader2 className="size-6 animate-spin" />
@@ -584,19 +618,29 @@ export default function ReviewForm({
             onChange={(e) => setGeneratedReview(e.target.value)}
             className="min-h-36 resize-none text-sm leading-relaxed"
           />
-          {generateCount < MAX_GENERATIONS ? (
+          <div className="flex flex-col items-start gap-3">
             <button
               type="button"
-              onClick={() => void runGenerate()}
-              disabled={isGenerating}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation hover:text-foreground transition-colors disabled:opacity-40"
+              onClick={() => setInfoOpen(true)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground touch-manipulation hover:text-foreground transition-colors"
             >
-              <RefreshCw className="size-3.5" />
-              Generate another version
+              <Info className="size-3.5" />
+              How was this written?
             </button>
-          ) : (
-            <p className="text-xs text-muted-foreground">Maximum regenerations reached</p>
-          )}
+            {generateCount < MAX_GENERATIONS ? (
+              <button
+                type="button"
+                onClick={() => void runGenerate()}
+                disabled={isGenerating}
+                className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation hover:text-foreground transition-colors disabled:opacity-40"
+              >
+                <RefreshCw className="size-3.5" />
+                Generate another version
+              </button>
+            ) : (
+              <p className="text-xs text-muted-foreground">Maximum regenerations reached</p>
+            )}
+          </div>
         </>
       )}
 
@@ -607,17 +651,19 @@ export default function ReviewForm({
               type="button"
               onClick={handlePostToGoogle}
               disabled={isGenerating}
-              className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
               style={{ backgroundColor: brandColor }}
             >
+              <GoogleLogo className="size-5" />
               Copy &amp; Post to Google
             </button>
             <button
               type="button"
               onClick={handleSendPrivately}
               disabled={isGenerating}
-              className="w-full rounded-xl border border-border py-4 text-base font-medium text-foreground transition-colors hover:bg-muted active:bg-muted disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border py-4 text-base font-medium text-foreground transition-colors hover:bg-muted active:bg-muted disabled:opacity-50"
             >
+              <VenetianMask className="size-5" />
               Send this privately to the manager
             </button>
           </>
@@ -627,18 +673,20 @@ export default function ReviewForm({
               type="button"
               onClick={handleSendPrivately}
               disabled={isGenerating}
-              className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
               style={{ backgroundColor: brandColor }}
             >
+              <VenetianMask className="size-5" />
               Send feedback to the manager
             </button>
             <button
               type="button"
               onClick={handlePostToGoogle}
               disabled={isGenerating}
-              className="w-full py-3 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 touch-manipulation"
+              className="flex w-full items-center justify-center gap-2 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 touch-manipulation"
             >
-              Still want to post to Google →
+              <GoogleLogo className="size-4" />
+              Post to Google instead →
             </button>
           </>
         )}

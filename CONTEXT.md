@@ -86,6 +86,12 @@ _Avoid_: category (collides with the feedback zone), vertical, industry, segment
 A named, code-defined starter set of [categories] + [tags] (with per-language [labels] and [canonical keys]) for one [Business Type], seeded into a business's form **once at onboarding**. After seeding, the taxonomy is owned and edited per business — the template is not a live link. One template per Business Type.
 _Avoid_: template (bare — collides with [Card Template]), category template, preset, starter pack
 
+## Review generation
+
+**Mood** (tone band):
+The emotional tone of an AI-generated review, fixed by the customer's star rating in three bands — **1–2★** honest/disappointed, **3★** balanced/lukewarm, **4–5★** warm/positive. The [chips] and free text set *what* the review says; the mood sets *how* it says it. Surfaced to customers on the review-ready screen (the "How was this written?" explainer) so a tone they didn't expect for their rating doesn't read as a defect.
+_Avoid_: sentiment (that's the analyzer's per-review judgement of a submitted review — see [Polarity]), vibe, emotion
+
 ## Cards
 
 **Card Template**:

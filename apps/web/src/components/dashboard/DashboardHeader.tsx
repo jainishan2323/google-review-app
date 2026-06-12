@@ -3,7 +3,10 @@
 import { useRef, useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
-import { LogOut, Building2, ChevronDown } from "lucide-react";
+import { LogOut, Building2, ChevronDown, Check } from "lucide-react";
+import { setActiveBusiness } from "@/actions/active-business";
+
+type HeaderBusiness = { id: string; name: string; googleLocationId: string };
 
 const PAGE_TITLES: Record<string, string> = {
   "/dashboard":                   "Overview",
@@ -15,28 +18,57 @@ const PAGE_TITLES: Record<string, string> = {
 };
 
 export function DashboardHeader({
-  businessName,
-  googleLocationId,
+  businesses,
+  activeBusinessId,
 }: {
-  businessName: string;
-  googleLocationId: string;
+  businesses: HeaderBusiness[];
+  activeBusinessId: string;
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
   const [open, setOpen] = useState(false);
+  const [bizOpen, setBizOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const bizRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (bizRef.current && !bizRef.current.contains(e.target as Node)) setBizOpen(false);
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  const active = businesses.find((b) => b.id === activeBusinessId) ?? businesses[0];
+  const canSwitch = businesses.length > 1;
   const title = PAGE_TITLES[pathname] ?? "Dashboard";
+
+  async function switchTo(id: string) {
+    if (id === active?.id) {
+      setBizOpen(false);
+      return;
+    }
+    await setActiveBusiness(id);
+    // Hard reload so server pages and client-fetched API data both re-resolve
+    // against the new active-business cookie.
+    window.location.assign("/dashboard");
+  }
+
+  // The active business, rendered as the pill's inner content (icon + two lines).
+  const pillContent = (
+    <>
+      <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+      <div className="min-w-0 text-left">
+        <p className="text-xs font-medium text-foreground leading-none truncate max-w-[180px]">
+          {active?.name}
+        </p>
+        <p className="text-[10px] text-muted-foreground leading-none mt-0.5 truncate max-w-[180px]">
+          {active?.googleLocationId}
+        </p>
+      </div>
+    </>
+  );
 
   return (
     <header className="flex h-14 items-center justify-between border-b border-border bg-background px-6">
@@ -44,18 +76,47 @@ export function DashboardHeader({
       <h1 className="text-sm font-semibold text-foreground">{title}</h1>
 
       <div className="flex items-center gap-4">
-        {/* Business badge */}
-        <div className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5">
-          <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-foreground leading-none truncate max-w-[180px]">
-              {businessName}
-            </p>
-            <p className="text-[10px] text-muted-foreground leading-none mt-0.5 truncate max-w-[180px]">
-              {googleLocationId}
-            </p>
+        {/* Business switcher (or static badge when the owner has only one) */}
+        {canSwitch ? (
+          <div className="relative hidden sm:block" ref={bizRef}>
+            <button
+              onClick={() => setBizOpen((o) => !o)}
+              aria-label="Switch business"
+              className="flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 transition-colors hover:bg-muted"
+            >
+              {pillContent}
+              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            </button>
+
+            {bizOpen && (
+              <div className="absolute right-0 top-full mt-1.5 w-64 rounded-xl border border-border bg-background shadow-lg z-50 overflow-hidden">
+                <p className="px-4 pt-3 pb-1 text-xs text-muted-foreground uppercase tracking-wide">
+                  Switch business
+                </p>
+                {businesses.map((b) => (
+                  <button
+                    key={b.id}
+                    onClick={() => void switchTo(b.id)}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-left transition-colors hover:bg-muted"
+                  >
+                    <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-foreground truncate">{b.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{b.googleLocationId}</p>
+                    </div>
+                    {b.id === active?.id && (
+                      <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-        </div>
+        ) : (
+          <div className="hidden sm:flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5">
+            {pillContent}
+          </div>
+        )}
 
         {/* User dropdown */}
         {session?.user && (
@@ -95,8 +156,8 @@ export function DashboardHeader({
                   <div className="flex items-center gap-2">
                     <Building2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-foreground truncate">{businessName}</p>
-                      <p className="text-[10px] text-muted-foreground truncate">{googleLocationId}</p>
+                      <p className="text-xs font-medium text-foreground truncate">{active?.name}</p>
+                      <p className="text-[10px] text-muted-foreground truncate">{active?.googleLocationId}</p>
                     </div>
                   </div>
                 </div>

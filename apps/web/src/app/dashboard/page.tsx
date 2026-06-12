@@ -3,7 +3,6 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { prisma } from "@repo/db";
 import { Star, MessageSquare, Inbox, ArrowUpRight } from "lucide-react";
-import { ReviewCTA } from "@/components/ReviewCTA";
 import { requireCurrentBusiness } from "@/lib/current-business";
 
 export const dynamic = "force-dynamic";
@@ -60,9 +59,6 @@ export default async function DashboardPage() {
 
   return (
     <div className="p-8 space-y-8">
-      {/* Gamified CTA */}
-      <ReviewCTA unreadCount={unreadCount} businessId={business.id} />
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>

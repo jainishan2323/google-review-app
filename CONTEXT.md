@@ -32,6 +32,10 @@ _Avoid_: user (too generic — an Operator is also a User), customer (use for th
 The Jugnoo team (currently just the app's creator) who runs the internal admin app, **Lantern**. Modelled as a `User` with `role = ADMIN`. The Operator hand-onboards pilots: creates each `Business` ahead of time and records the future Owner's email on it.
 _Avoid_: admin (fine as the role value, but "Operator" for the person), app owner (collides with [Owner])
 
+**Active business**:
+When an [Owner] owns more than one business, the one currently selected in the dashboard — chosen via the header switcher and remembered per-device. Every dashboard page and API route scopes to it. An owner with a single business always has that one active (no switcher shown). The selection is only honoured if the owner actually owns it.
+_Avoid_: current business (fine informally), selected account, default business
+
 ## Taxonomy
 
 **Tag**:

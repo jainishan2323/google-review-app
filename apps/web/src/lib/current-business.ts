@@ -1,8 +1,14 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getServerSession } from "next-auth";
 import { prisma } from "@repo/db";
 import { authOptions } from "./auth";
+
+// Which of an owner's businesses is active in the dashboard. Set by the sidebar
+// switcher; only ever trusted after re-validating against the owner's own list, so
+// a tampered value can never select another owner's business.
+export const ACTIVE_BUSINESS_COOKIE = "activeBusinessId";
 
 // Owner→business resolution keys off the *verified Google email*, never
 // `session.userId` (which, with no NextAuth DB adapter, is the Google `sub`
@@ -44,7 +50,13 @@ export const resolveCurrentBusiness = cache(async (): Promise<Resolution> => {
   const businesses = user?.businesses ?? [];
   if (businesses.length === 0) return { status: "unlinked" };
 
-  return { status: "ok", business: businesses[0], businesses };
+  // The active business is the cookie's choice *if* the owner actually owns it,
+  // else the first. Every consumer (pages + API routes) reads `business`, so this
+  // one line is what threads the switcher's selection through the whole dashboard.
+  const activeId = (await cookies()).get(ACTIVE_BUSINESS_COOKIE)?.value;
+  const business = businesses.find((b) => b.id === activeId) ?? businesses[0];
+
+  return { status: "ok", business, businesses };
 });
 
 /**
@@ -58,3 +70,16 @@ export const requireCurrentBusiness = cache(async (): Promise<ResolvedBusiness> 
   if (result.status === "unlinked") redirect("/no-business");
   return result.business;
 });
+
+/**
+ * Like requireCurrentBusiness, but also returns the owner's full business list —
+ * for the layout/sidebar switcher. Same redirect behaviour.
+ */
+export const requireBusinessContext = cache(
+  async (): Promise<{ active: ResolvedBusiness; businesses: ResolvedBusiness[] }> => {
+    const result = await resolveCurrentBusiness();
+    if (result.status === "unauthenticated") redirect("/login");
+    if (result.status === "unlinked") redirect("/no-business");
+    return { active: result.business, businesses: result.businesses };
+  }
+);

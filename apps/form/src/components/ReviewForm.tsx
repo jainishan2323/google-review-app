@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
-import { Star, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Copy, ExternalLink, Info, VenetianMask, Camera } from "lucide-react";
+import { Star, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Copy, ExternalLink, Info, VenetianMask, Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { FireflyLogo } from "@/components/FireflyLogo";
@@ -68,61 +68,96 @@ export default function ReviewForm({
   // Tag IDENTITIES the customer selected (never display wording).
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [customText, setCustomText] = useState("");
-  const [generatedReview, setGeneratedReview] = useState("");
+  // Every AI draft is kept so the customer can navigate between them; each slot is
+  // independently editable and retains its edits. Regenerating appends a slot (cap
+  // MAX_GENERATIONS); the submitted text is always the slot on screen.
+  const [versions, setVersions] = useState<string[]>([]);
+  const [currentVersion, setCurrentVersion] = useState(0);
+  // True only when a *regenerate* (not the first draft) fails — surfaced inline so
+  // the attempt is a no-op that doesn't burn a slot or clobber the current draft.
+  const [regenError, setRegenError] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDone, setIsDone] = useState(false);
   const [doneMessage, setDoneMessage] = useState("");
   // "idle" → step-3 editor; "copied"/"error" → guided handoff screen before Google.
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
-  const [generateCount, setGenerateCount] = useState(0);
   const [appRatingSubmitted, setAppRatingSubmitted] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+
+  // The text currently on screen — the one that gets edited, copied, and submitted.
+  const currentText = versions[currentVersion] ?? "";
+
+  // Auto-focus the first draft once (cursor at end) to invite editing; never on
+  // regenerate or arrow navigation, which would thrash the mobile keyboard.
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const didFocusFirstDraft = useRef(false);
 
 
 
   const runGenerate = useCallback(async () => {
+    // Index this draft would land at — also the count of prior successful drafts,
+    // sent as `attempt` so the model varies each regeneration. Existing versions are
+    // left untouched while generating, so a failure restores cleanly.
+    const attempt = versions.length;
     setIsGenerating(true);
-    setGeneratedReview("");
+    setRegenError(false);
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessId, rating, tagIds: selectedTagIds, customText, attempt: generateCount }),
+        body: JSON.stringify({ businessId, rating, tagIds: selectedTagIds, customText, attempt }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const isStreaming = response.headers.get("content-type")?.includes("text/plain");
 
+      let result: string;
       if (isStreaming && response.body) {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let result = "";
+        result = "";
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           result += decoder.decode(value, { stream: true });
-          setGeneratedReview(result);
         }
       } else {
-        const data = await response.json() as { text: string };
-        setGeneratedReview(data.text);
+        result = (await response.json() as { text: string }).text;
       }
 
-      setGenerateCount((c) => c + 1);
+      // Success → append the new draft and jump to it.
+      setVersions((prev) => [...prev, result]);
+      setCurrentVersion(attempt);
     } catch {
-      setGeneratedReview(
-        "Couldn't generate a review right now. Feel free to write your own above."
-      );
+      if (attempt === 0) {
+        // First draft failed: seed version 1 with editable fallback so the customer
+        // still has a box to write in.
+        setVersions(["Couldn't generate a review right now. Feel free to write your own above."]);
+        setCurrentVersion(0);
+      } else {
+        // Regenerate failed: no-op. Keep the current draft, surface an inline error.
+        setRegenError(true);
+      }
     } finally {
       setIsGenerating(false);
     }
-  }, [businessId, rating, selectedTagIds, customText, generateCount]);
+  }, [businessId, rating, selectedTagIds, customText, versions.length]);
 
   useEffect(() => {
     if (step === 3) void runGenerate();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
+
+  // Focus the first draft once, cursor at end (see didFocusFirstDraft above).
+  useEffect(() => {
+    if (didFocusFirstDraft.current || isGenerating || versions.length === 0) return;
+    const el = textareaRef.current;
+    if (!el) return;
+    didFocusFirstDraft.current = true;
+    el.focus();
+    el.setSelectionRange(el.value.length, el.value.length);
+  }, [versions.length, isGenerating]);
 
   const APP_EMOJIS = [
     { emoji: "😞", value: 1 },
@@ -170,7 +205,7 @@ export default function ReviewForm({
   function copyReview() {
     const clipboardPromise =
       typeof navigator !== "undefined" && navigator.clipboard?.writeText
-        ? navigator.clipboard.writeText(generatedReview)
+        ? navigator.clipboard.writeText(currentText)
         : Promise.reject(new Error("Clipboard API unavailable"));
 
     clipboardPromise
@@ -197,7 +232,7 @@ export default function ReviewForm({
         rating,
         tagIds: selectedTagIds,
         text: customText || undefined,
-        generatedReview,
+        generatedReview: currentText,
         source: "google_redirect",
       }),
     }).catch(() => { /* best-effort */ });
@@ -237,6 +272,11 @@ export default function ReviewForm({
     );
   }
 
+  // Write an edit back to the version currently on screen, leaving the others intact.
+  function updateCurrentVersion(text: string) {
+    setVersions((prev) => prev.map((v, i) => (i === currentVersion ? text : v)));
+  }
+
   async function handleSendPrivately() {
     try {
       await fetch("/api/submit-private", {
@@ -246,7 +286,7 @@ export default function ReviewForm({
           businessId,
           rating,
           text: customText || undefined,
-          generatedReview: generatedReview || undefined,
+          generatedReview: currentText || undefined,
           tagIds: selectedTagIds,
           source: "private",
         }),
@@ -524,7 +564,7 @@ export default function ReviewForm({
           </div>
           {failed ? (
             <Textarea
-              value={generatedReview}
+              value={currentText}
               readOnly
               onFocus={(e) => e.currentTarget.select()}
               className="min-h-36 resize-none text-sm leading-relaxed"
@@ -532,14 +572,16 @@ export default function ReviewForm({
           ) : (
             <div className="rounded-xl border border-border p-4">
               <p className="select-text whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-                {generatedReview}
+                {currentText}
               </p>
             </div>
           )}
-          <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <Camera className="size-4 shrink-0" style={{ color: brandColor }} />
-            Don&apos;t forget to add photos too!
-          </p>
+          {rating >= 4 && (
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <Camera className="size-4 shrink-0" style={{ color: brandColor }} />
+              Don&apos;t forget to add photos too!
+            </p>
+          )}
         </div>
 
         {!failed && <PasteCoachmark brandColor={brandColor} />}
@@ -626,20 +668,42 @@ export default function ReviewForm({
       ) : (
         <>
           <Textarea
-            value={generatedReview}
-            onChange={(e) => setGeneratedReview(e.target.value)}
+            ref={textareaRef}
+            value={currentText}
+            onChange={(e) => updateCurrentVersion(e.target.value)}
             className="min-h-36 resize-none text-sm leading-relaxed"
           />
+
+          {/* Navigate between preserved drafts. Hidden until a 2nd version exists —
+              nothing to navigate with a single draft. */}
+          {versions.length >= 2 && (
+            <div className="flex items-center justify-center gap-4">
+              <button
+                type="button"
+                onClick={() => setCurrentVersion((v) => Math.max(0, v - 1))}
+                disabled={currentVersion === 0}
+                aria-label="Previous version"
+                className="touch-manipulation text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronLeft className="size-5" />
+              </button>
+              <span className="text-sm text-muted-foreground tabular-nums">
+                Version {currentVersion + 1} of {versions.length}
+              </span>
+              <button
+                type="button"
+                onClick={() => setCurrentVersion((v) => Math.min(versions.length - 1, v + 1))}
+                disabled={currentVersion === versions.length - 1}
+                aria-label="Next version"
+                className="touch-manipulation text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+              >
+                <ChevronRight className="size-5" />
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-col items-start gap-3">
-            <button
-              type="button"
-              onClick={() => setInfoOpen(true)}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground touch-manipulation hover:text-foreground transition-colors"
-            >
-              <Info className="size-3.5" />
-              How was this written?
-            </button>
-            {generateCount < MAX_GENERATIONS ? (
+            {versions.length < MAX_GENERATIONS ? (
               <button
                 type="button"
                 onClick={() => void runGenerate()}
@@ -650,8 +714,21 @@ export default function ReviewForm({
                 Generate another version
               </button>
             ) : (
-              <p className="text-xs text-muted-foreground">Maximum regenerations reached</p>
+              <p className="text-xs text-muted-foreground">Maximum versions reached</p>
             )}
+            {regenError && (
+              <p className="text-xs text-destructive">
+                Couldn&apos;t generate another version — try again.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => setInfoOpen(true)}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground touch-manipulation hover:text-foreground transition-colors"
+            >
+              <Info className="size-3.5" />
+              How was this written?
+            </button>
           </div>
         </>
       )}

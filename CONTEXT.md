@@ -92,6 +92,10 @@ _Avoid_: template (bare — collides with [Card Template]), category template, p
 The emotional tone of an AI-generated review, fixed by the customer's star rating in three bands — **1–2★** honest/disappointed, **3★** balanced/lukewarm, **4–5★** warm/positive. The [chips] and free text set *what* the review says; the mood sets *how* it says it. Surfaced to customers on the review-ready screen (the "How was this written?" explainer) so a tone they didn't expect for their rating doesn't read as a defect.
 _Avoid_: sentiment (that's the analyzer's per-review judgement of a submitted review — see [Polarity]), vibe, emotion
 
+**Draft version**:
+One of up to three AI-generated drafts the customer can navigate between on the review-ready screen. Each version is independently editable and keeps its own edits; regenerating *appends* a new version rather than replacing the current one. The version on screen is the one that gets copied/submitted. Lives only in the browser session — versions are not persisted.
+_Avoid_: regeneration (that's the *action* that creates a version), attempt, revision
+
 ## Cards
 
 **Card Template**:

@@ -53,7 +53,7 @@ export function FormPreview({
       </p>
 
       {/* Controls: rating band + language */}
-      <div className="flex w-full items-center justify-between gap-2">
+      <div className="flex w-full items-center justify-center gap-2">
         <div className="flex gap-1 rounded-full bg-muted p-1 text-xs">
           {([
             ["stars", "Stars"],

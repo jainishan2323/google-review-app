@@ -1,26 +1,20 @@
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
-import { requireCurrentBusiness } from "@/lib/current-business";
+import { requireBusinessContext } from "@/lib/current-business";
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const business = await requireCurrentBusiness();
-
-  const businessName = business.name;
-  const googleLocationId = business.googleLocationId;
+  const { active, businesses } = await requireBusinessContext();
 
   return (
     <div className="flex h-screen bg-background text-foreground">
-      <DashboardSidebar businessName={businessName} />
+      <DashboardSidebar businessName={active.name} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <DashboardHeader
-          businessName={businessName}
-          googleLocationId={googleLocationId}
-        />
+        <DashboardHeader businesses={businesses} activeBusinessId={active.id} />
         <main className="flex-1 overflow-auto">
           {children}
         </main>

@@ -2,16 +2,19 @@ import type { LLMProvider } from "./providers/types";
 import { OpenAIProvider } from "./providers/openai";
 
 /**
- * Returns the configured LLM provider.
+ * Returns an LLM provider.
  *
- * Swap providers by setting the LLM_PROVIDER env var:
+ * With no argument it returns the env-configured default (LLM_PROVIDER, falling
+ * back to "openai") — the normal path for feature code. Pass an explicit provider
+ * name to target a specific one regardless of env; the review playground uses this
+ * to run a single request against any model in the registry. Either way, feature
+ * code should never import a provider SDK directly.
+ *
  *   LLM_PROVIDER=openai   (default)
  *   LLM_PROVIDER=ollama   (add OllamaProvider to ./providers/ollama.ts)
- *
- * Feature code should call getLLMClient() — never import a provider SDK directly.
  */
-export function getLLMClient(): LLMProvider {
-  const provider = process.env.LLM_PROVIDER ?? "openai";
+export function getLLMClient(providerName?: string): LLMProvider {
+  const provider = providerName ?? process.env.LLM_PROVIDER ?? "openai";
   switch (provider) {
     case "openai":
       return new OpenAIProvider();

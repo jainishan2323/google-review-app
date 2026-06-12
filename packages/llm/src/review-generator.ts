@@ -1,5 +1,6 @@
 import type { ReviewGenerateInput } from "@repo/types";
 import { getLLMClient } from "./client";
+import type { ModelDescriptor } from "./models";
 
 /** Persona + grounding + anti-cliché rules, constant for every rating. */
 const SYSTEM_PROMPT =
@@ -100,14 +101,36 @@ function buildPrompt(input: ReviewGenerateInput, businessName: string): string {
   );
 }
 
-/** One-shot generation — resolves with the complete review text. */
-export async function generateReviewText(
+/**
+ * The exact pair of strings the generator would send for this input — the
+ * production source of truth for the prompt, exposed so the Lantern review
+ * playground can PREVIEW it without reimplementing (and drifting from) the
+ * assembly. `temperature` is shown alongside because it rides the attempt ramp.
+ */
+export function buildReviewPrompt(
   input: ReviewGenerateInput,
   businessName: string
+): { system: string; user: string; temperature: number } {
+  return {
+    system: SYSTEM_PROMPT,
+    user: buildPrompt(input, businessName),
+    temperature: temperatureFor(input.attempt ?? 0),
+  };
+}
+
+/**
+ * One-shot generation — resolves with the complete review text. Pass a `model`
+ * descriptor to run against a specific registry model (the playground does this);
+ * omit it to use the env-default provider + its default model (the form path).
+ */
+export async function generateReviewText(
+  input: ReviewGenerateInput,
+  businessName: string,
+  model?: ModelDescriptor
 ): Promise<string> {
-  return getLLMClient().complete(
+  return getLLMClient(model?.provider).complete(
     buildPrompt(input, businessName),
-    { maxTokens: 80, temperature: temperatureFor(input.attempt ?? 0) },
+    { maxTokens: 80, temperature: temperatureFor(input.attempt ?? 0), model: model?.modelId },
     SYSTEM_PROMPT
   );
 }
@@ -115,11 +138,12 @@ export async function generateReviewText(
 /** Streaming generation — resolves with a ReadableStream of text chunks. */
 export async function streamReviewText(
   input: ReviewGenerateInput,
-  businessName: string
+  businessName: string,
+  model?: ModelDescriptor
 ): Promise<ReadableStream<string>> {
-  return getLLMClient().stream(
+  return getLLMClient(model?.provider).stream(
     buildPrompt(input, businessName),
-    { maxTokens: 80, temperature: temperatureFor(input.attempt ?? 0) },
+    { maxTokens: 80, temperature: temperatureFor(input.attempt ?? 0), model: model?.modelId },
     SYSTEM_PROMPT
   );
 }

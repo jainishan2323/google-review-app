@@ -20,7 +20,7 @@ export class OpenAIProvider implements LLMProvider {
     if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
     messages.push({ role: "user", content: prompt });
     const response = await this.client.chat.completions.create({
-      model: this.defaultModel,
+      model: opts.model ?? this.defaultModel,
       messages,
       max_tokens: opts.maxTokens,
       temperature: opts.temperature,
@@ -34,7 +34,7 @@ export class OpenAIProvider implements LLMProvider {
     if (systemPrompt) messages.push({ role: "system", content: systemPrompt });
     messages.push({ role: "user", content: prompt });
     const openaiStream = await this.client.chat.completions.create({
-      model: this.defaultModel,
+      model: opts.model ?? this.defaultModel,
       messages,
       max_tokens: opts.maxTokens,
       temperature: opts.temperature,

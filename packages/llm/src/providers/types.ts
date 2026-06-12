@@ -3,6 +3,8 @@ export interface LLMOptions {
   temperature: number;
   /** Request structured JSON output. Provider-specific behaviour — best-effort for non-OpenAI providers. */
   json?: boolean;
+  /** Exact model string for this call; falls back to the provider's default when omitted. */
+  model?: string;
 }
 
 /**

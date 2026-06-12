@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import { Star, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Copy, ExternalLink, Info, VenetianMask, Camera } from "lucide-react";
@@ -40,8 +40,16 @@ interface Props {
 const DEV_PLACE_ID = "ChIJQ9oatEZRqEcRlRVb2Cpqx1w";
 
 const MAX_GENERATIONS = 3;
-const GOOGLE_REDIRECT_DELAY_MS = 10000;
-const REDIRECT_SECONDS = Math.round(GOOGLE_REDIRECT_DELAY_MS / 1000);
+
+// The two share-action buttons (Post to Google / Send privately) are styled from
+// these two variants and only their ORDER flips by rating — so both rating paths
+// render structurally identical CTAs. De-emphasising the public path on low ratings
+// (faint link, smaller weight) would be review gating; equal-weight buttons are not.
+// See docs/adr/0009-symmetric-share-ctas-on-both-rating-paths.md.
+const ACTION_PRIMARY_CLASS =
+  "flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50";
+const ACTION_SECONDARY_CLASS =
+  "flex w-full items-center justify-center gap-2 rounded-xl border border-border py-4 text-base font-medium text-foreground transition-colors hover:bg-muted active:bg-muted disabled:opacity-50";
 
 export default function ReviewForm({
   businessId,
@@ -66,8 +74,6 @@ export default function ReviewForm({
   const [doneMessage, setDoneMessage] = useState("");
   // "idle" → step-3 editor; "copied"/"error" → guided handoff screen before Google.
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
-  const [secondsLeft, setSecondsLeft] = useState(REDIRECT_SECONDS);
-  const redirectTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [generateCount, setGenerateCount] = useState(0);
   const [appRatingSubmitted, setAppRatingSubmitted] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
@@ -156,31 +162,6 @@ export default function ReviewForm({
   // must paste. We copy + show a guided handoff screen, then hand off on their tap.
   const reviewUrl = `https://search.google.com/local/writereview?placeid=${googlePlaceId ?? DEV_PLACE_ID}`;
 
-  // After a successful copy, count down once per second and auto-redirect at zero.
-  // The visible timer tells the customer the handoff is coming so it isn't a
-  // surprise. Cancelled if they tap "Open Google Reviews" or go back to edit.
-  useEffect(() => {
-    if (copyState !== "copied") {
-      setSecondsLeft(REDIRECT_SECONDS);
-      return;
-    }
-    redirectTimerRef.current = setInterval(() => {
-      setSecondsLeft((s) => {
-        if (s <= 1) {
-          if (redirectTimerRef.current) clearInterval(redirectTimerRef.current);
-          window.location.href = reviewUrl;
-          return 0;
-        }
-        return s - 1;
-      });
-    }, 1000);
-    return () => {
-      if (redirectTimerRef.current) clearInterval(redirectTimerRef.current);
-    };
-  // reviewUrl derives from stable props — intentionally omitted to avoid resetting on re-renders
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [copyState]);
-
   /**
    * Copy the review to the clipboard. MUST be called synchronously from a click
    * handler so mobile browsers (iOS/Android) grant clipboard access via the user
@@ -198,10 +179,19 @@ export default function ReviewForm({
   }
 
   function handlePostToGoogle() {
-    // Fire-and-forget: record that the customer chose to post to Google.
+    // Copy + show the guided handoff screen. The google_redirect record is written
+    // only when the customer actually taps through (handleOpenGoogle), so the count
+    // reflects real handoffs, not intent.
+    copyReview();
+  }
+
+  function handleOpenGoogle() {
+    // Record the handoff at the moment of the deliberate tap. `keepalive` lets the
+    // request survive the navigation below — a plain fetch would be aborted on unload.
     fetch("/api/submit-private", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      keepalive: true,
       body: JSON.stringify({
         businessId,
         rating,
@@ -212,12 +202,39 @@ export default function ReviewForm({
       }),
     }).catch(() => { /* best-effort */ });
 
-    copyReview();
+    window.location.href = reviewUrl;
   }
 
-  function handleOpenGoogle() {
-    if (redirectTimerRef.current) clearInterval(redirectTimerRef.current);
-    window.location.href = reviewUrl;
+  // Defined once; rendered on both rating paths with only the variant + order
+  // flipped, so the public and private CTAs stay structurally identical.
+  function postToGoogleButton(variant: "primary" | "secondary") {
+    return (
+      <button
+        type="button"
+        onClick={handlePostToGoogle}
+        disabled={isGenerating}
+        className={variant === "primary" ? ACTION_PRIMARY_CLASS : ACTION_SECONDARY_CLASS}
+        style={variant === "primary" ? { backgroundColor: brandColor } : undefined}
+      >
+        <GoogleLogo className="size-5" />
+        Copy &amp; Post to Google
+      </button>
+    );
+  }
+
+  function sendPrivatelyButton(variant: "primary" | "secondary") {
+    return (
+      <button
+        type="button"
+        onClick={handleSendPrivately}
+        disabled={isGenerating}
+        className={variant === "primary" ? ACTION_PRIMARY_CLASS : ACTION_SECONDARY_CLASS}
+        style={variant === "primary" ? { backgroundColor: brandColor } : undefined}
+      >
+        <VenetianMask className="size-5" />
+        Send privately to the manager
+      </button>
+    );
   }
 
   async function handleSendPrivately() {
@@ -538,11 +555,6 @@ export default function ReviewForm({
               Copy review text
             </button>
           )}
-          {!failed && (
-            <p className="text-center text-xs text-muted-foreground" aria-live="polite">
-              Taking you to Google in {secondsLeft}s…
-            </p>
-          )}
           <button
             type="button"
             onClick={handleOpenGoogle}
@@ -647,47 +659,13 @@ export default function ReviewForm({
       <div className="mt-auto space-y-3">
         {rating >= 4 ? (
           <>
-            <button
-              type="button"
-              onClick={handlePostToGoogle}
-              disabled={isGenerating}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
-              style={{ backgroundColor: brandColor }}
-            >
-              <GoogleLogo className="size-5" />
-              Copy &amp; Post to Google
-            </button>
-            <button
-              type="button"
-              onClick={handleSendPrivately}
-              disabled={isGenerating}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-border py-4 text-base font-medium text-foreground transition-colors hover:bg-muted active:bg-muted disabled:opacity-50"
-            >
-              <VenetianMask className="size-5" />
-              Send this privately to the manager
-            </button>
+            {postToGoogleButton("primary")}
+            {sendPrivatelyButton("secondary")}
           </>
         ) : (
           <>
-            <button
-              type="button"
-              onClick={handleSendPrivately}
-              disabled={isGenerating}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80 disabled:opacity-50"
-              style={{ backgroundColor: brandColor }}
-            >
-              <VenetianMask className="size-5" />
-              Send feedback to the manager
-            </button>
-            <button
-              type="button"
-              onClick={handlePostToGoogle}
-              disabled={isGenerating}
-              className="flex w-full items-center justify-center gap-2 py-3 text-sm text-muted-foreground hover:text-foreground transition-colors disabled:opacity-40 touch-manipulation"
-            >
-              <GoogleLogo className="size-4" />
-              Post to Google instead →
-            </button>
+            {sendPrivatelyButton("primary")}
+            {postToGoogleButton("secondary")}
           </>
         )}
         <a

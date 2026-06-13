@@ -11,7 +11,7 @@ interface Props {
 }
 
 const QR_SIZE = 192;
-const QR_PADDING = 32; // white quiet zone around the code, applied to both exports
+const QR_PADDING = 12; // white quiet zone around the code, applied to both exports
 
 // Wrap the rendered <svg> in a padded white canvas so the export has a printable
 // quiet zone. Returns a standalone, serialisable SVG string.

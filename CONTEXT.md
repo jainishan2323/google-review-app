@@ -103,8 +103,16 @@ _Avoid_: regeneration (that's the *action* that creates a version), attempt, rev
 ## Cards
 
 **Card Template**:
-A single predefined Jugnoo-designed card layout (fixed copy, fixed funnel steps, locked "Powered by Jugnoo" attribution) that a business personalises with its own logo. There is one template; its variants come from [hasNfc], not from separate templates.
+A predefined Jugnoo-designed card layout (fixed copy, fixed funnel steps, locked "Powered by Jugnoo" attribution) that a business personalises with its own logo. Delivered as **print-ready SVG artwork** with two named injectable slots — `#qr-code` (a square box the generated QR fills) and `#brand-logo` (the box the business logo fills). All other copy is baked into the artwork and **not editable**. There are **four** templates, one per ([hasNfc] × [Card language]) combination; the studio selects the matching file. (Earlier the layout was a React component with one template; that is superseded — see the cards ADR.)
 _Avoid_: card design, design (implies user-authored layout — it isn't), poster, flyer
+
+**Card language**:
+The language an SVG [Card Template] is authored in — `en` or `de`. A *template-selection* dimension (each language is a wholly separate SVG with baked copy), **not** a runtime/i18n setting. Defaults to the business's [FormConfig].`defaultLanguage`; the studio may offer the other language as a deliberate choice (e.g. English cards for a German café's tourists). Persisted on the [Print Order].
+_Avoid_: locale, i18n, translation (copy isn't translated at runtime — the whole artwork differs)
+
+**Brand-logo slot** (`#brand-logo`):
+The injectable box in a [Card Template] SVG that holds the **business's** logo, fitted contained-and-centered. Fixed on the **right**; the locked Jugnoo mark `#jugnoo-logo` sits on the **left** and is always present. The two are independent — no repositioning. When a business has **no** logo, the brand-logo slot simply renders empty (the static left-side `#jugnoo-logo` still brands the card).
+_Avoid_: logo (ambiguous — say brand-logo vs jugnoo-logo)
 
 **hasNfc**:
 A boolean on a personalised card. When on, the card renders the "Tap phone" block and is **order-only** (cannot be self-printed). When off, the card is QR-only and may be self-printed or ordered.
@@ -114,6 +122,5 @@ _Avoid_: nfc support, nfc enabled, format
 A request from a business to have physical cards produced and shipped by Jugnoo. Free during the pilot. The only path to obtain an NFC card.
 _Avoid_: order (too generic), print job, print request
 
-**Card theme**:
-The colour arrangement of a card — `green-black` (green background, black panel) or `black-green` (inverted). Both use the same single brand green; only which colour is the base vs the panel changes.
-_Avoid_: colour scheme, variant, skin
+**Card theme** _(retired)_:
+Was the colour arrangement of the React card — `green-black` / `black-green`. **No longer a concept:** the SVG [Card Template]s are single-treatment artwork, so theme is dropped from the studio and no longer written. The `PrintOrder.theme` column lingers only for old rows. The card's second dimension is now [Card language], not theme.

@@ -1,60 +1,68 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { Loader2, Printer, Package, Nfc } from "lucide-react";
+import { Loader2, Package, Nfc } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { CardTemplate, type CardTheme } from "@/components/cards/CardTemplate";
+import { injectCard } from "@/lib/inject-card";
 import { createPrintOrder } from "@/actions/createPrintOrder";
 
 const MAX_QUANTITY = 5; // paper + NFC share this pool (see docs/cards-feature.md)
 
-// Print only the card: hide everything else, center it at the physical 9×9 cm size.
-const PRINT_CSS = `
-@media print {
-  body * { visibility: hidden !important; }
-  #jugnoo-print-area, #jugnoo-print-area * { visibility: visible !important; }
-  #jugnoo-print-area { position: fixed; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; }
-  #jugnoo-print-card { width: 90mm; height: 90mm; }
-}
-`;
+const LANGUAGES = [
+  { value: "en", label: "English" },
+  { value: "de", label: "Deutsch" },
+] as const;
+type Language = (typeof LANGUAGES)[number]["value"];
 
-const THEME_OPTIONS: { value: CardTheme; label: string }[] = [
-  { value: "green-black", label: "Green / Black" },
-  { value: "black-green", label: "Black / Green" },
-];
+/** Stable key matching the server-side filename map (card-templates.ts). */
+function variantKey(hasNfc: boolean, language: Language): string {
+  return `${hasNfc ? "qr_nfc" : "qr_only"}_${language}`;
+}
 
 interface Props {
   businessId: string;
   businessName: string;
-  /** Base form URL with no query string, e.g. https://feedback.jugnoo.olbaid.de/{id} */
-  formUrlBase: string;
+  /** Raw Card Template SVGs keyed by variant (e.g. "qr_only_en"); missing = not yet delivered. */
+  templates: Record<string, string>;
+  /** Generated QR as a standalone `<svg>` string, encoding the business form URL. */
+  qrSvg: string;
   /** Logo from FormConfig, used as the default. */
   defaultLogoUrl: string;
+  /** Business's configured form language — pre-selects the matching card language. */
+  defaultLanguage: Language;
 }
 
-export function CardStudio({ businessId, businessName, formUrlBase, defaultLogoUrl }: Props) {
+export function CardStudio({
+  businessId,
+  businessName,
+  templates,
+  qrSvg,
+  defaultLogoUrl,
+  defaultLanguage,
+}: Props) {
   const [logoUrl, setLogoUrl] = useState(defaultLogoUrl);
-  const [theme, setTheme] = useState<CardTheme>("green-black");
+  const [language, setLanguage] = useState<Language>(defaultLanguage);
   const [hasNfc, setHasNfc] = useState(false);
   const [quantity, setQuantity] = useState(2);
   const [isOrdering, startOrder] = useTransition();
 
-  // The QR is always scanned, so it always carries ?src=qr. The NFC tag (encoded
-  // during fulfilment) carries ?src=nfc — it is physical, not rendered here.
-  const qrUrl = `${formUrlBase}?src=qr`;
+  // injectCard uses DOMParser (browser-only). Gate on a post-mount flag so the
+  // hydration render matches the server (both show the skeleton), then swap in
+  // the composed SVG — avoids a hydration mismatch.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
-  // NFC cards can't be self-printed — the tag must be physically encoded (ADR/spec).
-  const canSelfPrint = !hasNfc;
+  const rawTemplate = templates[variantKey(hasNfc, language)];
 
-  function handlePrint() {
-    if (!canSelfPrint) return;
-    window.print();
-  }
+  const composedSvg = useMemo(() => {
+    if (!mounted || !rawTemplate) return null;
+    return injectCard(rawTemplate, { qrSvg, logoUrl: logoUrl.trim() || null });
+  }, [mounted, rawTemplate, qrSvg, logoUrl]);
 
   function handleOrder() {
     startOrder(async () => {
@@ -62,7 +70,7 @@ export function CardStudio({ businessId, businessName, formUrlBase, defaultLogoU
         businessId,
         quantity,
         hasNfc,
-        theme,
+        language,
         logoUrl: logoUrl.trim(),
       });
       if (res.ok) {
@@ -77,21 +85,27 @@ export function CardStudio({ businessId, businessName, formUrlBase, defaultLogoU
 
   return (
     <div className="grid gap-8 lg:grid-cols-[1fr_minmax(320px,420px)]">
-      <style dangerouslySetInnerHTML={{ __html: PRINT_CSS }} />
-
-      {/* ── Preview (also the print target) ─────────────────────── */}
+      {/* ── Preview (the real print artwork, QR + logo injected) ──── */}
       <div className="space-y-3">
         <p className="text-sm font-medium text-muted-foreground">Preview</p>
-        <div id="jugnoo-print-area">
-          <div id="jugnoo-print-card" className="mx-auto w-full max-w-xl shadow-sm ring-1 ring-border rounded-2xl">
-            <CardTemplate
-              qrUrl={qrUrl}
-              logoUrl={logoUrl.trim() || null}
-              businessName={businessName}
-              hasNfc={hasNfc}
-              theme={theme}
+        <div className="mx-auto w-full max-w-xl overflow-hidden rounded-2xl shadow-sm ring-1 ring-border">
+          {composedSvg ? (
+            <div
+              className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: composedSvg }}
             />
-          </div>
+          ) : rawTemplate ? (
+            // Pre-hydration (SSR) — brief square skeleton until the client injects.
+            <div className="aspect-square w-full animate-pulse bg-muted" />
+          ) : (
+            <div className="flex aspect-square w-full flex-col items-center justify-center gap-2 bg-muted/40 p-6 text-center">
+              <p className="text-sm font-medium text-foreground">Template coming soon</p>
+              <p className="text-xs text-muted-foreground">
+                The {LANGUAGES.find((l) => l.value === language)?.label}{" "}
+                {hasNfc ? "QR + NFC" : "QR-only"} card artwork isn&apos;t available yet.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -101,18 +115,18 @@ export function CardStudio({ businessId, businessName, formUrlBase, defaultLogoU
           <CardTitle className="text-base">Customize your card</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Theme */}
+          {/* Language */}
           <div className="space-y-2">
-            <Label>Theme</Label>
+            <Label>Language</Label>
             <div className="grid grid-cols-2 gap-2">
-              {THEME_OPTIONS.map((opt) => (
+              {LANGUAGES.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
-                  onClick={() => setTheme(opt.value)}
+                  onClick={() => setLanguage(opt.value)}
                   className={cn(
                     "rounded-lg border px-3 py-2.5 text-sm font-medium transition-colors",
-                    theme === opt.value
+                    language === opt.value
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground hover:text-foreground"
                   )}
@@ -135,7 +149,7 @@ export function CardStudio({ businessId, businessName, formUrlBase, defaultLogoU
               onChange={(e) => setLogoUrl(e.target.value)}
             />
             <p className="text-xs text-muted-foreground">
-              Defaults to your form logo. Leave blank to show your business name instead.
+              Defaults to your form logo. Leave blank to show only the Jugnoo mark.
             </p>
           </div>
 
@@ -172,7 +186,7 @@ export function CardStudio({ businessId, businessName, formUrlBase, defaultLogoU
             <p className="text-xs text-muted-foreground">
               {hasNfc
                 ? "NFC cards are made to order — they can't be self-printed."
-                : "QR-only cards can be printed yourself or ordered."}
+                : "QR-only cards carry just the scan code."}
             </p>
           </div>
 
@@ -201,8 +215,8 @@ export function CardStudio({ businessId, businessName, formUrlBase, defaultLogoU
             </p>
           </div>
 
-          {/* Actions */}
-          <div className="space-y-3 border-t pt-5">
+          {/* Action */}
+          <div className="border-t pt-5">
             <Button
               type="button"
               onClick={handleOrder}
@@ -216,17 +230,9 @@ export function CardStudio({ businessId, businessName, formUrlBase, defaultLogoU
               )}
               Send to print {quantity > 0 && `(${quantity})`}
             </Button>
-
-            <Button
-              type="button"
-              variant="outline"
-              onClick={handlePrint}
-              disabled={!canSelfPrint}
-              className="w-full gap-2"
-            >
-              <Printer className="size-4" />
-              {canSelfPrint ? "Print it yourself" : "Print yourself (QR-only)"}
-            </Button>
+            <p className="mt-2 text-center text-xs text-muted-foreground">
+              We print &amp; ship your cards and reach out to arrange delivery.
+            </p>
           </div>
         </CardContent>
       </Card>

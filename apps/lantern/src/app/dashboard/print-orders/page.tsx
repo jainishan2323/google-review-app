@@ -48,7 +48,7 @@ export default async function PrintOrdersPage() {
             <tr className="border-b border-border bg-muted/40">
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Business</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Theme</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Language</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Qty</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Ordered</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
@@ -66,7 +66,7 @@ export default async function PrintOrdersPage() {
                   <td className="px-4 py-2.5 text-muted-foreground">
                     {o.hasNfc ? "QR + NFC" : "QR only"}
                   </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{o.theme}</td>
+                  <td className="px-4 py-2.5 text-muted-foreground uppercase">{o.language}</td>
                   <td className="px-4 py-2.5 text-muted-foreground">{o.quantity}</td>
                   <td className="px-4 py-2.5 text-muted-foreground text-xs">
                     {formatDate(o.createdAt)}

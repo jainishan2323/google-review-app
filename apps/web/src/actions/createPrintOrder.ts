@@ -7,7 +7,7 @@ const schema = z.object({
   businessId: z.string().min(1),
   quantity: z.number().int().min(1).max(5), // max 5 physical cards per order (paper + NFC share the pool)
   hasNfc: z.boolean(),
-  theme: z.enum(["green-black", "black-green"]),
+  language: z.enum(["en", "de"]), // selects which of the 4 SVG templates to print (ADR 0011)
   logoUrl: z.string().url().or(z.literal("")).optional(),
 });
 
@@ -19,7 +19,7 @@ export async function createPrintOrder(input: CreatePrintOrderInput) {
     return { ok: false as const, error: "Invalid order details." };
   }
 
-  const { businessId, quantity, hasNfc, theme, logoUrl } = parsed.data;
+  const { businessId, quantity, hasNfc, language, logoUrl } = parsed.data;
 
   const business = await prisma.business.findUnique({
     where: { id: businessId },
@@ -34,7 +34,7 @@ export async function createPrintOrder(input: CreatePrintOrderInput) {
       businessId,
       quantity,
       hasNfc,
-      theme,
+      language,
       logoUrl: logoUrl?.trim() || null,
       status: "pending",
     },

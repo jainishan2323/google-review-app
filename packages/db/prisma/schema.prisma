@@ -223,7 +223,8 @@ model PrintOrder {
   businessId  String
   quantity    Int // 1–5 physical cards (paper + NFC share this pool)
   hasNfc      Boolean   @default(false) // NFC cards are order-only (cannot be self-printed)
-  theme       String    @default("green-black") // colour arrangement: "green-black" | "black-green"
+  language    String    @default("en") // SVG template language: "en" | "de" — selects the artwork (ADR 0011)
+  theme       String    @default("green-black") // RETIRED (ADR 0011) — kept for old rows; no longer written
   logoUrl     String? // Snapshot of the logo used on the card at order time
   status      String    @default("pending") // "pending" | "fulfilled"
   createdAt   DateTime  @default(now())

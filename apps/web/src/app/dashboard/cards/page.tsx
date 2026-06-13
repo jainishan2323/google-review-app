@@ -3,6 +3,8 @@ import { Separator } from "@/components/ui/separator";
 import { CardStudio } from "@/components/cards/CardStudio";
 import { QrCodeCard } from "@/components/QrCodeCard";
 import { requireCurrentBusiness } from "@/lib/current-business";
+import { loadCardTemplates } from "@/lib/card-templates";
+import { buildQrSvg } from "@/lib/qr-svg";
 
 export const dynamic = "force-dynamic";
 
@@ -22,8 +24,15 @@ export default async function CardsPage() {
   const business = await requireCurrentBusiness();
   const formConfig = await prisma.formConfig.findUnique({
     where: { businessId: business.id },
-    select: { logoUrl: true },
+    select: { logoUrl: true, defaultLanguage: true },
   });
+
+  // QR is identical across all variants — it encodes the business form URL only.
+  const qrSvg = CARDS_STUDIO_ENABLED
+    ? buildQrSvg(`${FORM_BASE_URL}/${business.id}?src=qr`)
+    : "";
+  const templates = CARDS_STUDIO_ENABLED ? await loadCardTemplates() : {};
+  const defaultLanguage = formConfig?.defaultLanguage === "de" ? "de" : "en";
 
   return (
     <main className="p-8 space-y-8 max-w-6xl">
@@ -44,8 +53,10 @@ export default async function CardsPage() {
         <CardStudio
           businessId={business.id}
           businessName={business.name}
-          formUrlBase={`${FORM_BASE_URL}/${business.id}`}
+          templates={templates}
+          qrSvg={qrSvg}
           defaultLogoUrl={formConfig?.logoUrl ?? ""}
+          defaultLanguage={defaultLanguage}
         />
       ) : (
         <QrCodeCard formUrl={`${FORM_BASE_URL}/${business.id}?src=qr`} />

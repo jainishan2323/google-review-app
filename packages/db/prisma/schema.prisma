@@ -218,19 +218,39 @@ model QrCode {
 // Pilot: free, fulfilled manually from the Lantern admin app (no shipping
 // address captured — operator contacts the business directly).
 
+// A Print Order is a CART of one or more PrintOrderItem line items submitted
+// together (ADR 0012). A business may have only one active (status="pending")
+// order at a time. The flat quantity/hasNfc/language/theme columns below are
+// LEGACY — kept only for rows created before ADR 0012; new orders leave them at
+// their defaults and carry the real variants on PrintOrderItem.
 model PrintOrder {
   id          String    @id @default(cuid())
   businessId  String
-  quantity    Int // 1–5 physical cards (paper + NFC share this pool)
-  hasNfc      Boolean   @default(false) // NFC cards are order-only (cannot be self-printed)
-  language    String    @default("en") // SVG template language: "en" | "de" — selects the artwork (ADR 0011)
+  quantity    Int       @default(0) // LEGACY (pre-ADR-0012) — variants now live on items
+  hasNfc      Boolean   @default(false) // LEGACY (pre-ADR-0012)
+  language    String    @default("en") // LEGACY (pre-ADR-0012)
   theme       String    @default("green-black") // RETIRED (ADR 0011) — kept for old rows; no longer written
-  logoUrl     String? // Snapshot of the logo used on the card at order time
+  logoUrl     String? // Snapshot of the logo used on the whole order at order time
   status      String    @default("pending") // "pending" | "fulfilled"
   createdAt   DateTime  @default(now())
   fulfilledAt DateTime?
 
-  business Business @relation(fields: [businessId], references: [id])
+  business Business         @relation(fields: [businessId], references: [id])
+  items    PrintOrderItem[]
+}
+
+// One line of a Print Order cart: a single (hasNfc × language) Card Template
+// variant plus a quantity, capped at 6 per item (ADR 0012).
+model PrintOrderItem {
+  id           String  @id @default(cuid())
+  printOrderId String
+  hasNfc       Boolean @default(false) // QR-only (false) vs QR + NFC (true)
+  language     String  @default("en") // SVG template language: "en" | "de" (ADR 0011)
+  quantity     Int // 1–6 physical cards of this variant
+
+  printOrder PrintOrder @relation(fields: [printOrderId], references: [id], onDelete: Cascade)
+
+  @@index([printOrderId])
 }
 
 // ── App Feedback ─────────────────────────────────────────────

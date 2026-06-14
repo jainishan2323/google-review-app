@@ -46,9 +46,26 @@ See [ADR 0002](./adr/0002-card-print-deferred-behind-flag.md).
 
 ## Print Order
 
-- `PrintOrder` row: `businessId`, `quantity` (1–5), `hasNfc`, `logoUrl` snapshot,
-  `status` (`pending` | `fulfilled`), `createdAt`, `fulfilledAt`.
-- **Max 5** physical cards per order; paper + NFC share the one pool.
+A Print Order is a **cart of line items**, not a single variant (revised 2026-06-14 —
+see [ADR 0012](./adr/0012-print-order-becomes-cart-with-single-active-order.md)).
+
+- **Parent `PrintOrder`:** `businessId`, `logoUrl` snapshot (one logo for the whole order),
+  `status` (`pending` | `fulfilled`), `createdAt`, `fulfilledAt`. The retired flat
+  `quantity` / `hasNfc` / `language` / `theme` columns linger only for old rows.
+- **`PrintOrderItem` child:** `printOrderId`, `hasNfc`, `language` (`en` | `de`),
+  `quantity` (1–6). One row per (`hasNfc` × `language`) variant in the cart.
+- **Studio cart:** the business builds the order locally — pick a variant, set a quantity,
+  add it; adjust or remove line items; then submit the whole cart as **one** Print Order.
+  The cart is local to the cards studio (not a global/cross-feature cart).
+- **Cap: 6 per line item, each variant independent.** The earlier "max 5 across the order,
+  paper + NFC share the pool" rule is **retired** — a multi-variant cart can exceed 5 total.
+- **Unavailable variants can't be ordered.** A variant whose Card Template SVG isn't on disk
+  (e.g. German / NFC artwork today) shows **disabled + "coming soon"** in the studio and is
+  **rejected server-side** in `createPrintOrder` as a backstop.
+- **One active order at a time.** A business with an unfulfilled Print Order can't start a new
+  one — the studio shows an **"under processing"** summary of the pending order instead of the
+  builder. Ordering reopens only when the **Operator** marks it fulfilled in Lantern; there is
+  **no business-side cancel** (the screen points them to Jugnoo for changes).
 - **Free during pilot.** No shipping address captured — operator contacts the business.
 - Created from the web dashboard; surfaced in **Lantern** (`/dashboard/print-orders`)
   where the operator marks them fulfilled, then prints + ships by hand.

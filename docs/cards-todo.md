@@ -10,7 +10,10 @@ Tracking work to fully enable the SVG-template review cards (ADR 0011). Phase 1
 - [x] Add `#brand-logo` + `#jugnoo-logo` slots to `template_qr_and_nfc_en.svg`. *(done — re-exported)*
 
 ## Phase 1 — launch readiness
-- [ ] Run `prisma migrate deploy` on the production DB (web + lantern projects).
+- [ ] Run `prisma migrate deploy` on the production DB (web + lantern projects) — includes
+      `20260614211913_add_print_order_items` (cart line items, ADR 0012).
+- [ ] Test the cart flow end-to-end: add multiple variants → send to print → studio locks to
+      "under processing" → Lantern shows the line items → mark fulfilled reopens ordering.
 - [ ] Verify QR/logo placement visually in the browser for all 4 variants.
 - [ ] Confirm a logo with an odd aspect ratio fits cleanly (contain + center).
 - [ ] Test the record-only order end-to-end (web order → Lantern row shows language).

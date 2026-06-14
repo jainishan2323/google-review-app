@@ -24,6 +24,20 @@ const VARIANT_FILES: Record<string, string> = {
 
 const ASSET_DIR = path.join(process.cwd(), "src", "assets");
 
+/** Stable variant key matching CardStudio's `variantKey(hasNfc, language)`. */
+export function cardVariantKey(hasNfc: boolean, language: string): string {
+  return `${hasNfc ? "qr_nfc" : "qr_only"}_${language}`;
+}
+
+/**
+ * Variant keys whose Card Template SVG exists on disk — the only variants that
+ * may be ordered. Used as the server-side backstop in `createPrintOrder` so an
+ * unavailable variant can't slip past the studio's disabled state (ADR 0012).
+ */
+export async function availableCardVariants(): Promise<string[]> {
+  return Object.keys(await loadCardTemplates());
+}
+
 /** Reads every Card Template SVG that exists on disk, keyed by variant. */
 export async function loadCardTemplates(): Promise<Record<string, string>> {
   const entries = await Promise.all(

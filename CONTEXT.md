@@ -119,8 +119,12 @@ A boolean on a personalised card. When on, the card renders the "Tap phone" bloc
 _Avoid_: nfc support, nfc enabled, format
 
 **Print Order**:
-A request from a business to have physical cards produced and shipped by Jugnoo. Free during the pilot. The only path to obtain an NFC card.
+A request from a business to have physical cards produced and shipped by Jugnoo. A **basket** of one or more [Print Order Item]s assembled in the studio cart and submitted together; carries one [logo] snapshot shared by all its items. Free during the pilot. The only path to obtain an NFC card. **A business may have only one *active* (unfulfilled) Print Order at a time** — while one is being processed the studio is locked and shows "under processing"; ordering reopens only when the [Operator] marks it fulfilled. There is no business-side cancel.
 _Avoid_: order (too generic), print job, print request
+
+**Print Order Item**:
+One line of a [Print Order] cart: a single ([hasNfc] × [Card language]) variant plus a quantity (1–6). The studio cart lets the business add, adjust, or remove items per variant before submitting. A variant whose [Card Template] SVG doesn't exist yet cannot become an item (blocked in the studio and rejected server-side). Each variant is capped independently — the earlier shared "max 5 across the order" pool is retired.
+_Avoid_: line, cart row (informal), sku
 
 **Card theme** _(retired)_:
 Was the colour arrangement of the React card — `green-black` / `black-green`. **No longer a concept:** the SVG [Card Template]s are single-treatment artwork, so theme is dropped from the studio and no longer written. The `PrintOrder.theme` column lingers only for old rows. The card's second dimension is now [Card language], not theme.

@@ -20,13 +20,21 @@ Tracking work to fully enable the SVG-template review cards (ADR 0011). Phase 1
 - [ ] Decide when to flip `NEXT_PUBLIC_CARDS_STUDIO=true` in production.
 - [ ] (Optional) Add `apps/web/src/assets/README.md` listing required slot ids.
 
-## Phase 2 — self-serve PDF
-- [ ] Pick a renderer (resvg / puppeteer / svg-to-pdfkit) and add the dep.
-- [ ] Move `injectCard` + templates into a shared package (server-capable, no DOMParser).
-- [ ] Add a route/action that composites the SVG and returns a print-ready PDF at 9×9 cm.
-- [ ] Embed/handle the baked fonts (Inter 28pt, Century Gothic) in the PDF.
-- [ ] Fetch + inline the business logo server-side for the PDF.
-- [ ] Add "Print it yourself" download button (QR-only) to the studio.
+## Phase 2 — self-serve Print Sheet (client-side, ADR 0013)
+- [ ] Add `pdf-lib` to `@repo/web` (zero-dep, isomorphic — reused by the server fallback).
+- [ ] Generate the **Print Sheet** client-side: composite the QR-only card *logo-less*
+      (`injectCard` with `logoUrl: null`), rasterize via the browser canvas (~300 DPI), tile
+      **6-up (2×3)** on **A4** with a hairline **cut-line grid** (vector lines), and download.
+- [ ] Add a "Print it yourself" button (QR-only; disabled + note for QR+NFC), always available
+      regardless of the order lock, only when the variant template exists.
+- [ ] Label the button so the logo-less self-print vs logo-on-ordered-cards difference is clear.
+- [ ] ~~Embed baked fonts~~ — N/A: templates have no `<text>`/fonts (copy is outlined to paths).
+
+### Deferred fallback ("Option A") — only if client-side proves insufficient
+- [ ] Server route compositing with `@xmldom/xmldom` + resvg-js → pdf-lib (move `injectCard` +
+      templates into a shared, DOM-agnostic package; fetch + inline the logo server-side).
+- [ ] (Cheaper logo path if wanted before Option A) a same-origin `/api/logo-proxy` to keep the
+      logo on the Print Sheet without canvas taint.
 
 ## Phase 3 — operator-side composited file (Lantern)
 - [ ] Add "Download print file" to each Lantern print-order (composites on demand).

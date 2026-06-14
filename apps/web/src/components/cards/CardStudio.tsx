@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Loader2, Package, Nfc, Plus, Minus, Trash2, Clock } from "lucide-react";
+import { Loader2, Package, Nfc, Plus, Minus, Trash2, Clock, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { injectCard } from "@/lib/inject-card";
+import { downloadPrintSheet } from "@/lib/print-sheet";
 import { createPrintOrder } from "@/actions/createPrintOrder";
 import { QrCodeCard } from "@/components/QrCodeCard";
 
@@ -82,6 +83,7 @@ export function CardStudio({
   const [draftQty, setDraftQty] = useState(2);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [isOrdering, startOrder] = useTransition();
+  const [isPrinting, setIsPrinting] = useState(false);
 
   // injectCard uses DOMParser (browser-only). Gate on a post-mount flag so the
   // hydration render matches the server (both show the skeleton), then swap in
@@ -129,6 +131,23 @@ export function CardStudio({
 
   function removeItem(key: string) {
     setCart((prev) => prev.filter((i) => variantKey(i.hasNfc, i.language) !== key));
+  }
+
+  async function handlePrintSheet() {
+    // Self-print is QR-only and needs an existing template (ADR 0013).
+    if (hasNfc || !rawTemplate) return;
+    setIsPrinting(true);
+    try {
+      await downloadPrintSheet({
+        rawTemplate,
+        qrSvg,
+        fileName: `jugnoo-review-cards-${language}.pdf`,
+      });
+    } catch {
+      toast.error("Couldn't generate the print sheet. Please try again.");
+    } finally {
+      setIsPrinting(false);
+    }
   }
 
   function handleOrder() {
@@ -190,8 +209,10 @@ export function CardStudio({
 
       {/* ── Preview + controls, side by side ──────────────────────── */}
       <div className="grid gap-8 lg:grid-cols-[1fr_minmax(320px,420px)]">
+        {/* Preview + self-print (left column) */}
+        <div className="space-y-3 self-start">
         {/* Preview (the real print artwork, QR + logo injected) */}
-        <div className="w-full overflow-hidden rounded-2xl shadow-sm ring-1 ring-border self-start">
+        <div className="w-full overflow-hidden rounded-2xl shadow-sm ring-1 ring-border">
           {composedSvg ? (
             <div
               className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
@@ -209,6 +230,30 @@ export function CardStudio({
             </div>
           )}
         </div>
+
+        {/* Print it yourself — QR-only self-serve sheet (ADR 0013) */}
+        <div className="space-y-1.5">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handlePrintSheet}
+            disabled={hasNfc || !rawTemplate || isPrinting}
+            className="w-full gap-2"
+          >
+            {isPrinting ? (
+              <Loader2 className="size-4 animate-spin" />
+            ) : (
+              <Printer className="size-4" />
+            )}
+            Print it yourself (PDF)
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            {hasNfc
+              ? "NFC cards can't be self-printed — order them instead."
+              : "A4 sheet of 6 QR cards to cut out. Self-printed cards show the Jugnoo mark only — order cards to include your logo."}
+          </p>
+        </div>
+      </div>
 
       {/* ── Controls + cart ───────────────────────────────────────── */}
       <div className="space-y-6">

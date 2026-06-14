@@ -209,10 +209,8 @@ export function CardStudio({
 
       {/* ── Preview + controls, side by side ──────────────────────── */}
       <div className="grid gap-8 lg:grid-cols-[1fr_minmax(320px,420px)]">
-        {/* Preview + self-print (left column) */}
-        <div className="space-y-3 self-start">
         {/* Preview (the real print artwork, QR + logo injected) */}
-        <div className="w-full overflow-hidden rounded-2xl shadow-sm ring-1 ring-border">
+        <div className="w-full self-start overflow-hidden rounded-2xl shadow-sm ring-1 ring-border">
           {composedSvg ? (
             <div
               className="[&>svg]:block [&>svg]:h-auto [&>svg]:w-full"
@@ -230,30 +228,6 @@ export function CardStudio({
             </div>
           )}
         </div>
-
-        {/* Print it yourself — QR-only self-serve sheet (ADR 0013) */}
-        <div className="space-y-1.5">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handlePrintSheet}
-            disabled={hasNfc || !rawTemplate || isPrinting}
-            className="w-full gap-2"
-          >
-            {isPrinting ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <Printer className="size-4" />
-            )}
-            Print it yourself (PDF)
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            {hasNfc
-              ? "NFC cards can't be self-printed — order them instead."
-              : "A4 sheet of 6 QR cards to cut out. Self-printed cards show the Jugnoo mark only — order cards to include your logo."}
-          </p>
-        </div>
-      </div>
 
       {/* ── Controls + cart ───────────────────────────────────────── */}
       <div className="space-y-6">
@@ -379,6 +353,29 @@ export function CardStudio({
                   yet.
                 </p>
               )}
+            </div>
+
+            {/* Print it yourself — QR-only self-serve sheet (ADR 0013) */}
+            <div className="space-y-1.5 border-t pt-5">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handlePrintSheet}
+                disabled={hasNfc || !rawTemplate || isPrinting}
+                className="w-full gap-2"
+              >
+                {isPrinting ? (
+                  <Loader2 className="size-4 animate-spin" />
+                ) : (
+                  <Printer className="size-4" />
+                )}
+                Print it yourself (PDF)
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                {hasNfc
+                  ? "NFC cards can't be self-printed — order them instead."
+                  : "A4 sheet of 6 QR cards to cut out. Self-printed cards show the Jugnoo mark only — order cards to include your logo."}
+              </p>
             </div>
           </CardContent>
         </Card>

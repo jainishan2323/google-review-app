@@ -36,13 +36,25 @@ shows only the simple branded **QR-code download** (`QrCodeCard`) — the always
 baseline. Print/compositing is deferred; orders are fulfilled manually in Illustrator.
 See [ADR 0002](./adr/0002-card-print-deferred-behind-flag.md).
 
-## Self-print
+## Self-print (Print Sheet)
 
-- **Phase 2 (not yet built).** Self-serve **PDF** download of the composited card for QR-only
-  cards (adds a renderer dep — see ADR 0011). NFC cards cannot be self-printed (the tag must be
-  physically encoded) → order only.
-- **Phase 1 ships preview only:** the studio renders the real injected SVG so the business sees
-  exactly what they'll get; the order button stays record-only.
+- **Phase 2.** A self-serve **Print Sheet** PDF the business downloads and prints themselves —
+  a **2×3 grid of six identical QR-only cards** on one **A4** page with **hairline cut lines**.
+  See [ADR 0013](./adr/0013-self-print-pdf-client-side-multi-up-logo-less.md).
+- **Client-side** generation (pdf-lib + canvas, ~300 DPI raster; cut grid drawn as vector lines).
+  No server route, no shared-package move, no renderer service. If client-side proves
+  insufficient we graduate to a server route (resvg-js → pdf-lib) — the deferred "Option A".
+- **QR-only.** NFC cards can't be self-printed (the tag must be physically encoded) → order only;
+  the "Print it yourself" button is disabled with a note when QR+NFC is selected.
+- **Logo-less.** The Print Sheet renders the **Jugnoo-mark-only** card — the business logo is
+  *omitted* (it's an arbitrary external URL → cross-origin canvas taint would break the export).
+  The logo appears only on operator-fulfilled ordered cards; the download button says so.
+- **Always available** regardless of the one-active-order lock, and only when the variant's
+  template SVG exists (English today).
+- **Note — fonts are a non-issue:** the templates carry **no `<text>`/fonts** (all copy is
+  outlined to `<path>`), so there's nothing to embed when rasterizing.
+- **Phase 1 shipped preview + cart only:** the studio renders the real injected SVG so the
+  business sees what they'll get; ordering is the operator path (ADR 0012).
 
 ## Print Order
 

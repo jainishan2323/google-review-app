@@ -118,6 +118,10 @@ _Avoid_: logo (ambiguous — say brand-logo vs jugnoo-logo)
 A boolean on a personalised card. When on, the card renders the "Tap phone" block and is **order-only** (cannot be self-printed). When off, the card is QR-only and may be self-printed or ordered.
 _Avoid_: nfc support, nfc enabled, format
 
+**Print Sheet** (self-print):
+A self-serve, print-at-home **PDF** the business generates and prints themselves — a 2×3 grid of **six identical QR-only cards** on one A4 page with hairline cut lines. Generated **client-side** (no operator involvement), **QR-only** ([hasNfc] cards can't be self-printed → order only), and rendered as the **Jugnoo-mark-only card without the business logo** (the [brand-logo slot] is left empty; a business logo appears only on operator-fulfilled [Print Order]s). Distinct from a [Print Order] (operator-fulfilled physical cards) and from the bare QR PNG/SVG download (just the scan code, no card artwork).
+_Avoid_: print order (that's the operator path), download (ambiguous — also the bare QR export), poster
+
 **Print Order**:
 A request from a business to have physical cards produced and shipped by Jugnoo. A **basket** of one or more [Print Order Item]s assembled in the studio cart and submitted together; carries one [logo] snapshot shared by all its items. Free during the pilot. The only path to obtain an NFC card. **A business may have only one *active* (unfulfilled) Print Order at a time** — while one is being processed the studio is locked and shows "under processing"; ordering reopens only when the [Operator] marks it fulfilled. There is no business-side cancel.
 _Avoid_: order (too generic), print job, print request

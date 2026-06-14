@@ -6,17 +6,25 @@ Lets a business personalise a review card, self-print it, or order physical card
 See [CONTEXT.md](../CONTEXT.md) for canonical terms (Card Template, hasNfc, Print Order, scansrc)
 and [ADR 0001](./adr/0001-card-urls-use-scansrc-not-per-card-codes.md) for the URL scheme.
 
+> **Updated 2026-06-13 — moving to slotted SVG templates (ADR 0011).** The card is now
+> print-ready **SVG artwork** with two injectable slots, not a React component. Theme is
+> dropped; **language** (`en`/`de`) is the new second dimension. See ADR 0011 for the phased plan.
+
 ## Model
 
-- **One Card Template** — fixed copy ("Loved it? Say it louder.", 3-step funnel, locked
-  "Powered by Jugnoo"). The only editable input is the business **logo**
-  (defaults to `FormConfig.logoUrl`, with an optional per-card override).
-- **Card theme** — `green-black` (default) or `black-green`; swaps base/panel colours
-  (single brand green, arrangement differs). Persisted on the `PrintOrder`.
+- **Four Card Templates** — print-ready SVG files, one per (`hasNfc` × `language`) combo,
+  chosen by a hardcoded filename map (`template_qr_only_en.svg`, …). Fixed copy + 3-step funnel
+  + locked `#jugnoo-logo` are **baked into the artwork**. The only injectable inputs are the
+  generated QR (slot `#qr-code`, square) and the business **logo** (slot `#brand-logo`, right;
+  defaults to `FormConfig.logoUrl`, contained-and-centered, empty if none).
+- **Card language** — `en` / `de`, defaults to `FormConfig.defaultLanguage`, studio-toggleable;
+  selects which of the 4 SVGs is used. Persisted on the `PrintOrder`.
+- **Card theme** — **removed.** SVGs are single-treatment; `PrintOrder.theme` is retired
+  (kept only for old rows).
 - **Print size:** 9 × 9 cm, square.
 - **`hasNfc` toggle:**
-  - **on** → renders the "Tap phone — hold to the card" block; card is **order-only**.
-  - **off** → QR-only; card can be **self-printed or ordered**.
+  - **on** → uses the `_qr_nfc_` artwork; card is **order-only**.
+  - **off** → uses the `_qr_only_` artwork; QR-only.
 - **Card URL** (QR and NFC both): `{FORM_BASE_URL}/{businessId}?src=qr` / `?src=nfc`.
   No per-card codes (ADR 0001).
 
@@ -30,15 +38,34 @@ See [ADR 0002](./adr/0002-card-print-deferred-behind-flag.md).
 
 ## Self-print
 
-- Available for **QR-only** cards. Download a print-ready PDF/PNG of the card.
-- NFC cards cannot be self-printed (the tag must be physically encoded) → order only.
-- **Pilot status:** behind the studio flag; the always-on fallback is the simple QR download.
+- **Phase 2 (not yet built).** Self-serve **PDF** download of the composited card for QR-only
+  cards (adds a renderer dep — see ADR 0011). NFC cards cannot be self-printed (the tag must be
+  physically encoded) → order only.
+- **Phase 1 ships preview only:** the studio renders the real injected SVG so the business sees
+  exactly what they'll get; the order button stays record-only.
 
 ## Print Order
 
-- `PrintOrder` row: `businessId`, `quantity` (1–5), `hasNfc`, `logoUrl` snapshot,
-  `status` (`pending` | `fulfilled`), `createdAt`, `fulfilledAt`.
-- **Max 5** physical cards per order; paper + NFC share the one pool.
+A Print Order is a **cart of line items**, not a single variant (revised 2026-06-14 —
+see [ADR 0012](./adr/0012-print-order-becomes-cart-with-single-active-order.md)).
+
+- **Parent `PrintOrder`:** `businessId`, `logoUrl` snapshot (one logo for the whole order),
+  `status` (`pending` | `fulfilled`), `createdAt`, `fulfilledAt`. The retired flat
+  `quantity` / `hasNfc` / `language` / `theme` columns linger only for old rows.
+- **`PrintOrderItem` child:** `printOrderId`, `hasNfc`, `language` (`en` | `de`),
+  `quantity` (1–6). One row per (`hasNfc` × `language`) variant in the cart.
+- **Studio cart:** the business builds the order locally — pick a variant, set a quantity,
+  add it; adjust or remove line items; then submit the whole cart as **one** Print Order.
+  The cart is local to the cards studio (not a global/cross-feature cart).
+- **Cap: 6 per line item, each variant independent.** The earlier "max 5 across the order,
+  paper + NFC share the pool" rule is **retired** — a multi-variant cart can exceed 5 total.
+- **Unavailable variants can't be ordered.** A variant whose Card Template SVG isn't on disk
+  (e.g. German / NFC artwork today) shows **disabled + "coming soon"** in the studio and is
+  **rejected server-side** in `createPrintOrder` as a backstop.
+- **One active order at a time.** A business with an unfulfilled Print Order can't start a new
+  one — the studio shows an **"under processing"** summary of the pending order instead of the
+  builder. Ordering reopens only when the **Operator** marks it fulfilled in Lantern; there is
+  **no business-side cancel** (the screen points them to Jugnoo for changes).
 - **Free during pilot.** No shipping address captured — operator contacts the business.
 - Created from the web dashboard; surfaced in **Lantern** (`/dashboard/print-orders`)
   where the operator marks them fulfilled, then prints + ships by hand.
@@ -54,6 +81,8 @@ See [ADR 0002](./adr/0002-card-print-deferred-behind-flag.md).
 ## Open / deferred
 
 - Per-card analytics (would activate the dormant `QrCode` model) — deferred (ADR 0001).
-- Editable card text/colours — deferred; copy is fixed for now.
+- Editable card text — out of scope; all copy is baked into the SVG artwork.
+- Self-serve PDF (Phase 2) + operator-side composited file in Lantern (Phase 3) — ADR 0011.
+- The other 3 SVG templates (`_qr_only_de`, `_qr_nfc_en`, `_qr_nfc_de`) — only `_qr_only_en`
+  exists today; code guards for missing files until they land.
 - Shipping address + automated fulfilment — deferred (manual during pilot).
-- Brand-green hex / display font / tap icon — approximated from the mockup; refine with real assets.

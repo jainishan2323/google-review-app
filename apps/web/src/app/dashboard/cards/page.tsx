@@ -3,6 +3,8 @@ import { Separator } from "@/components/ui/separator";
 import { CardStudio } from "@/components/cards/CardStudio";
 import { QrCodeCard } from "@/components/QrCodeCard";
 import { requireCurrentBusiness } from "@/lib/current-business";
+import { loadCardTemplates } from "@/lib/card-templates";
+import { buildQrSvg } from "@/lib/qr-svg";
 
 export const dynamic = "force-dynamic";
 
@@ -22,11 +24,35 @@ export default async function CardsPage() {
   const business = await requireCurrentBusiness();
   const formConfig = await prisma.formConfig.findUnique({
     where: { businessId: business.id },
-    select: { logoUrl: true },
+    select: { logoUrl: true, defaultLanguage: true },
   });
 
+  // QR is identical across all variants — it encodes the business form URL only.
+  const qrSvg = CARDS_STUDIO_ENABLED
+    ? buildQrSvg(`${FORM_BASE_URL}/${business.id}?src=qr`)
+    : "";
+  const templates = CARDS_STUDIO_ENABLED ? await loadCardTemplates() : {};
+  const defaultLanguage = formConfig?.defaultLanguage === "de" ? "de" : "en";
+
+  // One active (unfulfilled) order at a time (ADR 0012). When one exists the
+  // studio shows an "under processing" summary instead of the builder.
+  const activeOrder = CARDS_STUDIO_ENABLED
+    ? await prisma.printOrder.findFirst({
+        where: { businessId: business.id, status: "pending" },
+        orderBy: { createdAt: "desc" },
+        select: {
+          createdAt: true,
+          // Legacy (pre-ADR-0012) rows carry the variant on these flat columns.
+          quantity: true,
+          hasNfc: true,
+          language: true,
+          items: { select: { hasNfc: true, language: true, quantity: true } },
+        },
+      })
+    : null;
+
   return (
-    <main className="p-8 space-y-8 max-w-6xl">
+    <main className="mx-auto p-8 space-y-8 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Review Cards
@@ -44,8 +70,34 @@ export default async function CardsPage() {
         <CardStudio
           businessId={business.id}
           businessName={business.name}
-          formUrlBase={`${FORM_BASE_URL}/${business.id}`}
+          templates={templates}
+          availableVariants={Object.keys(templates)}
+          qrSvg={qrSvg}
+          formUrl={`${FORM_BASE_URL}/${business.id}?src=qr`}
           defaultLogoUrl={formConfig?.logoUrl ?? ""}
+          defaultLanguage={defaultLanguage}
+          activeOrder={
+            activeOrder
+              ? {
+                  createdAt: activeOrder.createdAt.toISOString(),
+                  // New orders carry line items; legacy rows fall back to the flat columns.
+                  items: (activeOrder.items.length > 0
+                    ? activeOrder.items
+                    : [
+                        {
+                          hasNfc: activeOrder.hasNfc,
+                          language: activeOrder.language,
+                          quantity: activeOrder.quantity,
+                        },
+                      ]
+                  ).map((i) => ({
+                    hasNfc: i.hasNfc,
+                    language: i.language === "de" ? "de" : "en",
+                    quantity: i.quantity,
+                  })),
+                }
+              : null
+          }
         />
       ) : (
         <QrCodeCard formUrl={`${FORM_BASE_URL}/${business.id}?src=qr`} />

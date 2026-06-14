@@ -1,0 +1,13 @@
+# Print Order becomes a cart of line items, capped to one active order per business
+
+**Status:** accepted — revises the Print Order model in [ADR 0011](./0011-cards-graduate-to-svg-slot-injection.md) (which kept the flat single-variant `PrintOrder` row).
+
+**Context.** The studio originally let a business submit one `PrintOrder` per (`hasNfc` × `language`) variant, with a flat `quantity` (1–5) sharing one pool. Three problems surfaced: (1) the "Send to print" button stayed live even for variants whose SVG artwork doesn't exist yet, so a business could order an unprintable card; (2) ordering a mix of variants meant several disconnected orders; (3) nothing stopped a business from firing off many orders, which the manual-fulfilment pilot can't absorb.
+
+**Decision.** A **Print Order is now a cart**: a parent `PrintOrder` (one `logoUrl` snapshot, `status`, timestamps) with one or more `PrintOrderItem` children, each a single (`hasNfc` × `language`) variant + `quantity` (1–6). The studio builds the cart locally (add / adjust / remove line items) and submits it as one order. Each variant is capped independently at 6 — the earlier "max 5 across the order, shared pool" rule is **retired**. Variants whose Card Template SVG isn't on disk are **disabled + "coming soon"** in the studio and **rejected in `createPrintOrder`** as a backstop. A business may have **only one active (unfulfilled) Print Order at a time**: while one is processing the studio shows an "under processing" summary, and ordering reopens only when the **Operator** marks it fulfilled in Lantern — there is no business-side cancel.
+
+**Considered options.**
+- **Cart shape:** parent + `PrintOrderItem` children — chosen — so one cart reads as one order in Lantern and carries a single shared logo — vs writing N flat `PrintOrder` rows per submission (loses the "one order" grouping unless a synthetic batch id is added) and vs keeping one variant per order (contradicts the per-variant cart the studio needs).
+- **Single-active-order limit:** a hard pilot lock until fulfilled, no self-cancel — chosen for the manual, free, hand-shipped pilot — vs allowing unlimited orders (floods manual fulfilment) or a business-side cancel (extra `cancelled` status + UI not worth it yet).
+
+**Consequences.** Schema migration adds `PrintOrderItem` and moves the logo snapshot to the parent; the flat `quantity` / `hasNfc` / `language` / `theme` columns linger only for old rows. Lantern's print-orders view must render line items, not a single variant. "Free during pilot" now allows up to 6 × (number of available variants) cards per order — acceptable while only QR-only EN exists; revisit the cap when more artwork lands or pricing is introduced.

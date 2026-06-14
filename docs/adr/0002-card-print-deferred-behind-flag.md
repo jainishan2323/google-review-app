@@ -1,5 +1,7 @@
 # Physical card print is deferred behind a feature flag; pilot orders fulfilled manually
 
+**Status:** superseded by [ADR 0011](./0011-cards-graduate-to-svg-slot-injection.md) — the slotted SVG templates this ADR named as the graduation trigger now exist; the card moves to SVG-slot injection (theme dropped, language added, phased rollout).
+
 **Context.** We built a card studio (one Card Template, theme switch, NFC toggle, quantity, "send to print"). Two problems surfaced before launch: (1) the HTML→browser print output looks poor, and (2) the intended fix — pre-made Illustrator template PDFs — cannot be purely static, because each card needs a **per-business QR code** (`…/{businessId}?src=qr`) and optionally a per-business logo. A static PDF can be a beautiful background but not the final artifact.
 
 **Options considered.**

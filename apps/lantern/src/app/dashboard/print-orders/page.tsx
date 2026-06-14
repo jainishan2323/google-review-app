@@ -14,10 +14,17 @@ function formatDate(d: Date) {
   });
 }
 
+function variantLabel(hasNfc: boolean, language: string) {
+  return `${hasNfc ? "QR + NFC" : "QR only"} · ${language.toUpperCase()}`;
+}
+
 export default async function PrintOrdersPage() {
   const orders = await prisma.printOrder.findMany({
     orderBy: [{ status: "asc" }, { createdAt: "desc" }],
-    include: { business: { select: { name: true } } },
+    include: {
+      business: { select: { name: true } },
+      items: { select: { id: true, hasNfc: true, language: true, quantity: true } },
+    },
   });
 
   const pending = orders.filter((o) => o.status === "pending").length;
@@ -47,9 +54,8 @@ export default async function PrintOrdersPage() {
           <thead>
             <tr className="border-b border-border bg-muted/40">
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Business</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Type</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Theme</th>
-              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Qty</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Cards</th>
+              <th className="px-4 py-3 text-left font-medium text-muted-foreground">Total</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Ordered</th>
               <th className="px-4 py-3 text-left font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-3 text-right font-medium text-muted-foreground">Action</th>
@@ -58,16 +64,29 @@ export default async function PrintOrdersPage() {
           <tbody>
             {orders.map((o, i) => {
               const fulfilled = o.status === "fulfilled";
+              // Legacy (pre-ADR-0012) rows carry the variant on the flat columns;
+              // new orders carry one or more line items.
+              const lines =
+                o.items.length > 0
+                  ? o.items
+                  : [{ id: o.id, hasNfc: o.hasNfc, language: o.language, quantity: o.quantity }];
+              const total = lines.reduce((sum, l) => sum + l.quantity, 0);
               return (
                 <tr key={o.id} className={i % 2 === 0 ? "bg-card" : "bg-muted/20"}>
                   <td className="px-4 py-2.5 font-medium text-foreground">
                     {o.business?.name ?? o.businessId}
                   </td>
                   <td className="px-4 py-2.5 text-muted-foreground">
-                    {o.hasNfc ? "QR + NFC" : "QR only"}
+                    <ul className="space-y-0.5">
+                      {lines.map((l) => (
+                        <li key={l.id}>
+                          {variantLabel(l.hasNfc, l.language)}{" "}
+                          <span className="text-foreground">×{l.quantity}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{o.theme}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{o.quantity}</td>
+                  <td className="px-4 py-2.5 font-medium text-foreground">{total}</td>
                   <td className="px-4 py-2.5 text-muted-foreground text-xs">
                     {formatDate(o.createdAt)}
                   </td>
@@ -105,7 +124,7 @@ export default async function PrintOrdersPage() {
             })}
             {orders.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-muted-foreground">
+                <td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">
                   No print orders yet.
                 </td>
               </tr>

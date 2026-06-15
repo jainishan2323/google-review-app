@@ -2,6 +2,19 @@ import { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@repo/db";
 
+// The Operator allowlist is the single source of truth for who is an admin: an
+// email listed in ADMIN_EMAILS is the Operator (role=ADMIN, cross-business access);
+// everyone else is an Owner. We resolve role from this list on every sign-in so a
+// change to the env list takes effect on next login, with no manual DB edits.
+// See docs/adr/0014-operator-admin-cross-business-access.md
+const adminEmails = (process.env.ADMIN_EMAILS ?? "")
+  .split(",")
+  .map((s) => s.trim().toLowerCase())
+  .filter(Boolean);
+
+const roleForEmail = (email: string) =>
+  adminEmails.includes(email.toLowerCase()) ? "ADMIN" : "OWNER";
+
 export const authOptions: NextAuthOptions = {
   providers: [
     GoogleProvider({
@@ -25,10 +38,11 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user }) {
       if (!user.email) return false;
 
+      const role = roleForEmail(user.email);
       await prisma.user.upsert({
         where: { email: user.email },
-        update: { name: user.name, image: user.image },
-        create: { email: user.email, name: user.name, image: user.image },
+        update: { name: user.name, image: user.image, role },
+        create: { email: user.email, name: user.name, image: user.image, role },
       });
 
       return true;

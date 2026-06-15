@@ -4,10 +4,12 @@ import { cookies } from "next/headers";
 import { ACTIVE_BUSINESS_COOKIE, resolveCurrentBusiness } from "@/lib/current-business";
 
 /**
- * Set the dashboard's active business. Validates that the signed-in owner actually
- * owns the target before writing the cookie — a client can't switch into a business
- * that isn't theirs. The caller hard-reloads afterwards so server-rendered pages and
- * client-fetched API data both pick up the new selection.
+ * Set the dashboard's active business. Validates that the target is in the signed-in
+ * user's candidate list before writing the cookie — an owner can't switch into a
+ * business that isn't theirs, while an Operator (role=ADMIN) may select any business
+ * because their candidate list is all of them (see resolveCurrentBusiness / ADR 0014).
+ * The caller hard-reloads afterwards so server-rendered pages and client-fetched API
+ * data both pick up the new selection.
  */
 export async function setActiveBusiness(businessId: string): Promise<void> {
   const resolved = await resolveCurrentBusiness();

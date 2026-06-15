@@ -29,11 +29,15 @@ A customer of Jugnoo — the proprietor of a pilot business who signs into the c
 _Avoid_: user (too generic — an Operator is also a User), customer (use for the human/relationship, "Owner" for the modelled role), account
 
 **Operator**:
-The Jugnoo team (currently just the app's creator) who runs the internal admin app, **Lantern**. Modelled as a `User` with `role = ADMIN`. The Operator hand-onboards pilots: creates each `Business` ahead of time and records the future Owner's email on it.
+The Jugnoo team (currently just the app's creator) who runs the internal admin app, **Lantern**. Modelled as a `User` with `role = ADMIN`. The Operator hand-onboards pilots: creates each `Business` ahead of time and records the future Owner's email on it. The Operator can also sign into the customer dashboard (`apps/web`) and **view and operate any business** there — not just ones they own (see [Cross-business access]); businesses stay single-owner, this is an admin read of all of them, not co-ownership.
 _Avoid_: admin (fine as the role value, but "Operator" for the person), app owner (collides with [Owner])
 
+**Cross-business access**:
+The Operator's ability, as a `role = ADMIN` user, to select and fully operate **any** business in the customer dashboard, with the same rights as that business's [Owner]. An [Owner] sees only the businesses they own; an admin's candidate list is every business. **Google data is not part of this**: live Reviews/Analytics and reply posting gate on a per-person `business.manage` grant (the Phase 2 "Connect Google" step) the admin doesn't hold, so an admin sees everything stored in our DB (private feedback, sentiment, taxonomy, form config, orders) but not live Google reviews. Distinct from co-ownership, which Jugnoo does **not** have — a business always has exactly one [Owner].
+_Avoid_: super admin, impersonation, co-owner (there is no co-ownership)
+
 **Active business**:
-When an [Owner] owns more than one business, the one currently selected in the dashboard — chosen via the header switcher and remembered per-device. Every dashboard page and API route scopes to it. An owner with a single business always has that one active (no switcher shown). The selection is only honoured if the owner actually owns it.
+When a user has more than one business in their candidate list, the one currently selected in the dashboard — chosen via the header switcher and remembered per-device. Every dashboard page and API route scopes to it. A user with a single business always has that one active (no switcher shown). The selection is only honoured if the business is in the user's candidate list — their own businesses for an [Owner], every business for the Operator (see [Cross-business access]).
 _Avoid_: current business (fine informally), selected account, default business
 
 ## Taxonomy

@@ -83,6 +83,9 @@ export default function ReviewForm({
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
   const [appRatingSubmitted, setAppRatingSubmitted] = useState(false);
   const [infoOpen, setInfoOpen] = useState(false);
+  // Drives the logo's fade-in: the reserved slot shows a pulsing backdrop until
+  // the image decodes, then the logo eases in over it (no hard pop).
+  const [logoLoaded, setLogoLoaded] = useState(false);
 
   // The text currently on screen — the one that gets edited, copied, and submitted.
   const currentText = versions[currentVersion] ?? "";
@@ -344,12 +347,20 @@ export default function ReviewForm({
     const displayRating = hovered || rating;
     return (
       <div className="relative flex min-h-svh flex-col items-center justify-center gap-8 p-6">
-        {logoUrl && (
-          // Fixed h-14 w-40 box (matching FormSkeleton's logo placeholder) is painted
-          // immediately with a subtle fill, so the logo area is never empty — the image
-          // resolves *into* the reserved box instead of popping in and shifting layout.
-          // `priority` preloads it as the first-screen hero; next/image serves WebP/AVIF.
-          <div className="flex h-14 w-40 items-center justify-center overflow-hidden rounded-md bg-muted/40">
+        {/* The fixed h-14 w-40 logo slot is reserved UNCONDITIONALLY (matching
+            FormSkeleton's placeholder) — whether or not this business has a logo —
+            so the skeleton→form swap never changes the column height and recenters
+            the stars. While the image decodes the slot shows a pulsing backdrop
+            (consistent with the skeleton); the logo then eases in over it instead of
+            popping. `priority` preloads it as the first-screen hero; next/image
+            serves WebP/AVIF. With no logo the slot is just transparent whitespace. */}
+        <div
+          className={cn(
+            "flex h-14 w-40 items-center justify-center overflow-hidden rounded-md",
+            logoUrl && !logoLoaded && "animate-pulse bg-muted/40"
+          )}
+        >
+          {logoUrl && (
             <Image
               src={logoUrl}
               alt={businessName}
@@ -357,10 +368,14 @@ export default function ReviewForm({
               height={56}
               priority
               sizes="160px"
-              className="h-14 w-auto object-contain"
+              onLoad={() => setLogoLoaded(true)}
+              className={cn(
+                "h-14 w-auto object-contain transition-opacity duration-500",
+                logoLoaded ? "opacity-100" : "opacity-0"
+              )}
             />
-          </div>
-        )}
+          )}
+        </div>
         {/* Reserve a fixed-height slot (fits ~2 lines) so the welcome text settling
             in — font load, skeleton→form swap — never reflows and shifts the stars. */}
         <div className="flex min-h-14 w-full max-w-xs items-center justify-center">

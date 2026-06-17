@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: "/dashboard/waitlist", label: "Waitlist", icon: "👥" },
   { href: "/dashboard/businesses", label: "Businesses", icon: "🏢" },
   { href: "/dashboard/print-orders", label: "Print Orders", icon: "🖨️" },
+  { href: "/dashboard/qr-codes", label: "QR Codes", icon: "🔳" },
   { href: "/dashboard/app-feedback", label: "App Feedback", icon: "⭐" },
   { href: "/dashboard/playground", label: "Review Playground", icon: "🧪" },
 ];

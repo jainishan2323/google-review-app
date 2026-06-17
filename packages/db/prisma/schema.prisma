@@ -202,15 +202,25 @@ model WaitlistEntry {
 
 // ── QR Codes ─────────────────────────────────────────────────
 
+// Token-based counter-card QR codes (ADR 0015, supersedes ADR 0001's dormant
+// model). A row is a TOKEN→business MAPPING, not a physical card: the same token
+// may be printed on any number of cards. The QR encodes feedback…/q/{token},
+// which the form app resolves to the assigned business. `businessId` is null
+// until the card is assigned on-site in Lantern.
 model QrCode {
-  id         String   @id @default(cuid())
-  businessId String
-  code       String   @unique @default(cuid())
-  label      String?
-  isActive   Boolean  @default(true)
-  createdAt  DateTime @default(now())
+  id         String    @id @default(cuid())
+  token      String    @unique // short, ambiguity-free, uppercase (e.g. "K7M2P"); printed under the QR
+  status     String    @default("unassigned") // "unassigned" | "assigned" | "retired"
+  businessId String? // null until assigned; the mapping is what's owned (ADR 0015)
+  placement  String? // optional label ("counter", "window") — per-token, not per physical card
+  batchLabel String? // ops grouping for a mint run, not a per-card serial
+  createdAt  DateTime  @default(now())
+  assignedAt DateTime?
 
-  business Business @relation(fields: [businessId], references: [id])
+  business Business? @relation(fields: [businessId], references: [id])
+
+  @@index([businessId])
+  @@index([status])
 }
 
 // ── Print Orders ─────────────────────────────────────────────

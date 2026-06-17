@@ -1,5 +1,7 @@
 # Cards encode the raw business form URL with a `?src` channel param, not per-card tracking codes
 
+**Status:** superseded by [ADR-0015](0015-qr-code-assignment.md) — the token system reverses this for pre-printed generic stock (the pilot's direct-URL self-serve cards still encode the business form URL directly, so the `?src` decision lives on for that mode).
+
 **Context.** Physical review cards (QR + optional NFC) need a target URL. The schema already has a `QrCode` model with a unique `code` and `isActive`, which would support per-card redirect URLs (`/c/{code}`) and per-card scan analytics.
 
 **Decision.** For the pilot, every card encodes the raw business form URL `…/{businessId}?src=qr|nfc`. We do **not** mint per-card codes; the `QrCode` model is left dormant. The `?src` param rides on the URL to enable future channel attribution via client-side analytics (e.g. Google Analytics); the app does **not** persist or read it server-side (see [src] in CONTEXT.md).

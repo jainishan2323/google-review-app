@@ -106,6 +106,18 @@ _Avoid_: regeneration (that's the *action* that creates a version), attempt, rev
 
 ## Cards
 
+**Scan token**:
+The short, random, ambiguity-free code (e.g. `K7M2P`) carried in a [Token card]'s QR path (`/q/{token}`) and printed in human-readable form beneath it. It is a pointer to a *mapping we own* (token → business), **not** a business baked into the card — so the same token may be printed on many physical cards, and the mapping can be assigned, reassigned, or retired without reprinting. There is **no per-physical-card entity**; the token is the unit. See [ADR-0015](docs/adr/0015-qr-code-assignment.md).
+_Avoid_: code (collides with the dormant `QrCode.code`), qr code (the image, not the code), scansrc
+
+**Token card**:
+A pre-printed **generic** (logo-less, Jugnoo-branded) stock card whose QR encodes `/q/{[Scan token]}`. The business is unknown at print time and the card is **assigned on-site** in [Lantern]; a server redirect resolves the token to the assigned business's form, forwarding the token as a `?token=` URL param for **client-side/GA analytics only** (not persisted server-side, exactly like [src]). Co-branded token cards are generated *after* assignment. Contrast [Direct-URL card].
+_Avoid_: generic card (informal), counter card (a placement, not the mode)
+
+**Direct-URL card**:
+The existing owner-self-serve card whose QR encodes a business's form URL **directly** (`/{businessId}`), co-branded with the owner's own logo. The business is known at generation (the owner is signed in), so there is nothing to assign. Coexists with — is not replaced by — the [Token card]. See [ADR-0001] (the `?src` channel param) and [ADR-0015].
+_Avoid_: self-serve QR (overlaps [Print Sheet]), business-URL card
+
 **Card Template**:
 A predefined Jugnoo-designed card layout (fixed copy, fixed funnel steps, locked "Powered by Jugnoo" attribution) that a business personalises with its own logo. Delivered as **print-ready SVG artwork** with two named injectable slots — `#qr-code` (a square box the generated QR fills) and `#brand-logo` (the box the business logo fills). All other copy is baked into the artwork and **not editable**. There are **four** templates, one per ([hasNfc] × [Card language]) combination; the studio selects the matching file. (Earlier the layout was a React component with one template; that is superseded — see the cards ADR.)
 _Avoid_: card design, design (implies user-authored layout — it isn't), poster, flyer

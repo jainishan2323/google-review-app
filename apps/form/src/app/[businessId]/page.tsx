@@ -3,12 +3,25 @@ import ReviewForm from "@/components/ReviewForm";
 import { FormSkeleton } from "@/components/FormSkeleton";
 import { getFormData } from "@/lib/form-data";
 
-// TODO(perf, pre-public): restore ISR before launch — `export const revalidate = 300`
-// (render each business once, then serve from the CDN for 5 min via
-// stale-while-revalidate, keeping the DB round-trip off the QR-scan critical path).
-// Disabled during testing so config/data edits show up instantly. Pairs with the
-// caching TODO in lib/form-data.ts.
-export const revalidate = 0;
+// 30s ISR in production: render each business once, then serve from the CDN via
+// stale-while-revalidate, keeping the DB round-trip off the QR-scan critical path.
+// Must be a static literal (Next rejects an env-conditional segment config), but it
+// only bites in production — `next dev` ignores route ISR and re-renders every request,
+// so local config edits still show instantly. The dev-instant guarantee is enforced in
+// lib/form-data.ts, which bypasses `unstable_cache` (the only layer that persists in dev)
+// when NODE_ENV !== "production". No cross-deployment invalidation; freshness rides the
+// 30s TTL. See docs/adr/0016.
+export const revalidate = 30;
+
+// No params are known at build (businesses are created at runtime), but declaring
+// generateStaticParams is what opts a dynamic-segment route into the Full Route Cache:
+// without it Next renders `/[businessId]` fully dynamic on every request (revalidate is
+// ignored). With it, each business renders on first scan, is cached at the CDN, and
+// revalidates per `revalidate` above. dynamicParams defaults true, so unknown ids still
+// render on demand.
+export function generateStaticParams() {
+  return [];
+}
 
 interface PageProps {
   params: Promise<{ businessId: string }>;

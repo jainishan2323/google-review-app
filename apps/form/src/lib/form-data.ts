@@ -1,4 +1,4 @@
-// TODO(perf, pre-public): re-add `unstable_cache` from "next/cache" — see getFormData.
+import { unstable_cache } from "next/cache";
 import { prisma } from "@repo/db";
 import { resolveLabel, type FormTag } from "@repo/types";
 import { normalizePlaceId } from "./place-id";
@@ -25,18 +25,14 @@ export interface FormData {
   } | null;
 }
 
+// Form payload cache TTL (production only). See docs/adr/0016.
+const CACHE_TTL_SECONDS = 30;
+
 /**
  * Loads the business + form config for a given id. Returns null when the
  * business doesn't exist.
- *
- * TODO(perf, pre-public): re-enable caching before launch. While testing we hit
- * Postgres on every request so data/config edits show up instantly — no waiting
- * on a 5-min TTL. Restore by wrapping the body in `unstable_cache(fn,
- * ["form-data", businessId], { revalidate: 300, tags: [`form-config:${businessId}`] })`
- * for fast TTFB on slow networks / cold Vercel lambdas. Also flip the ISR
- * `revalidate` back on in app/[businessId]/page.tsx.
  */
-export async function getFormData(businessId: string): Promise<FormData | null> {
+async function loadFormData(businessId: string): Promise<FormData | null> {
   const [business, config] = await Promise.all([
     prisma.business.findUnique({
       where: { id: businessId },
@@ -88,3 +84,21 @@ export async function getFormData(businessId: string): Promise<FormData | null> 
       : null,
   };
 }
+
+/**
+ * Cached entry point. In production the computed payload is cached for 30s via
+ * `unstable_cache`, keyed per-business, keeping the relational query (business +
+ * config + categories + tags) off the per-scan hot path — pairs with 30s ISR on
+ * app/[businessId]/page.tsx.
+ *
+ * There is NO cross-deployment invalidation: the dashboard and Lantern are separate
+ * Vercel deployments and can't bust the form's cache, so freshness rides the 30s TTL
+ * (+ ISR stale-while-revalidate). See docs/adr/0016.
+ *
+ * In development the cache is bypassed entirely so local config edits show instantly —
+ * `next dev` ignores route ISR, but `unstable_cache` would otherwise persist for 30s.
+ */
+export const getFormData =
+  process.env.NODE_ENV === "production"
+    ? unstable_cache(loadFormData, ["form-data"], { revalidate: CACHE_TTL_SECONDS })
+    : loadFormData;

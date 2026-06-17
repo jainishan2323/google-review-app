@@ -20,18 +20,22 @@ export function FormSkeleton() {
         <div className="h-5 w-40 animate-pulse rounded bg-muted" />
       </div>
 
-      {/* star row */}
+      {/* star row — each star wrapped in the same p-1 box the real form's star
+          buttons use, so the row is the exact same height and the centered
+          column doesn't recenter (and shift the stars) on the skeleton→form swap */}
       <div className="flex gap-3">
         {[1, 2, 3, 4, 5].map((star) => (
-          <Star
-            key={star}
-            className="size-14 text-muted animate-pulse"
-            style={{ fill: "transparent", strokeWidth: 1.5 }}
-          />
+          <div key={star} className="p-1">
+            <Star
+              className="size-14 text-muted animate-pulse"
+              style={{ fill: "transparent", strokeWidth: 1.5 }}
+            />
+          </div>
         ))}
       </div>
 
-      <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+      {/* h-5 matches the text-sm "Tap a star to rate" line the real form renders */}
+      <div className="h-5 w-24 animate-pulse rounded bg-muted" />
     </div>
   );
 }

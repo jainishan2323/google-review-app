@@ -5,7 +5,6 @@
 
 @layer base {
   .theme {
-    --font-heading: var(--font-heading);
     --font-sans: var(--font-sans)}
   :root {
     --background: oklch(1 0 0);

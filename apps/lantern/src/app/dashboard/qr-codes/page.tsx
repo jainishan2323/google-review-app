@@ -110,8 +110,8 @@ export default async function QrCodesPage({ searchParams }: PageProps) {
             </button>
           </form>
           <p className="text-xs text-muted-foreground">
-            Mints N unassigned tokens. Download each token&apos;s QR (Download SVG) and print
-            manually for now — branded batch sheets are Phase 2.
+            Mints N unassigned tokens. Use a token&apos;s Preview to grab its bare QR (SVG) or a
+            print-ready A4 counter-card sheet (PDF).
           </p>
         </div>
 

@@ -39,3 +39,6 @@ prisma/dev.db-journal
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# Local-only operator scripts (kept out of git — direct DB superpowers)
+packages/db/scripts/reassign-owner.mts

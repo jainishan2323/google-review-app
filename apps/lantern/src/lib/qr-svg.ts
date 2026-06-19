@@ -27,3 +27,27 @@ export function buildQrSvg(
     `</svg>`
   );
 }
+
+// Builds the QR as a bare SVG path (the dark modules only) plus its overall
+// square dimension in module units. Used by the Token Print Sheet PDF builder,
+// which feeds `d` straight into pdf-lib's `drawSvgPath` (vector, no raster) and
+// scales it by box/`dim` to fill a slot. `dim` includes the quiet-zone margin,
+// so a white slot background + this path yields a correctly-padded QR.
+export function buildQrPath(
+  text: string,
+  { margin = 2, ecc = "M" as "L" | "M" | "Q" | "H" } = {},
+): { d: string; dim: number } {
+  const qr = QRCode.create(text, { errorCorrectionLevel: ecc });
+  const n = qr.modules.size;
+  const data = qr.modules.data; // 1 = dark module
+  const dim = n + margin * 2;
+
+  let d = "";
+  for (let y = 0; y < n; y++) {
+    for (let x = 0; x < n; x++) {
+      if (data[y * n + x]) d += `M${x + margin},${y + margin}h1v1h-1z`;
+    }
+  }
+
+  return { d, dim };
+}

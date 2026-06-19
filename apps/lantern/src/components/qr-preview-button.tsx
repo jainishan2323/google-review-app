@@ -52,11 +52,18 @@ export function QrPreviewButton({
               {url}
             </a>
 
-            <div className="mt-5 flex items-center justify-center gap-2">
+            <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+              <a
+                href={`/dashboard/qr-codes/${token}/pdf`}
+                download
+                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+              >
+                Print sheet (PDF)
+              </a>
               <a
                 href={`/dashboard/qr-codes/${token}/svg`}
                 download
-                className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90"
+                className="rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
               >
                 Download SVG
               </a>
@@ -68,6 +75,9 @@ export function QrPreviewButton({
                 Close
               </button>
             </div>
+            <p className="mt-3 text-xs text-muted-foreground">
+              Print sheet: one A4 page, this token&apos;s QR on all four counter-card designs.
+            </p>
           </div>
         </div>
       )}

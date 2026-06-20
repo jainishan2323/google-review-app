@@ -1,0 +1,21 @@
+# Private-feedback alerts: email the Owner from the form app via a shared `@repo/email` package
+
+**Status:** accepted
+
+**Context.** Private feedback (`AnonymousFeedback` with `source = private`, the rating-<4 path) is the one signal an [Owner] has no other way to see — by design it never reaches Google. Owners had no notification of it. We want them emailed the moment one arrives.
+
+**Decision.** When `api/submit-private` (in `apps/form`) creates a `source = private` row, it sends the Owner an email. The send lives in a **new shared `@repo/email` package** (Resend client + `react-email` templates + a shared `<EmailLayout>`), imported by the form app the same way apps consume `@repo/db`. `google_redirect` submissions do **not** notify. The email goes to `Business.owner.email`.
+
+**The email is deliberately detail-free: the star rating + a "kept private / not posted to Google" note + a CTA to `${NEXT_PUBLIC_DASHBOARD_URL}/dashboard/feedback` — and nothing about the feedback content.** The comment text and chips are withheld so the Owner must log into the dashboard to read them; that login is the hook for the planned **feedback monetization**. Showing the rating preserves the urgency signal ("how bad") while gating the substance ("what"). The content is never placed in the email body (HTML or plain-text), so it's genuinely gated, not just visually hidden — a CSS blur was rejected because email clients (Gmail/Outlook) strip `filter: blur()` and would leak the text. Richer/teaser content returns with the monetization work.
+
+**Considered options / why.**
+- **Trigger in `apps/form`, not `apps/web`.** The event only exists where the row is created — the form route. Routing through a web API would add a synchronous cross-deployment call (cold-start/availability/trust) on the customer's submit path for no gain. The form app already has Prisma to look up the recipient. (`resend` and `react-email` are server-only imports in the route handler — zero impact on the form's client bundle.)
+- **A shared `@repo/email` package, not a local helper.** Email is the first of several planned notification channels (SMS/WhatsApp later); the package gives the Resend client, from-address, and a reusable `react-email` layout one home so later notifications/channels reuse it instead of being trapped in the form app.
+- **Recipient is `Business.owner.email`; `AlertConfig` is deliberately bypassed.** `AlertConfig` exists in the schema but is entirely inert (no UI creates rows, `/api/alerts` has no client, seed makes none), and it was modelled around Google-review alerts (`NEW_REVIEW`/`RATING_DROP`). Gating on it would force a "send anyway when no row exists" default, making it contribute nothing until a settings UI exists. So v1 sends to the Owner's verified email unconditionally (always-on, no opt-out, no custom recipient). When the alerts settings UI is built, `AlertConfig` gets wired for all alert types at once — a `PRIVATE_FEEDBACK` enum value, `enabled` opt-out, and custom recipient are deferred to then.
+- **Fire-after-response via Next's `after()`, best-effort.** The `AnonymousFeedback` row is committed before any send, so a Resend failure can never fail the customer's submission. The send runs in `after()` (not a dangling un-awaited promise, which Vercel may freeze/kill after the response) so it's non-blocking for the customer yet still guaranteed to run; failures are caught and logged. **No retries, dead-letter, or `notifiedAt` tracking** in v1 — a dropped email is acceptable at pilot scale.
+- **Per-event/real-time, not digested.** One email per private feedback matches the ask and is simplest. A **digest** (the better long-term carrier per the retention plan) needs a scheduler — and the repo has no cron. **Deferred to Phase 2** alongside the cron infrastructure; revisit if email volume or Owner complaints make per-event a nuisance.
+
+**Consequences.**
+- `apps/form`'s Vercel project must now carry `RESEND_API_KEY` and `ALERT_FROM_EMAIL` (previously only `apps/web` needed them).
+- Two email pathways will exist once Google-review alerts ship; the intent is they converge on `@repo/email` and (for config) `AlertConfig`.
+- A redesigned/high-volume future will likely flip this to a digest — see the per-event note above.

@@ -1,5 +1,6 @@
 import { prisma } from "@repo/db";
-import { NextRequest, NextResponse } from "next/server";
+import { sendPrivateFeedbackAlert } from "@repo/email";
+import { NextRequest, NextResponse, after } from "next/server";
 import { z } from "zod";
 
 const schema = z.object({
@@ -11,6 +12,10 @@ const schema = z.object({
   tagIds: z.array(z.string().max(40)).max(20).default([]),
   source: z.enum(["private", "google_redirect"]).default("private"),
 });
+
+const DASHBOARD_URL = (
+  process.env.NEXT_PUBLIC_DASHBOARD_URL ?? "https://app.jugnoo.olbaid.de"
+).replace(/\/$/, "");
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,6 +54,33 @@ export async function POST(req: NextRequest) {
         status: "unread",
       },
     });
+
+    // Email the Owner about PRIVATE feedback only — google_redirect went to Google,
+    // so it's not the silent signal this alert exists for (ADR 0018). Runs after the
+    // response so the customer never waits on (or is failed by) the email send. The
+    // email is deliberately detail-free (stars + dashboard CTA) — the feedback
+    // content stays behind the login as the monetization hook.
+    if (source === "private") {
+      after(async () => {
+        try {
+          const business = await prisma.business.findUnique({
+            where: { id: businessId },
+            select: { name: true, owner: { select: { email: true } } },
+          });
+          const to = business?.owner?.email;
+          if (!business || !to) return;
+
+          await sendPrivateFeedbackAlert({
+            to,
+            businessName: business.name,
+            rating,
+            dashboardUrl: `${DASHBOARD_URL}/dashboard/feedback`,
+          });
+        } catch (err) {
+          console.error("[private-feedback-alert] send failed", err);
+        }
+      });
+    }
 
     return NextResponse.json({ success: true }, { status: 201 });
   } catch (err) {

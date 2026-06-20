@@ -46,6 +46,7 @@ google-review-app/
 ├── packages/
 │   ├── db/          Prisma schema, client singleton, seed
 │   ├── llm/         Provider-abstracted LLM helpers (OpenAI today)
+│   ├── email/       Transactional email (Resend + react-email templates)
 │   ├── types/       Shared TS interfaces + taxonomy/analysis types
 │   └── ui/          Shared React primitives (button/card/star-rating)
 ├── turbo.json       Task graph + the env vars each build receives
@@ -79,6 +80,7 @@ google-review-app/
 ### packages
 - **db** — `prisma/schema.prisma` (Postgres), `prisma/migrations/`, `prisma/seed.ts`, `src/taxonomy-templates.ts` (code-defined Taxonomy Templates per Business Type + `applyTaxonomyTemplate`), and `src/index.ts` exporting the `prisma` singleton + all Prisma types + the template helpers.
 - **llm** — `client.ts` (`getLLMClient()` picks a provider by `LLM_PROVIDER`), `providers/openai.ts` + `providers/types.ts` (the `LLMProvider` interface: `complete` / `stream`), and feature helpers: `review-generator.ts`, `review-analyzer.ts`, `sentiment-analyzer.ts`, `reply-drafter.ts`, `label-translator.ts` (batched chip-label translation for fill-blanks auto-translate). `index.ts` is the public surface.
+- **email** — `src/send.ts` (`sendPrivateFeedbackAlert`), `src/layout.tsx` (shared brand `<EmailLayout>`), `src/templates/*` (react-email templates), `src/index.ts` (public surface). Owns the Resend client + from-address; imported by apps that send mail (form today). Reads `RESEND_API_KEY`/`ALERT_FROM_EMAIL`; no-ops if unset. See ADR 0018.
 - **types** — `src/index.ts`: form/review/business/feedback interfaces, the analyzer taxonomy types (`TaxonomyCategory`, `MappedTag`, `ReviewAnalysisResult`, …), and the multilingual-tag helpers (`resolveLabel` fallback chain, `FormTag`, `LabelMap`, `Polarity`).
 - **ui** — `button.tsx`, `card.tsx`, `star-rating.tsx`.
 
@@ -136,7 +138,7 @@ Defined in `packages/db/prisma/schema.prisma`. Central entity is **`Business`** 
 - **PostgreSQL** via Prisma (`@repo/db`, `DATABASE_URL`) — the single source of truth shared by all apps.
 - **OpenAI** via `@repo/llm` (`OPENAI_API_KEY`, `LLM_PROVIDER`) — review generation (form), reply drafting + sentiment/taxonomy analysis (web). Provider is abstracted behind `LLMProvider`; feature code never imports the SDK directly, so swapping providers is a one-file change in `client.ts`.
 - **Google OAuth + Business Profile API** — NextAuth Google login (web + lantern). **web's Phase 1 requests only `openid email profile`** (identity, no app-verification warning); the `business.manage` scope + v4 API read/reply path (`src/lib/google-business.ts`) is built but deferred to a Phase 2 "Connect Google" step (ADR 0003). *(On `main`, reads come from the DB seed; live per-user fetching is the `feat/live-google-business-data` branch. The Business Profile API is quota-gated and 429s until Google approves the project.)*
-- **Resend** (`RESEND_API_KEY`, `ALERT_FROM_EMAIL`) — intended channel for review alerts. Modeled (`AlertConfig`) but **not yet implemented** in code.
+- **Resend** (`RESEND_API_KEY`, `ALERT_FROM_EMAIL`) — transactional email via `@repo/email`. **Wired** for private-feedback alerts: a new `source=private` feedback emails the owner from `apps/form`'s `submit-private` route (ADR 0018). The `AlertConfig`-based Google-review alerts (`NEW_REVIEW`/`RATING_DROP`) remain **not implemented**.
 - **Deployment:** Vercel, **one project per app**, each on its own domain/subdomain with its own env vars (no `vercel.json`/CI in the repo).
 
 ## 7. Where major features live
@@ -157,6 +159,7 @@ Defined in `packages/db/prisma/schema.prisma`. Central entity is **`Business`** 
 | Starter form template / business onboarding | `packages/db/src/taxonomy-templates.ts`, `apps/lantern/src/actions/businesses.ts`, `apps/web/src/actions/seedStarterForm.ts` |
 | Auth / scopes / session | `apps/web/src/lib/auth.ts`, `apps/lantern/src/lib/auth.ts` |
 | Business resolution / operator access | `apps/web/src/lib/current-business.ts` (ADR 0004 / 0010 / 0014) |
+| Email alerts / templates | `packages/email/src/*`, `apps/form/src/app/api/submit-private/route.ts` (ADR 0018) |
 | Database schema | `packages/db/prisma/schema.prisma` (+ `prisma/seed.ts`) |
 | Waitlist / marketing | `apps/landing/src` |
 | Admin views | `apps/lantern/src/app/dashboard` |

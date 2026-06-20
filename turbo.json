@@ -11,6 +11,7 @@
         "AI_STREAMING",
         "DEV_BUSINESS_ID",
         "NEXT_PUBLIC_FORM_URL",
+        "NEXT_PUBLIC_DASHBOARD_URL",
         "NEXTAUTH_URL",
         "NEXTAUTH_SECRET",
         "GOOGLE_CLIENT_ID",

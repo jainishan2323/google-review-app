@@ -152,3 +152,9 @@ _Avoid_: line, cart row (informal), sku
 
 **Card theme** _(retired)_:
 Was the colour arrangement of the React card — `green-black` / `black-green`. **No longer a concept:** the SVG [Card Template]s are single-treatment artwork, so theme is dropped from the studio and no longer written. The `PrintOrder.theme` column lingers only for old rows. The card's second dimension is now [Card language], not theme.
+
+## Notifications
+
+**Private-feedback alert**:
+An email sent to the [Owner] the moment a customer leaves [private] feedback (`source = private`) — the unhappy/captured-for-you submissions that, by design, never reach Google, so the alert is the Owner's only channel to learn of them. Always goes to the Owner's verified email; not sent for `google_redirect` submissions. Currently real-time, one email per submission. **Detail-free by design**: it carries only the star rating and a dashboard link — the comment and chips are withheld so the Owner must log in to read them (the monetization hook).
+_Avoid_: review alert (Google reviews are a separate, unbuilt alert), digest (the deferred batched form), notification (too generic)

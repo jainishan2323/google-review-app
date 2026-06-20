@@ -7,7 +7,7 @@ import { CookieBanner } from "@/components/CookieBanner";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
-const SITE_URL = "https://jugnoo.olbaid.de";
+const SITE_URL = "https://jugnoo.de";
 const SITE_NAME = "Jugnoo";
 const TITLE = "Jugnoo — Turn Happy Customers into 5-Star Google Reviews";
 const DESCRIPTION =

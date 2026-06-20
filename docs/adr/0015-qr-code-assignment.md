@@ -5,7 +5,7 @@
 ## Context
 
 Every business needs printed counter cards carrying a QR code that opens its
-per-business feedback form (`feedback.jugnoo.olbaid.de/<businessId>`). Today the QR
+per-business feedback form (`feedback.jugnoo.de/<businessId>`). Today the QR
 encodes the business's form URL directly, which marries each card to a business **at
 print time**. That has three costs:
 
@@ -32,7 +32,7 @@ not as a replacement (see "Two coexisting QR modes").
 
 ### The QR encodes a token, never a business
 
-Each card's QR points at a short URL: `feedback.jugnoo.olbaid.de/q/{token}`, where
+Each card's QR points at a short URL: `feedback.jugnoo.de/q/{token}`, where
 `{token}` is a short, random, human-readable, non-sequential code (e.g. `K7M2P`). The
 server looks the token up, finds the assigned business, and resolves to that business's
 form. The QR is a pointer to a mapping we own, not a baked-in destination.

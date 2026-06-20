@@ -62,7 +62,7 @@ See `.env.example` for the canonical list. Used across apps (declared in `turbo.
 
 ## Vocabulary
 
-- **Jugnoo** — the product (firefly in Hindi). Marketing domain `jugnoo.olbaid.de`; form at `feedback.jugnoo.olbaid.de`.
+- **Jugnoo** — the product (firefly in Hindi). Canonical marketing domain `jugnoo.de`; form at `feedback.jugnoo.de`. The old `*.jugnoo.olbaid.de` domains stay attached (form dual-serves both; landing/dashboard/Lantern redirect old→new) so legacy printed QR cards keep resolving — see `docs/domain-migration-todos.md`.
 - **Review gating funnel** — the form's core flow: rating ≥4 → AI-drafted review + redirect to Google; rating <4 → captured privately (not sent to Google).
 - **Anonymous / private feedback** — customer feedback stored in `AnonymousFeedback` (not a public Google review). `source` is `private` or `google_redirect`.
 - **Taxonomy / categories** — per-business `FeedbackCategory` (a "zone": Kitchen / Service) each owning `Tag` rows; drives both the form and the analyzer. Categories + tags carry per-language `labels` (JSON) and an optional `canonicalKey`.

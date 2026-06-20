@@ -7,7 +7,7 @@ import { mintBatch, unassignToken, retireToken, restoreToken } from "@/actions/q
 
 // Base URL the QR encodes — same resolver the form app serves at /q/{token}.
 const FORM_BASE_URL = (
-  process.env.NEXT_PUBLIC_FORM_URL ?? "https://feedback.jugnoo.olbaid.de"
+  process.env.NEXT_PUBLIC_FORM_URL ?? "https://feedback.jugnoo.de"
 ).replace(/\/$/, "");
 
 // Token-card management home (ADR 0015): mint stock, assign on-site, retire,

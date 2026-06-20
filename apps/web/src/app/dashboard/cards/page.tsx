@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 const FORM_BASE_URL =
   process.env.NEXT_PUBLIC_FORM_URL ??
   (process.env.NODE_ENV === "production"
-    ? "https://feedback.jugnoo.olbaid.de"
+    ? "https://feedback.jugnoo.de"
     : "http://localhost:3001");
 
 // Feature flag: the full card studio (template, theme switch, NFC, "send to print")

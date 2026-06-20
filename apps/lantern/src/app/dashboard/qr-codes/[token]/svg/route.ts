@@ -6,7 +6,7 @@ import { buildQrSvg } from "@/lib/qr-svg";
 // …/q/{token}; filename = the code so the file self-identifies. The Operator edits
 // + prints manually for now (batch-sheet UI is Phase 2).
 const FORM_BASE_URL = (
-  process.env.NEXT_PUBLIC_FORM_URL ?? "https://feedback.jugnoo.olbaid.de"
+  process.env.NEXT_PUBLIC_FORM_URL ?? "https://feedback.jugnoo.de"
 ).replace(/\/$/, "");
 
 export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {

@@ -6,7 +6,7 @@ import { buildTokenPrintSheetPdf } from "@/lib/token-print-sheet";
 // stamped into all four counter-card variants of the artboard — fully vector.
 // Mirrors the sibling per-token `/svg` route; filename = the code.
 const FORM_BASE_URL = (
-  process.env.NEXT_PUBLIC_FORM_URL ?? "https://feedback.jugnoo.olbaid.de"
+  process.env.NEXT_PUBLIC_FORM_URL ?? "https://feedback.jugnoo.de"
 ).replace(/\/$/, "");
 
 export async function GET(_req: Request, { params }: { params: Promise<{ token: string }> }) {

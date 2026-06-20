@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 
-const SITE_URL = "https://jugnoo.olbaid.de";
+const SITE_URL = "https://jugnoo.de";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();

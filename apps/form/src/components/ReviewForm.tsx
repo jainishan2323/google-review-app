@@ -330,7 +330,7 @@ export default function ReviewForm({
         </div>
 
         <a
-          href="https://jugnoo.olbaid.de"
+          href="https://jugnoo.de"
           target="_blank"
           rel="noopener noreferrer"
           className="absolute bottom-5 flex items-center gap-1.5"
@@ -408,7 +408,7 @@ export default function ReviewForm({
         <p className="text-sm text-muted-foreground">Tap a star to rate</p>
 
         <a
-          href="https://jugnoo.olbaid.de"
+          href="https://jugnoo.de"
           target="_blank"
           rel="noopener noreferrer"
           className="absolute bottom-5 flex items-center gap-1.5"
@@ -513,7 +513,7 @@ export default function ReviewForm({
             Next
           </button>
           <a
-            href="https://jugnoo.olbaid.de"
+            href="https://jugnoo.de"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1.5"
@@ -622,7 +622,7 @@ export default function ReviewForm({
             <ExternalLink className="size-4" />
           </button>
           <a
-            href="https://jugnoo.olbaid.de"
+            href="https://jugnoo.de"
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center justify-center gap-1.5 pt-1"
@@ -761,7 +761,7 @@ export default function ReviewForm({
           </>
         )}
         <a
-          href="https://jugnoo.olbaid.de"
+          href="https://jugnoo.de"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center justify-center gap-1.5 pt-1"

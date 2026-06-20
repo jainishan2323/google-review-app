@@ -94,6 +94,16 @@ _Avoid_: category (collides with the feedback zone), vertical, industry, segment
 A named, code-defined starter set of [categories] + [tags] (with per-language [labels] and [canonical keys]) for one [Business Type], seeded into a business's form **once at onboarding**. After seeding, the taxonomy is owned and edited per business — the template is not a live link. One template per Business Type.
 _Avoid_: template (bare — collides with [Card Template]), category template, preset, starter pack
 
+## Analysis
+
+**Analyzer** (batch analyzer):
+The LLM step that reads submitted [reviews] and [private feedback] and maps each onto the business's taxonomy — emitting **mapped tags** (stored as [tag] identities, each judged positive/negative per review) and **unmapped insights** (short free-text themes that fall outside the taxonomy). Maps against the [base language] and processes records in fixed-size batches.
+_Avoid_: classifier, tagger, sentiment engine
+
+**Analysis run**:
+One owner-initiated pass of the [analyzer] over a business's records — either the un-analyzed backlog ("Analyze") or every record again ("Re-analyze All"). Driven from the browser one batch at a time (there is no background worker); its live progress is surfaced in a persistent corner widget that follows the owner across dashboard tabs. Ephemeral: a run's progress is client state that ends on a hard reload, though each completed batch is already saved, so a new run resumes the remainder.
+_Avoid_: job (implies a server-tracked background task — a run is client-driven), task, analysis session
+
 ## Review generation
 
 **Mood** (tone band):

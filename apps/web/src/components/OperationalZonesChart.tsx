@@ -1,22 +1,13 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  LabelList,
-  Cell,
-  ResponsiveContainer,
-} from "recharts";
 import { TagDrillDownSheet } from "@/components/TagDrillDownSheet";
+import { cn } from "@/lib/utils";
 
 export interface ZoneTagBar {
   /** Tag IDENTITY — used for the drill-down query (stored on feedback). */
   tagId: string;
-  /** Display label (resolved to the business default language) — the chart axis + chip text. */
+  /** Display label (resolved to the business default language) — the row label + chip text. */
   tag: string;
   zone: string;
   positive: number;
@@ -30,243 +21,220 @@ interface OperationalZonesChartProps {
   deltas: Record<string, number>;
 }
 
-// Delta pill rendered inside the custom YAxis tick
+const POS_COLOR = "var(--color-green-500)";
+const NEG_COLOR = "#f87171";
+
+// Zone health is a traffic light on the zone's negative share of mentions.
+function zoneHealthColor(pos: number, neg: number): string {
+  const total = pos + neg;
+  if (total === 0) return "#9ca3af"; // grey — no data
+  const ratio = neg / total;
+  if (ratio < 0.25) return "#9ca3af"; // grey — healthy
+  if (ratio < 0.5) return "#f59e0b"; // amber — watch
+  return "#f87171"; // red — problem
+}
+
+// Period-over-period delta: ↓ fewer mentions = improving (green), ↑ more = worsening (red).
 function DeltaPill({ delta }: { delta: number | undefined }) {
-  if (delta === undefined) return null;
-  const isPositive = delta > 0;
-  const abs = Math.abs(delta);
+  if (delta === undefined || delta === 0) return null;
+  const up = delta > 0;
   return (
-    <span
-      className={`ml-1.5 inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${
-        isPositive
-          ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-          : "bg-chart-1/30 text-chart-5 dark:bg-chart-5/30 dark:text-chart-2"
-      }`}
-    >
-      {isPositive ? "↑" : "↓"} {abs}%
+    <span className={cn("text-xs font-semibold tabular-nums", up ? "text-red-400" : "text-green-500")}>
+      {up ? "↑" : "↓"}
+      {Math.abs(delta)}%
     </span>
   );
 }
 
-// Custom Y-axis tick that renders the tag name + delta pill as HTML
-function CustomYAxisTick(props: {
-  x?: number;
-  y?: number;
-  payload?: { value: string };
-  onTagClick?: (tag: string) => void;
-  deltas?: Record<string, number>;
-}) {
-  const { x = 0, y = 0, payload, onTagClick, deltas = {} } = props;
-  const tag = payload?.value ?? "";
-  const delta = deltas[tag];
-  const isPositive = delta !== undefined && delta > 0;
+interface TagRowProps {
+  tag: ZoneTagBar;
+  globalMax: number;
+  delta: number | undefined;
+  active: boolean;
+  dimmed: boolean;
+  onClick: () => void;
+}
+
+function TagRow({ tag, globalMax, delta, dimmed, onClick }: TagRowProps) {
+  const posPct = (tag.positive / globalMax) * 100;
+  const negPct = (tag.negative / globalMax) * 100;
 
   return (
-    <g transform={`translate(${x},${y})`}>
-      <foreignObject x={-180} y={-11} width={176} height={24}>
-        <div className="flex items-center justify-end gap-1 h-full pr-2">
-          <button
-            className="text-[11px] font-medium text-foreground hover:text-primary transition-colors truncate max-w-[90px]"
-            onClick={() => onTagClick?.(tag)}
-            title={tag}
-          >
-            {tag}
-          </button>
-          {delta !== undefined && (
-            <span
-              className={`inline-flex items-center gap-0.5 rounded-full px-1 py-0 text-[9px] font-bold shrink-0 ${
-                isPositive
-                  ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                  : "bg-chart-1/30 text-chart-5 dark:bg-chart-5/30 dark:text-chart-2"
-              }`}
+    <div
+      className={cn(
+        "grid grid-cols-[150px_minmax(0,1fr)_52px] items-center gap-2 transition-opacity",
+        dimmed && "opacity-40",
+      )}
+    >
+      {/* Tag label */}
+      <button
+        onClick={onClick}
+        title={tag.tag}
+        className="cursor-pointer truncate text-right text-sm font-medium text-foreground hover:text-primary transition-colors"
+      >
+        {tag.tag}
+      </button>
+
+      {/* Diverging bar */}
+      <div className="relative flex h-5 items-center">
+        <div className="absolute inset-y-0 left-1/2 w-px -translate-x-1/2 bg-border" />
+
+        {/* Negative — grows left from centre */}
+        <div className="flex w-1/2 justify-end">
+          {tag.negative > 0 && (
+            <button
+              onClick={onClick}
+              title={`${tag.tag} · ${tag.negative} negative`}
+              className="flex h-3.5 cursor-pointer items-center justify-start overflow-hidden rounded-l pl-1 transition-opacity hover:opacity-80"
+              style={{ width: `${negPct}%`, minWidth: 12, background: NEG_COLOR }}
             >
-              {isPositive ? "↑" : "↓"}{Math.abs(delta)}%
-            </span>
+              <span className="text-[10px] font-semibold text-white">{tag.negative}</span>
+            </button>
           )}
         </div>
-      </foreignObject>
-    </g>
+
+        {/* Positive — grows right from centre */}
+        <div className="flex w-1/2 justify-start">
+          {tag.positive > 0 && (
+            <button
+              onClick={onClick}
+              title={`${tag.tag} · ${tag.positive} positive`}
+              className="flex h-3.5 cursor-pointer items-center justify-end overflow-hidden rounded-r pr-1 transition-opacity hover:opacity-80"
+              style={{ width: `${posPct}%`, minWidth: 12, background: POS_COLOR }}
+            >
+              <span className="text-[10px] font-semibold text-white">{tag.positive}</span>
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Delta */}
+      <div className="text-right">
+        <DeltaPill delta={delta} />
+      </div>
+    </div>
   );
 }
 
-const ZONE_COLORS: Record<string, string> = {
-  Kitchen: "var(--chart-4)",
-  "Front of House": "oklch(0.45 0.18 250)", // blue-ish
-  Atmosphere: "oklch(0.45 0.18 30)",     // orange-ish
-};
-
-const POS_COLOR = "var(--chart-3)";
-const NEG_COLOR = "#f87171";
-
-function absFormatter(value: unknown) {
-  const n = Math.abs(Number(value));
-  return n > 0 ? String(n) : "";
-}
-
-interface ZoneChartSectionProps {
+interface ZoneSectionProps {
   zone: string;
   tags: ZoneTagBar[];
-  onTagClick: (tag: string) => void;
-  activeTag: string | null;
+  globalMax: number;
   deltas: Record<string, number>;
+  activeTag: string | null;
+  onTagClick: (tag: string) => void;
 }
 
-function ZoneChartSection({ zone, tags, onTagClick, activeTag, deltas }: ZoneChartSectionProps) {
+function ZoneSection({ zone, tags, globalMax, deltas, activeTag, onTagClick }: ZoneSectionProps) {
   if (tags.length === 0) return null;
 
-  // Recharts requires negative values to go left — store negative as negative number
-  const chartData = tags.map((t) => ({
-    tag: t.tag,
-    positive: t.positive,
-    negative: t.negative > 0 ? -t.negative : 0,
-  }));
+  const posSum = tags.reduce((s, t) => s + t.positive, 0);
+  const negSum = tags.reduce((s, t) => s + t.negative, 0);
+  const net = posSum - negSum;
 
-  const barHeight = 32;
-  const chartHeight = tags.length * barHeight + 16;
+  // Most-negative first, then by volume.
+  const sorted = [...tags].sort(
+    (a, b) => b.negative - a.negative || b.positive - a.positive,
+  );
 
   return (
-    <div className="space-y-1">
-      <div className="flex items-center gap-2 px-1">
+    <div className="space-y-2">
+      <div className="flex items-center gap-2">
         <span
-          className="h-2.5 w-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: ZONE_COLORS[zone] ?? "#888" }}
+          className="h-2.5 w-2.5 shrink-0 rounded-full"
+          style={{ background: zoneHealthColor(posSum, negSum) }}
         />
         <h3 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           {zone}
         </h3>
+        <span className="text-xs text-muted-foreground/50">·</span>
+        <span className={cn("text-xs font-semibold tabular-nums", net >= 0 ? "text-green-500" : "text-red-400")}>
+          net {net >= 0 ? "+" : ""}
+          {net}
+        </span>
       </div>
 
-      <ResponsiveContainer width="100%" height={chartHeight}>
-        <BarChart
-          data={chartData}
-          layout="vertical"
-          margin={{ top: 0, right: 32, bottom: 0, left: 184 }}
-          barCategoryGap={4}
-        >
-          <XAxis
-            type="number"
-            tick={false}
-            axisLine={false}
-            tickLine={false}
-            domain={["auto", "auto"]}
-          />
-          <YAxis
-            dataKey="tag"
-            type="category"
-            width={180}
-            tick={
-              <CustomYAxisTick
-                onTagClick={onTagClick}
-                deltas={deltas}
-              />
-            }
-            axisLine={false}
-            tickLine={false}
-          />
-          <Tooltip
-            formatter={(value) => [Math.abs(Number(value)), "Count"]}
-            contentStyle={{
-              fontSize: 12,
-              borderRadius: 6,
-            }}
-            cursor={{ fill: "rgba(0,0,0,0.05)" }}
-          />
+      {/* Axis hint */}
+      <div className="grid grid-cols-[150px_minmax(0,1fr)_52px] items-center gap-2">
+        <span />
+        <div className="relative flex items-center text-[10px] text-muted-foreground/60">
+          <span className="w-1/2 text-left">◀ negative</span>
+          <span className="absolute left-1/2 -translate-x-1/2">0</span>
+          <span className="w-1/2 text-right">positive ▶</span>
+        </div>
+        <span />
+      </div>
 
-          {/* Positive bars — extend right */}
-          <Bar dataKey="positive" fill={POS_COLOR} radius={[0, 3, 3, 0]} isAnimationActive={false}>
-            {chartData.map((entry) => (
-              <Cell
-                key={entry.tag}
-                fill={POS_COLOR}
-                opacity={activeTag && activeTag !== entry.tag ? 0.35 : 1}
-                cursor="pointer"
-                onClick={() => onTagClick(entry.tag)}
-              />
-            ))}
-            <LabelList
-              dataKey="positive"
-              position="insideRight"
-              style={{ fontSize: 10, fill: "#fff", fontWeight: 600 }}
-              formatter={(v) => (Number(v) > 0 ? String(v) : "")}
-            />
-          </Bar>
-
-          {/* Negative bars — extend left (stored as negative) */}
-          <Bar dataKey="negative" fill={NEG_COLOR} radius={[3, 0, 0, 3]} isAnimationActive={false}>
-            {chartData.map((entry) => (
-              <Cell
-                key={entry.tag}
-                fill={NEG_COLOR}
-                opacity={activeTag && activeTag !== entry.tag ? 0.35 : 1}
-                cursor="pointer"
-                onClick={() => onTagClick(entry.tag)}
-              />
-            ))}
-            <LabelList
-              dataKey="negative"
-              position="insideLeft"
-              style={{ fontSize: 10, fill: "#fff", fontWeight: 600 }}
-              formatter={absFormatter}
-            />
-          </Bar>
-        </BarChart>
-      </ResponsiveContainer>
+      <div className="space-y-1.5">
+        {sorted.map((t) => (
+          <TagRow
+            key={t.tagId}
+            tag={t}
+            globalMax={globalMax}
+            delta={deltas[t.tag]}
+            active={activeTag === t.tag}
+            dimmed={!!activeTag && activeTag !== t.tag}
+            onClick={() => onTagClick(t.tag)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
 export function OperationalZonesChart({ data, businessId, zoneOrder, deltas }: OperationalZonesChartProps) {
-  // The chart keys on display labels; map back to identities for the drill-down query.
-  // Labels are business-wide unique per language (guardrail), so this is unambiguous.
+  // Chart keys on display labels; map back to identities for the drill-down query.
   const idByLabel = new Map(data.map((d) => [d.tag, d.tagId]));
   const [selectedTag, setSelectedTag] = useState<string | null>(null);
 
-  const handleTagClick = useCallback((tag: string) => {
-    setSelectedTag(tag);
-  }, []);
+  const handleTagClick = useCallback((tag: string) => setSelectedTag(tag), []);
 
-  // Group tags by zone, preserving DB-configured order
   const byZone = zoneOrder.reduce<Record<string, ZoneTagBar[]>>((acc, zone) => {
     acc[zone] = data.filter((d) => d.zone === zone);
     return acc;
-  }, {} as Record<string, ZoneTagBar[]>);
+  }, {});
 
+  // One shared scale across every zone, so equal counts render at equal length.
+  const globalMax = Math.max(1, ...data.map((d) => Math.max(d.positive, d.negative)));
   const hasData = data.length > 0;
+  const selected = selectedTag ? data.find((d) => d.tag === selectedTag) ?? null : null;
 
   return (
     <>
       {/* Legend */}
-      <div className="flex items-center gap-4 mb-4">
+      <div className="mb-6 flex flex-wrap items-center gap-x-4 gap-y-2">
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: POS_COLOR }} />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: POS_COLOR }} />
           Positive (≥4★)
         </span>
         <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span className="inline-block w-3 h-3 rounded-sm" style={{ background: NEG_COLOR }} />
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: NEG_COLOR }} />
           Negative (&lt;4★)
         </span>
-        <span className="ml-auto flex items-center gap-3 text-[10px] text-muted-foreground">
-          <span className="inline-flex items-center gap-0.5 bg-chart-1/30 text-chart-5 dark:bg-chart-5/30 dark:text-chart-2 rounded-full px-1.5 py-0.5 font-semibold">↓ 15%</span>
-          <span>= improving vs. last period</span>
-          <span className="inline-flex items-center gap-0.5 bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-full px-1.5 py-0.5 font-semibold">↑ 10%</span>
-          <span>= worsening</span>
+        <span className="ml-auto flex items-center gap-2 text-xs text-muted-foreground">
+          <span className="rounded-full bg-green-500/15 px-2 py-0.5 font-semibold text-green-500">↓15%</span>
+          improving
+          <span className="rounded-full bg-red-400/15 px-2 py-0.5 font-semibold text-red-400">↑10%</span>
+          worsening
+          <span className="text-muted-foreground/60">vs. last period</span>
         </span>
       </div>
 
       {!hasData ? (
-        <p className="text-sm text-muted-foreground py-6 text-center">
+        <p className="py-6 text-center text-sm text-muted-foreground">
           No tagged feedback in this range.
         </p>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-8">
           {zoneOrder.map((zone) => (
-            <ZoneChartSection
+            <ZoneSection
               key={zone}
               zone={zone}
               tags={byZone[zone] ?? []}
-              onTagClick={handleTagClick}
-              activeTag={selectedTag}
+              globalMax={globalMax}
               deltas={deltas}
+              activeTag={selectedTag}
+              onTagClick={handleTagClick}
             />
           ))}
         </div>
@@ -278,6 +246,10 @@ export function OperationalZonesChart({ data, businessId, zoneOrder, deltas }: O
         businessId={businessId}
         open={!!selectedTag}
         onClose={() => setSelectedTag(null)}
+        zone={selected?.zone}
+        positive={selected?.positive}
+        negative={selected?.negative}
+        delta={selectedTag ? deltas[selectedTag] : undefined}
       />
     </>
   );

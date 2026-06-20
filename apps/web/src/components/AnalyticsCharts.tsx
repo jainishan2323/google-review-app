@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import {
   BarChart,
   Bar,
@@ -9,6 +10,8 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
+  ComposedChart,
+  Line,
 } from "recharts";
 import {
   ChartContainer,
@@ -16,6 +19,7 @@ import {
   ChartTooltipContent,
   type ChartConfig,
 } from "@/components/ui/chart";
+import { MonthReviewsSheet } from "@/components/MonthReviewsSheet";
 
 // ── Feedback Received (daily bar chart) ──────────────────────
 
@@ -58,6 +62,104 @@ export function FeedbackReceivedChart({ data }: { data: DailyCount[] }) {
         <Bar dataKey="count" fill="var(--color-primary)" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ChartContainer>
+  );
+}
+
+// ── Review volume over time (monthly stacked + avg-rating line) ──
+
+export interface MonthlyVolumePoint {
+  month: string; // "Jun" — x-axis tick
+  monthKey: string; // "2026-06" — drill-down query
+  monthLabel: string; // "June 2026" — drawer title
+  positive: number; // rating >= 4
+  negative: number; // rating < 4
+  avg: number | null; // average rating that month, null if no reviews
+}
+
+const volumeChartConfig = {
+  positive: { label: "Positive", color: "var(--color-green-500)" },
+  negative: { label: "Negative", color: "#f87171" },
+  avg: { label: "Avg ★", color: "var(--color-primary)" },
+} satisfies ChartConfig;
+
+export function ReviewVolumeChart({ data, businessId }: { data: MonthlyVolumePoint[]; businessId: string }) {
+  const [selected, setSelected] = useState<MonthlyVolumePoint | null>(null);
+  const hasData = data.some((d) => d.positive + d.negative > 0);
+  if (!hasData) {
+    return (
+      <div className="flex items-center justify-center h-72 text-muted-foreground text-sm">
+        No reviews in this period.
+      </div>
+    );
+  }
+  return (
+    <>
+    <ChartContainer config={volumeChartConfig} className="h-72 w-full cursor-pointer">
+      <ComposedChart
+        data={data}
+        barCategoryGap="30%"
+        onClick={(state) => {
+          const idx = Number(state?.activeIndex);
+          if (!Number.isInteger(idx)) return;
+          const point = data[idx];
+          if (point && point.positive + point.negative > 0) setSelected(point);
+        }}
+      >
+        <CartesianGrid vertical={false} strokeDasharray="3 3" className="stroke-border" />
+        <XAxis
+          dataKey="month"
+          tick={{ fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <YAxis
+          yAxisId="count"
+          tick={{ fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+          allowDecimals={false}
+          width={28}
+        />
+        {/* Hidden secondary axis so the avg-rating line shares the plot on its own 0–5 scale. */}
+        <YAxis yAxisId="avg" orientation="right" domain={[0, 5]} hide />
+        <ChartTooltip content={<ChartTooltipContent />} />
+        <Bar
+          yAxisId="count"
+          dataKey="positive"
+          stackId="vol"
+          fill="var(--color-green-500)"
+          radius={[0, 0, 0, 0]}
+          style={{ cursor: "pointer" }}
+        />
+        <Bar
+          yAxisId="count"
+          dataKey="negative"
+          stackId="vol"
+          fill="#f87171"
+          radius={[3, 3, 0, 0]}
+          style={{ cursor: "pointer" }}
+        />
+        <Line
+          yAxisId="avg"
+          dataKey="avg"
+          stroke="var(--color-primary)"
+          strokeWidth={2}
+          strokeDasharray="5 5"
+          dot={false}
+          connectNulls={false}
+        />
+      </ComposedChart>
+    </ChartContainer>
+    <MonthReviewsSheet
+      monthKey={selected?.monthKey ?? null}
+      monthLabel={selected?.monthLabel ?? ""}
+      positive={selected?.positive ?? 0}
+      negative={selected?.negative ?? 0}
+      businessId={businessId}
+      open={!!selected}
+      onClose={() => setSelected(null)}
+    />
+    </>
   );
 }
 

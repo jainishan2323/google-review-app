@@ -19,7 +19,7 @@ import { FireflyLogo } from "@/components/FireflyLogo";
 const navItems = [
   { href: "/dashboard",                   label: "Overview",  icon: LayoutDashboard, soon: false },
   { href: "/dashboard/reviews",           label: "Reviews",   icon: Star,            soon: true },
-  { href: "/dashboard/analytics",         label: "Analytics", icon: BarChart2,       soon: true },
+  { href: "/dashboard/analytics",         label: "Analytics", icon: BarChart2,       soon: process.env.NEXT_PUBLIC_ANALYTICS !== "true" },
   { href: "/dashboard/feedback",          label: "Feedback",  icon: MessageSquare,   soon: false },
   { href: "/dashboard/cards",             label: "Cards",     icon: QrCode,          soon: false },
   { href: "/dashboard/feedback/settings", label: "Settings",  icon: Settings,        soon: false },

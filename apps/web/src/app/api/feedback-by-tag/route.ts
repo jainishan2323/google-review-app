@@ -12,19 +12,22 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Missing tag or businessId" }, { status: 400 });
   }
 
-  // Query both sources in parallel
+  // Query both sources in parallel. `negativeTags` carries this mention's per-tag
+  // sentiment (set by the analyzer), so each row exposes whether THIS tag was
+  // negative — that drives the drawer's All/Positive/Negative filter and matches
+  // the Operational Zones bar split.
   const [feedbackRows, reviewRows] = await Promise.all([
     prisma.anonymousFeedback.findMany({
       where: { businessId, tags: { has: tag } },
-      select: { id: true, rating: true, text: true, generatedReview: true, source: true, createdAt: true },
+      select: { id: true, rating: true, text: true, generatedReview: true, source: true, createdAt: true, negativeTags: true },
       orderBy: { createdAt: "desc" },
-      take: 10,
+      take: 50,
     }),
     prisma.review.findMany({
       where: { businessId, tags: { has: tag } },
-      select: { id: true, rating: true, text: true, authorName: true, publishedAt: true },
+      select: { id: true, rating: true, text: true, authorName: true, publishedAt: true, negativeTags: true },
       orderBy: { publishedAt: "desc" },
-      take: 10,
+      take: 50,
     }),
   ]);
 
@@ -37,6 +40,7 @@ export async function GET(req: NextRequest) {
       source: f.source,
       date: f.createdAt,
       authorName: null as string | null,
+      negative: f.negativeTags.includes(tag),
     })),
     ...reviewRows.map((r) => ({
       id: r.id,
@@ -45,8 +49,9 @@ export async function GET(req: NextRequest) {
       source: "google" as string,
       date: r.publishedAt,
       authorName: r.authorName,
+      negative: r.negativeTags.includes(tag),
     })),
-  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 10);
+  ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 50);
 
   return NextResponse.json(rows);
 }

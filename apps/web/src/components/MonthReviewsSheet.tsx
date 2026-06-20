@@ -4,33 +4,27 @@ import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 
-interface FeedbackItem {
+interface MonthFeedbackItem {
   id: string;
   rating: number;
   text: string | null;
   source: string;
   date: string;
   authorName: string | null;
-  /** Whether THIS tag was negative for this mention (per-tag sentiment). Absent for insights. */
-  negative?: boolean;
+  negative: boolean; // rating < 4
 }
 
 type Filter = "all" | "negative" | "positive";
 
-interface TagDrillDownSheetProps {
-  /** The query value sent to the API: a tag IDENTITY for zones, or an insight text for insights. */
-  tag: string | null;
-  /** Human-readable text shown in the title (defaults to `tag` when omitted). */
-  displayLabel?: string | null;
+interface MonthReviewsSheetProps {
+  /** Month key `YYYY-MM` queried from the API; null when closed. */
+  monthKey: string | null;
+  monthLabel: string;
+  positive: number;
+  negative: number;
   businessId: string;
   open: boolean;
   onClose: () => void;
-  apiPath?: string;
-  /** Rich-header extras — present for the zone drill-down, absent for insights. */
-  zone?: string;
-  positive?: number;
-  negative?: number;
-  delta?: number;
 }
 
 function StarRow({ rating }: { rating: number }) {
@@ -48,36 +42,30 @@ function sourceLabel(source: string): string {
   return "private form";
 }
 
-export function TagDrillDownSheet({
-  tag,
-  displayLabel,
+export function MonthReviewsSheet({
+  monthKey,
+  monthLabel,
+  positive,
+  negative,
   businessId,
   open,
   onClose,
-  apiPath = "/api/feedback-by-tag",
-  zone,
-  positive,
-  negative,
-  delta,
-}: TagDrillDownSheetProps) {
-  const [items, setItems] = useState<FeedbackItem[]>([]);
+}: MonthReviewsSheetProps) {
+  const [items, setItems] = useState<MonthFeedbackItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<Filter>("all");
 
-  // Rich header + filter only when the caller supplies polarity context (zones).
-  const rich = zone !== undefined && positive !== undefined && negative !== undefined;
-
   useEffect(() => {
-    if (!open || !tag) return;
+    if (!open || !monthKey) return;
 
     let cancelled = false;
     setLoading(true);
     setItems([]);
     setFilter("all");
 
-    fetch(`${apiPath}?tag=${encodeURIComponent(tag)}&businessId=${encodeURIComponent(businessId)}`)
+    fetch(`/api/feedback-by-month?month=${encodeURIComponent(monthKey)}&businessId=${encodeURIComponent(businessId)}`)
       .then((r) => r.json())
-      .then((data: FeedbackItem[]) => {
+      .then((data: MonthFeedbackItem[]) => {
         if (!cancelled) setItems(data);
       })
       .catch(() => {
@@ -90,72 +78,45 @@ export function TagDrillDownSheet({
     return () => {
       cancelled = true;
     };
-  }, [open, tag, businessId, apiPath]);
+  }, [open, monthKey, businessId]);
 
   const visible =
-    rich && filter !== "all"
-      ? items.filter((i) => (filter === "negative" ? i.negative : !i.negative))
-      : items;
+    filter === "all" ? items : items.filter((i) => (filter === "negative" ? i.negative : !i.negative));
 
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) onClose(); }}>
-      <SheetContent className="w-full gap-0 sm:max-w-md overflow-y-auto">
+      <SheetContent className="w-full gap-0 overflow-y-auto border-l-2 border-l-primary/50 sm:max-w-md">
         <SheetHeader className="gap-1">
-          {rich && zone && (
-            <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              {zone}
+          <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+            Review volume
+          </span>
+          <SheetTitle className="text-2xl font-bold">{monthLabel}</SheetTitle>
+          <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+            <span className="text-red-400">
+              Negative <span className="font-semibold">{negative}</span>
             </span>
-          )}
-          <SheetTitle className={rich ? "text-2xl font-bold" : "text-base"}>
-            {rich ? (
-              displayLabel ?? tag
-            ) : (
-              <>
-                Reviews mentioning{" "}
-                <span className="font-semibold text-foreground">"{displayLabel ?? tag}"</span>
-              </>
-            )}
-          </SheetTitle>
-
-          {rich && (
-            <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
-              <span className="text-red-400">
-                Negative <span className="font-semibold">{negative}</span>
-              </span>
-              <span className="text-green-500">
-                Positive <span className="font-semibold">{positive}</span>
-              </span>
-              {delta !== undefined && delta !== 0 && (
-                <span className="text-muted-foreground">
-                  Trend{" "}
-                  <span className={cn("font-semibold", delta > 0 ? "text-red-400" : "text-green-500")}>
-                    {delta > 0 ? "↑" : "↓"}
-                    {Math.abs(delta)}%
-                  </span>
-                </span>
-              )}
-            </div>
-          )}
+            <span className="text-green-500">
+              Positive <span className="font-semibold">{positive}</span>
+            </span>
+          </div>
         </SheetHeader>
 
-        {rich && (
-          <div className="flex gap-2 px-4 pb-4">
-            {(["all", "negative", "positive"] as Filter[]).map((f) => (
-              <button
-                key={f}
-                onClick={() => setFilter(f)}
-                className={cn(
-                  "cursor-pointer rounded-lg px-4 py-1.5 text-sm font-medium capitalize transition-colors",
-                  filter === f
-                    ? "bg-foreground text-background"
-                    : "bg-muted/40 text-muted-foreground hover:bg-muted",
-                )}
-              >
-                {f}
-              </button>
-            ))}
-          </div>
-        )}
+        <div className="flex gap-2 px-4 pb-4">
+          {(["all", "negative", "positive"] as Filter[]).map((f) => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={cn(
+                "cursor-pointer rounded-lg px-4 py-1.5 text-sm font-medium capitalize transition-colors",
+                filter === f
+                  ? "bg-foreground text-background"
+                  : "bg-muted/40 text-muted-foreground hover:bg-muted",
+              )}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
 
         <div className="px-4 pb-4">
           {loading && (
@@ -172,7 +133,7 @@ export function TagDrillDownSheet({
 
           {!loading && visible.length === 0 && (
             <p className="py-8 text-center text-sm text-muted-foreground">
-              No {filter !== "all" ? `${filter} ` : ""}feedback found for this tag.
+              No {filter !== "all" ? `${filter} ` : ""}reviews this month.
             </p>
           )}
 

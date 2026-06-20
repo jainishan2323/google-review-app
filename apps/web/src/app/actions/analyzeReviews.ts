@@ -8,19 +8,36 @@ import { revalidatePath } from "next/cache";
 const BATCH_SIZE = 15;
 
 /**
- * Processes ONE batch of up to 15 un-analyzed records (mixing reviews + feedback)
- * for the business. Returns the number processed and the number remaining.
+ * Processes ONE batch of up to 15 records (mixing reviews + feedback) for the
+ * business. Returns the number processed and the number remaining.
  *
- * Idempotent — already-analyzed records are filtered out by the WHERE clause,
- * so the client can safely retry after a failure to resume where it left off.
+ * Normally only un-analyzed records (`analyzedAt IS NULL`) are eligible. For a
+ * re-analyze, pass `reanalyzeSince` (the run's start time): records analyzed
+ * before that cutoff also become eligible and are overwritten in place. Each
+ * processed record's `analyzedAt` is set to now (≥ cutoff), so it drops out of
+ * the next batch — the loop is self-terminating and resumable, and a record
+ * keeps its previous analysis until its fresh result lands (no up-front wipe).
  */
-export async function analyzeBatchOnce(businessId: string): Promise<{
+export async function analyzeBatchOnce(
+  businessId: string,
+  reanalyzeSince?: Date,
+): Promise<{
   processed: number;
   remaining: number;
 }> {
   if (!businessId || typeof businessId !== "string") {
     throw new Error("[analyzeBatchOnce] businessId is required.");
   }
+
+  // Records eligible for this run: never analyzed, plus (on a re-analyze) any
+  // analyzed before the run started.
+  const pendingWhere = reanalyzeSince
+    ? {
+        businessId,
+        text: { not: null },
+        OR: [{ analyzedAt: null }, { analyzedAt: { lt: reanalyzeSince } }],
+      }
+    : { businessId, analyzedAt: null, text: { not: null } };
 
   const formConfig = await prisma.formConfig.findUnique({
     where: { businessId },
@@ -59,9 +76,9 @@ export async function analyzeBatchOnce(businessId: string): Promise<{
     return { processed: 0, remaining: 0 };
   }
 
-  // Pull up to BATCH_SIZE un-analyzed records — reviews first, then feedback
+  // Pull up to BATCH_SIZE eligible records — reviews first, then feedback
   const reviews = await prisma.review.findMany({
-    where: { businessId, analyzedAt: null, text: { not: null } },
+    where: pendingWhere,
     select: { id: true, text: true, rating: true },
     take: BATCH_SIZE,
     orderBy: { publishedAt: "asc" },
@@ -71,7 +88,7 @@ export async function analyzeBatchOnce(businessId: string): Promise<{
   const feedback =
     feedbackTake > 0
       ? await prisma.anonymousFeedback.findMany({
-          where: { businessId, analyzedAt: null, text: { not: null } },
+          where: pendingWhere,
           select: { id: true, text: true, rating: true },
           take: feedbackTake,
           orderBy: { createdAt: "asc" },
@@ -83,6 +100,7 @@ export async function analyzeBatchOnce(businessId: string): Promise<{
   }
 
   const reviewIds = new Set(reviews.map((r) => r.id));
+  const feedbackIds = new Set(feedback.map((f) => f.id));
   const inputs: ReviewAnalysisInput[] = [
     ...reviews.map((r) => ({ id: r.id, text: r.text!, rating: r.rating })),
     ...feedback.map((f) => ({ id: f.id, text: f.text!, rating: f.rating })),
@@ -91,28 +109,41 @@ export async function analyzeBatchOnce(businessId: string): Promise<{
   const out = await analyzeBatch(inputs, taxonomy);
   const now = new Date();
 
-  await Promise.all(
-    out.results.map((r) => {
-      // Map the analyzer's label strings back to tag IDENTITIES before storage.
-      // A label with no match (e.g. edited away mid-batch) is dropped.
-      const mapped = r.mappedTags
-        .map((t) => ({ id: labelToId.get(t.tag), sentiment: t.sentiment }))
-        .filter((t): t is { id: string; sentiment: "positive" | "negative" } => t.id !== undefined);
-      const data = {
-        tags: mapped.map((t) => t.id),
-        negativeTags: mapped.filter((t) => t.sentiment === "negative").map((t) => t.id),
-        unmappedInsights: r.unmappedInsights,
-        analyzedAt: now,
-      };
-      return reviewIds.has(r.reviewId)
+  // The analyzer echoes each input id back as `reviewId`, but an LLM can mangle a
+  // long cuid. Route each result to its table by *explicit membership* and DROP
+  // ids that match neither — a blind `update` on an unknown id throws
+  // "Record to update not found" and fails the whole batch.
+  const updates = out.results.flatMap((r) => {
+    const table = reviewIds.has(r.reviewId)
+      ? "review"
+      : feedbackIds.has(r.reviewId)
+      ? "feedback"
+      : null;
+    if (!table) return [];
+
+    // Map the analyzer's label strings back to tag IDENTITIES before storage.
+    // A label with no match (e.g. edited away mid-batch) is dropped.
+    const mapped = r.mappedTags
+      .map((t) => ({ id: labelToId.get(t.tag), sentiment: t.sentiment }))
+      .filter((t): t is { id: string; sentiment: "positive" | "negative" } => t.id !== undefined);
+    const data = {
+      tags: mapped.map((t) => t.id),
+      negativeTags: mapped.filter((t) => t.sentiment === "negative").map((t) => t.id),
+      unmappedInsights: r.unmappedInsights,
+      analyzedAt: now,
+    };
+    return [
+      table === "review"
         ? prisma.review.update({ where: { id: r.reviewId }, data })
-        : prisma.anonymousFeedback.update({ where: { id: r.reviewId }, data });
-    })
-  );
+        : prisma.anonymousFeedback.update({ where: { id: r.reviewId }, data }),
+    ];
+  });
+
+  await Promise.all(updates);
 
   const [remainingReviews, remainingFeedback] = await Promise.all([
-    prisma.review.count({ where: { businessId, analyzedAt: null, text: { not: null } } }),
-    prisma.anonymousFeedback.count({ where: { businessId, analyzedAt: null, text: { not: null } } }),
+    prisma.review.count({ where: pendingWhere }),
+    prisma.anonymousFeedback.count({ where: pendingWhere }),
   ]);
 
   const remaining = remainingReviews + remainingFeedback;
@@ -121,27 +152,9 @@ export async function analyzeBatchOnce(businessId: string): Promise<{
   }
 
   return {
-    processed: out.results.length,
+    // Count records actually persisted (not raw LLM results) so a batch whose ids
+    // all failed to match reports 0 and the caller's stall guard halts the loop.
+    processed: updates.length,
     remaining,
   };
-}
-
-/**
- * Clears analysis flags + tags on every Review and AnonymousFeedback for the business.
- * Caller then runs analyzeBatchOnce in a loop to re-analyze everything.
- */
-export async function resetAnalysis(businessId: string): Promise<void> {
-  if (!businessId || typeof businessId !== "string") {
-    throw new Error("[resetAnalysis] businessId is required.");
-  }
-  await Promise.all([
-    prisma.review.updateMany({
-      where: { businessId },
-      data: { analyzedAt: null, tags: [], negativeTags: [], unmappedInsights: [] },
-    }),
-    prisma.anonymousFeedback.updateMany({
-      where: { businessId },
-      data: { analyzedAt: null, tags: [], negativeTags: [], unmappedInsights: [] },
-    }),
-  ]);
 }

@@ -18,7 +18,8 @@
         "GOOGLE_CLIENT_SECRET",
         "RESEND_API_KEY",
         "ALERT_FROM_EMAIL",
-        "ADMIN_EMAILS"
+        "ADMIN_EMAILS",
+        "SHOW_SAMPLE_DATA"
       ]
     },
     "dev": {

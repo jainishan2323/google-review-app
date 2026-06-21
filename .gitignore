@@ -42,3 +42,7 @@ pnpm-debug.log*
 
 # Local-only operator scripts (kept out of git — direct DB superpowers)
 packages/db/scripts/reassign-owner.mts
+
+# Scraped third-party PII — review exports used by seed-import (ADR-0020). Never commit.
+apps/web/src/mock/first-indian.json
+packages/db/scripts/seed-import/*.json

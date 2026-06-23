@@ -16,9 +16,17 @@ import type { ZoneTagBar } from "@/components/OperationalZonesChart";
 import { ReviewCTA } from "@/components/ReviewCTA";
 import { UnmappedInsightsPanel } from "@/components/UnmappedInsightsPanel";
 import { ComingSoon } from "@/components/ComingSoon";
+// SEED-IMPORT (temporary scaffolding — remove when live Google data lands; see ADR-0020)
+import { SampleDataBanner } from "@/components/SampleDataBanner";
 import { requireCurrentBusiness } from "@/lib/current-business";
 
 export const dynamic = "force-dynamic";
+
+// SEED-IMPORT (temporary scaffolding — remove when live Google data lands; see ADR-0020)
+// Global flag: while pilots run on imported (scraped) Google reviews, show an
+// honest "sample data" banner. Google approval is project-wide, so all pilots
+// flip together. Cutover: purge seeded rows, THEN set this off.
+const SHOW_SAMPLE_DATA = process.env.SHOW_SAMPLE_DATA === "true";
 
 // Feature flag: the review-analytics dashboard (sentiment, operational zones,
 // unmapped insights) is gated off by default — it depends on analysed reviews and
@@ -346,6 +354,8 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
 
   return (
     <main className="p-8 space-y-8 max-w-6xl mx-auto">
+      {/* SEED-IMPORT (temporary scaffolding — remove when live Google data lands; see ADR-0020) */}
+      {SHOW_SAMPLE_DATA && <SampleDataBanner />}
       <ReviewCTA
         unreadCount={pendingAnalysis}
         businessId={businessId}

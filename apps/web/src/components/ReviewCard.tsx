@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, Copy, Check, Loader2, RefreshCw, Send } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { LocalDateTime } from "@/components/LocalDateTime";
+import { DraftReplyModal } from "@/components/DraftReplyModal";
 
 interface ReviewCardProps {
   id: string;
@@ -12,21 +13,23 @@ interface ReviewCardProps {
   authorPhoto?: string | null;
   rating: number;
   text: string | null;
-  publishedAt: string;
+  publishedAtIso: string;
   isReplied: boolean;
   replyText?: string | null;
+  repliedAtIso?: string | null;
   // Display labels, already resolved by the caller. Review.tags / negativeTags store tag
   // IDENTITIES (see ADR-0005); the page that renders this must resolve id→label first.
   tags: string[];
   negativeTags: string[];
   unmappedInsights: string[];
+  businessName: string;
 }
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
     <span className="text-sm tracking-tight" aria-label={`${rating} out of 5 stars`}>
       <span className="text-yellow-400">{"★".repeat(rating)}</span>
-      <span className="text-muted-foreground">{"★".repeat(5 - rating)}</span>
+      <span className="text-muted-foreground/40">{"★".repeat(5 - rating)}</span>
     </span>
   );
 }
@@ -38,107 +41,49 @@ export function ReviewCard({
   authorName,
   rating,
   text,
-  publishedAt,
+  publishedAtIso,
   isReplied,
+  replyText,
+  repliedAtIso,
   tags,
   negativeTags,
   unmappedInsights,
+  businessName,
 }: ReviewCardProps) {
   const [expanded, setExpanded] = useState(false);
-  const [draft, setDraft] = useState<string | null>(null);
-  const [loadingDraft, setLoadingDraft] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [posting, setPosting] = useState(false);
-  const [postError, setPostError] = useState<string | null>(null);
-  const [replied, setReplied] = useState(isReplied);
+  const [modalOpen, setModalOpen] = useState(false);
 
   const negSet = new Set(negativeTags);
   const chars = text ? [...text] : [];
   const isLong = chars.length > COLLAPSE_THRESHOLD;
-  const displayText = isLong && !expanded ? chars.slice(0, COLLAPSE_THRESHOLD).join("").trimEnd() + "…" : text;
-
-  async function handleDraftReply() {
-    setLoadingDraft(true);
-    try {
-      const res = await fetch("/api/generate-reply", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ reviewId: id }),
-      });
-      const data = await res.json();
-      if (data.draft) setDraft(data.draft);
-    } finally {
-      setLoadingDraft(false);
-    }
-  }
-
-  async function handlePostReply() {
-    if (!draft) return;
-    setPosting(true);
-    setPostError(null);
-    try {
-      const res = await fetch(`/api/reviews/${id}/reply`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ replyText: draft }),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setPostError(data.error ?? "Failed to post reply.");
-      } else {
-        setReplied(true);
-        setDraft(null);
-      }
-    } catch {
-      setPostError("Network error — please try again.");
-    } finally {
-      setPosting(false);
-    }
-  }
-
-  async function handleCopy() {
-    if (!draft) return;
-    await navigator.clipboard.writeText(draft);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
+  const displayText =
+    isLong && !expanded
+      ? chars.slice(0, COLLAPSE_THRESHOLD).join("").trimEnd() + "…"
+      : text;
 
   return (
-    <div className="flex flex-col gap-3 py-5 border-b border-border last:border-b-0">
+    <div className="flex flex-col gap-3 rounded-xl bg-card p-5 ring-1 ring-foreground/10">
       {/* Top row: author + meta + badge */}
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-0.5">
-          <p className="text-sm font-semibold text-foreground">{authorName}</p>
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-semibold text-foreground">{authorName}</p>
+            <span className="text-[10px] text-muted-foreground">· Google</span>
+          </div>
           <div className="flex items-center gap-2">
             <StarDisplay rating={rating} />
-            <span className="text-xs text-muted-foreground">{publishedAt}</span>
+            <LocalDateTime
+              iso={publishedAtIso}
+              className="text-xs text-muted-foreground"
+            />
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Badge
-            variant={replied ? "secondary" : "destructive"}
-            className="text-[10px]"
-          >
-            {replied ? "Replied" : "Pending"}
-          </Badge>
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-7 gap-1.5 text-xs"
-            onClick={handleDraftReply}
-            disabled={loadingDraft || !text}
-            title={!text ? "No review text to reply to" : undefined}
-          >
-            {loadingDraft ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : draft ? (
-              <RefreshCw className="h-3.5 w-3.5" />
-            ) : (
-              <MessageSquare className="h-3.5 w-3.5" />
-            )}
-            {draft ? "Regenerate" : "Draft Reply"}
-          </Button>
-        </div>
+        <Badge
+          variant={isReplied ? "secondary" : "destructive"}
+          className={isReplied ? "" : "text-amber-500 bg-amber-500/10"}
+        >
+          {isReplied ? "Replied" : "Awaiting reply"}
+        </Badge>
       </div>
 
       {/* Review text */}
@@ -192,63 +137,44 @@ export function ReviewCard({
         </div>
       )}
 
-      {/* Draft reply */}
-      {draft && (
-        <div className="space-y-2 rounded-lg border border-border bg-muted/30 p-3">
-          <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Draft reply</p>
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            className="text-sm bg-background"
-            rows={4}
-          />
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5 text-xs"
-              onClick={handleCopy}
-            >
-              {copied ? (
-                <Check className="h-3.5 w-3.5 text-green-500" />
-              ) : (
-                <Copy className="h-3.5 w-3.5" />
-              )}
-              {copied ? "Copied" : "Copy"}
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7 gap-1.5 text-xs"
-              onClick={handleDraftReply}
-              disabled={loadingDraft}
-            >
-              {loadingDraft ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <RefreshCw className="h-3.5 w-3.5" />
-              )}
-              {loadingDraft ? "Regenerating…" : "Regenerate"}
-            </Button>
+      {/* Existing reply (replied reviews) */}
+      {isReplied && replyText ? (
+        <div className="rounded-lg border border-border bg-muted/30 p-3 space-y-1">
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+              Your reply
+            </p>
+            {repliedAtIso && (
+              <LocalDateTime
+                iso={repliedAtIso}
+                withTime
+                className="text-[11px] text-muted-foreground"
+              />
+            )}
+          </div>
+          <p className="text-sm text-foreground leading-relaxed">{replyText}</p>
+        </div>
+      ) : (
+        text && (
+          <div>
             <Button
               size="sm"
-              className="h-7 gap-1.5 text-xs"
-              onClick={handlePostReply}
-              disabled={posting}
+              className="gap-1.5"
+              onClick={() => setModalOpen(true)}
             >
-              {posting ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <Send className="h-3.5 w-3.5" />
-              )}
-              {posting ? "Posting…" : "Post to Google"}
+              <Sparkles className="h-3.5 w-3.5" />
+              Draft reply with AI
             </Button>
           </div>
-          {postError && (
-            <p className="text-xs text-destructive">{postError}</p>
-          )}
-        </div>
+        )
       )}
+
+      <DraftReplyModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        review={{ id, authorName, rating, text, publishedAtIso }}
+        businessName={businessName}
+      />
     </div>
   );
 }

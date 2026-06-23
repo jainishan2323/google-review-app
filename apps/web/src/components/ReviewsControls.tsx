@@ -3,14 +3,6 @@
 import { useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 
-const RANGES = [
-  { value: "7d",  label: "7d" },
-  { value: "30d", label: "30d" },
-  { value: "90d", label: "90d" },
-  { value: "ytd", label: "YTD" },
-  { value: "all", label: "All" },
-] as const;
-
 const RATINGS = [
   { value: "all", label: "All ratings" },
   { value: "5",   label: "★★★★★" },
@@ -19,22 +11,29 @@ const RATINGS = [
   { value: "lte2", label: "★★ & below" },
 ] as const;
 
-type RangeValue = typeof RANGES[number]["value"];
+const REPLY = [
+  { value: "all",      label: "All" },
+  { value: "awaiting", label: "Awaiting" },
+  { value: "replied",  label: "Replied" },
+] as const;
+
 type RatingValue = typeof RATINGS[number]["value"];
+type ReplyValue = typeof REPLY[number]["value"];
 
 interface ReviewsControlsProps {
-  currentRange: RangeValue;
   currentRating: RatingValue;
+  currentReply: ReplyValue;
 }
 
-export function ReviewsControls({ currentRange, currentRating }: ReviewsControlsProps) {
+export function ReviewsControls({ currentRating, currentReply }: ReviewsControlsProps) {
   const router = useRouter();
   const pathname = usePathname();
 
+  // Omitting `page` resets pagination to 1 on any filter change.
   function update(key: string, value: string) {
     const params = new URLSearchParams({
-      range: currentRange,
       rating: currentRating,
+      reply: currentReply,
       [key]: value,
     });
     router.push(`${pathname}?${params.toString()}`);
@@ -42,25 +41,6 @@ export function ReviewsControls({ currentRange, currentRating }: ReviewsControls
 
   return (
     <div className="flex flex-wrap items-center gap-3">
-      {/* Range toggle */}
-      <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
-        {RANGES.map(({ value, label }) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => update("range", value)}
-            className={cn(
-              "px-3 py-1.5 text-sm font-medium transition-colors border-r border-border last:border-r-0",
-              currentRange === value
-                ? "bg-primary text-primary-foreground"
-                : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {/* Rating filter */}
       <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
         {RATINGS.map(({ value, label }) => (
@@ -71,6 +51,25 @@ export function ReviewsControls({ currentRange, currentRating }: ReviewsControls
             className={cn(
               "px-3 py-1.5 text-sm font-medium transition-colors border-r border-border last:border-r-0",
               currentRating === value
+                ? "bg-primary text-primary-foreground"
+                : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Reply-status filter */}
+      <div className="flex rounded-lg border border-border overflow-hidden shrink-0">
+        {REPLY.map(({ value, label }) => (
+          <button
+            key={value}
+            type="button"
+            onClick={() => update("reply", value)}
+            className={cn(
+              "px-3 py-1.5 text-sm font-medium transition-colors border-r border-border last:border-r-0",
+              currentReply === value
                 ? "bg-primary text-primary-foreground"
                 : "bg-background text-muted-foreground hover:bg-muted hover:text-foreground"
             )}

@@ -4,11 +4,21 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@repo/db";
 import { postReply } from "@/lib/google-business";
 import { resolveCurrentBusiness } from "@/lib/current-business";
+import { REVIEW_REPLY_POSTING_ENABLED } from "@/lib/flags";
 
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ reviewId: string }> }
 ) {
+  // Kill-switch: until NEXT_PUBLIC_REVIEW_REPLY_POSTING is "true", refuse to post —
+  // even a crafted request can't publish to a live Google connection by accident.
+  if (!REVIEW_REPLY_POSTING_ENABLED) {
+    return NextResponse.json(
+      { error: "Posting replies is temporarily disabled." },
+      { status: 403 }
+    );
+  }
+
   // Posting a reply needs the `business.manage` access token — a Phase 2
   // capability that only exists once the owner has connected Google. The
   // accessToken will be absent in Phase 1, so this route 401s until then.

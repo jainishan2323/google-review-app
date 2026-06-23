@@ -1,6 +1,7 @@
 import { prisma } from "@repo/db";
 import { OnboardBusinessForm } from "@/components/onboard-business-form";
 import { ReseedFormButton } from "@/components/reseed-form-button";
+import { CopyBusinessId } from "@/components/copy-business-id";
 
 export const dynamic = "force-dynamic";
 
@@ -67,6 +68,7 @@ export default async function BusinessesPage() {
             <div>
               <p className="font-semibold text-foreground">{b.name}</p>
               <p className="text-xs text-muted-foreground mt-0.5 truncate">{b.owner.email}</p>
+              <CopyBusinessId businessId={b.id} />
               <div className="mt-1.5 flex items-center gap-2">
                 <span
                   className={

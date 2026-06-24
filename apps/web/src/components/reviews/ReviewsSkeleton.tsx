@@ -54,7 +54,7 @@ export function ReviewListSkeleton({ rows = 4 }: { rows?: number }) {
 // Full-page skeleton — the route-level loading.tsx fallback on first load.
 export function ReviewsPageSkeleton() {
   return (
-    <main className="p-8 space-y-6 max-w-5xl mx-auto">
+    <main className="p-8 space-y-6 max-w-6xl mx-auto">
       <Bar className="h-8 w-48" />
       <StatsCardsSkeleton />
       <div className="flex flex-wrap justify-center gap-3 max-w-3xl mx-auto w-full">

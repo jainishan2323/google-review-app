@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -11,9 +11,18 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, RefreshCw, Send, Loader2, Info } from "lucide-react";
+import { Sparkles, RefreshCw, Send, Loader2, Info, Pencil } from "lucide-react";
 import { LocalDateTime } from "@/components/LocalDateTime";
 import { REVIEW_REPLY_POSTING_ENABLED } from "@/lib/flags";
+
+function ThinkingDots() {
+  const [dots, setDots] = useState(1);
+  useEffect(() => {
+    const id = setInterval(() => setDots((d) => (d % 3) + 1), 500);
+    return () => clearInterval(id);
+  }, []);
+  return <span className="inline-block w-5 text-left">{".".repeat(dots)}</span>;
+}
 
 interface DraftReplyModalProps {
   open: boolean;
@@ -49,13 +58,36 @@ export function DraftReplyModal({
 }: DraftReplyModalProps) {
   const [draft, setDraft] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [posting, setPosting] = useState(false);
   const [postError, setPostError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const animationRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function runTypewriter(text: string) {
+    if (animationRef.current) clearTimeout(animationRef.current);
+    setIsAnimating(true);
+    setDraft("");
+    let i = 0;
+    function step() {
+      i++;
+      setDraft(text.slice(0, i));
+      if (i < text.length) {
+        animationRef.current = setTimeout(step, 14);
+      } else {
+        setIsAnimating(false);
+      }
+    }
+    animationRef.current = setTimeout(step, 14);
+  }
 
   async function generate() {
+    if (animationRef.current) clearTimeout(animationRef.current);
+    setIsAnimating(false);
     setLoading(true);
     setError(null);
+    setDraft("");
     try {
       const res = await fetch("/api/generate-reply", {
         method: "POST",
@@ -63,7 +95,7 @@ export function DraftReplyModal({
         body: JSON.stringify({ reviewId: review.id }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.ok && data.draft) setDraft(data.draft);
+      if (res.ok && data.draft) runTypewriter(data.draft);
       else setError(data.error ?? "Couldn't draft a reply. Try again.");
     } catch {
       setError("Network error — please try again.");
@@ -75,11 +107,16 @@ export function DraftReplyModal({
   // Auto-generate once each time the modal opens.
   useEffect(() => {
     if (open) {
+      if (animationRef.current) clearTimeout(animationRef.current);
       setDraft("");
+      setIsAnimating(false);
       setError(null);
       setPostError(null);
       generate();
     }
+    return () => {
+      if (animationRef.current) clearTimeout(animationRef.current);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
@@ -147,23 +184,41 @@ export function DraftReplyModal({
         <div className="space-y-2">
           <p className="text-sm font-medium text-foreground">AI draft</p>
           <div className="relative">
-            <Textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              rows={5}
-              disabled={loading}
-              placeholder={loading ? "Drafting a reply…" : ""}
-              className="resize-y"
-            />
-            {loading && (
-              <div className="absolute inset-0 flex items-center justify-center rounded-md bg-background/60">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            {loading ? (
+              <div className="flex min-h-[7.5rem] items-center gap-2.5 rounded-md border border-border bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+                <Sparkles className="h-4 w-4 shrink-0 animate-pulse text-primary" />
+                <span>Jugnoo AI is thinking</span>
+                <ThinkingDots />
               </div>
+            ) : (
+              <>
+                <Textarea
+                  ref={textareaRef}
+                  value={draft}
+                  onChange={(e) => {
+                    if (animationRef.current) clearTimeout(animationRef.current);
+                    setIsAnimating(false);
+                    setDraft(e.target.value);
+                  }}
+                  rows={5}
+                  className="resize-y pr-9"
+                />
+                {draft && (
+                  <button
+                    type="button"
+                    onClick={() => textareaRef.current?.focus()}
+                    className="absolute right-2 top-2 rounded p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    title="Edit reply"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                )}
+              </>
             )}
           </div>
           <div className="flex items-center justify-between">
             <span className="text-xs text-muted-foreground">
-              {draft.length} characters
+              {draft.length > 0 ? `${draft.length} characters` : ""}
             </span>
             <Button
               variant="outline"

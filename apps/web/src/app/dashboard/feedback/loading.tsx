@@ -1,6 +1,6 @@
 export default function FeedbackLoading() {
   return (
-    <main className="p-8 space-y-8 max-w-5xl mx-auto animate-pulse">
+    <main className="p-8 space-y-8 max-w-6xl mx-auto animate-pulse">
       {/* Header */}
       <div className="space-y-2">
         <div className="h-7 w-40 rounded bg-muted" />

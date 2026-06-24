@@ -6,21 +6,23 @@ import { signOut, useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
-  Star,
   BarChart2,
   MessageSquare,
   QrCode,
   Settings,
   LogOut,
+  VenetianMask,
 } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { FireflyLogo } from "@/components/FireflyLogo";
+import { GoogleLogo } from "@/components/GoogleLogo";
+import type { ComponentType } from "react";
 
-const navItems = [
+const navItems: { href: string; label: string; icon: ComponentType<{ className?: string }>; soon: boolean }[] = [
   { href: "/dashboard",                   label: "Overview",  icon: LayoutDashboard, soon: false },
-  { href: "/dashboard/reviews",           label: "Reviews",   icon: Star,            soon: false },
+  { href: "/dashboard/reviews",           label: "Reviews",   icon: GoogleLogo,      soon: false },
   { href: "/dashboard/analytics",         label: "Analytics", icon: BarChart2,       soon: process.env.NEXT_PUBLIC_ANALYTICS !== "true" },
-  { href: "/dashboard/feedback",          label: "Feedback",  icon: MessageSquare,   soon: false },
+  { href: "/dashboard/feedback",          label: "Feedback",  icon: VenetianMask,    soon: false },
   { href: "/dashboard/cards",             label: "Cards",     icon: QrCode,          soon: false },
   { href: "/dashboard/feedback/settings", label: "Settings",  icon: Settings,        soon: false },
 ];

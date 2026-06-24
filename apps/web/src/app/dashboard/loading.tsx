@@ -1,6 +1,6 @@
 export default function DashboardLoading() {
   return (
-    <div className="p-8 space-y-8 animate-pulse">
+    <div className="p-8 space-y-8 max-w-6xl mx-auto animate-pulse">
       {/* CTA placeholder */}
       <div className="h-16 rounded-lg bg-muted" />
 

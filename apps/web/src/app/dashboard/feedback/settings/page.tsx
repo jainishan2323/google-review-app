@@ -34,7 +34,7 @@ export default async function FeedbackSettingsPage() {
     Date.now() - createdAt.getTime() < WEEK_MS && !referenced.has(id);
 
   return (
-    <main className="p-8 space-y-8 max-w-6xl">
+    <main className="p-8 space-y-8 max-w-6xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Feedback Settings

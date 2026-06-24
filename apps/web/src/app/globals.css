@@ -120,6 +120,7 @@
   }
   html {
     font-family: var(--font-sans);
-    font-size: 17px;
+    /* 17px at ≤1440px viewport, smoothly scales to 20px at 2560px (2K at 100% DPI) */
+    font-size: clamp(17px, calc(10.6px + 0.45vw), 22px);
   }
 }

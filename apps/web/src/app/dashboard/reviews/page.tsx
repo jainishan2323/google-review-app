@@ -67,7 +67,7 @@ export default async function ReviewsPage({ searchParams }: PageProps) {
     : null;
 
   return (
-    <main className="p-8 space-y-6 max-w-5xl mx-auto">
+    <main className="p-8 space-y-6 max-w-6xl mx-auto">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Google Reviews</h1>

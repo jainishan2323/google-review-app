@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { MessageSquare } from "lucide-react";
+import { MessageSquare, VenetianMask } from "lucide-react";
 
 function StarDisplay({ rating }: { rating: number }) {
   return (
@@ -45,7 +45,7 @@ export default async function FeedbackPage() {
   const unreadCount = feedbackList.filter((f) => f.status === "unread").length;
 
   return (
-    <main className="p-8 space-y-8">
+    <main className="p-8 space-y-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -81,13 +81,16 @@ export default async function FeedbackPage() {
               <CardHeader className="pb-2 flex flex-row items-start justify-between gap-2">
                 <div className="space-y-1">
                   <StarDisplay rating={item.rating} />
-                  <CardTitle className="text-xs font-normal text-muted-foreground">
-                    {item.createdAt.toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </CardTitle>
+                  <div className="flex items-center gap-1.5">
+                    <VenetianMask className="h-3 w-3 text-muted-foreground/60 shrink-0" />
+                    <CardTitle className="text-xs font-normal text-muted-foreground">
+                      {item.createdAt.toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                        year: "numeric",
+                      })}
+                    </CardTitle>
+                  </div>
                 </div>
                 <div className="flex items-center gap-1.5 shrink-0">
                   {item.status === "unread" && (

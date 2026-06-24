@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { VenetianMask } from "lucide-react";
+import { GoogleLogo } from "@/components/GoogleLogo";
 import { cn } from "@/lib/utils";
 
 interface FeedbackItem {
@@ -201,7 +203,12 @@ export function TagDrillDownSheet({
                     ) : (
                       <p className="text-xs italic text-muted-foreground">No review text.</p>
                     )}
-                    <p className="text-xs text-muted-foreground">via {sourceLabel(item.source)}</p>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      {item.source === "google" || item.source === "google_redirect"
+                        ? <GoogleLogo className="h-3 w-3 shrink-0" />
+                        : <VenetianMask className="h-3 w-3 shrink-0" />}
+                      <span>via {sourceLabel(item.source)}</span>
+                    </div>
                   </div>
                 );
               })}

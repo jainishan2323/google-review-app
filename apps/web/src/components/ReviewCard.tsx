@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Sparkles } from "lucide-react";
 import { LocalDateTime } from "@/components/LocalDateTime";
 import { DraftReplyModal } from "@/components/DraftReplyModal";
+import { GoogleLogo } from "@/components/GoogleLogo";
 
 interface ReviewCardProps {
   id: string;
@@ -68,7 +69,7 @@ export function ReviewCard({
         <div className="space-y-0.5">
           <div className="flex items-center gap-2">
             <p className="text-sm font-semibold text-foreground">{authorName}</p>
-            <span className="text-[10px] text-muted-foreground">· Google</span>
+            <GoogleLogo className="h-3.5 w-3.5" />
           </div>
           <div className="flex items-center gap-2">
             <StarDisplay rating={rating} />

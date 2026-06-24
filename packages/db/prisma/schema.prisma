@@ -93,6 +93,7 @@ model AnonymousFeedback {
   negativeTags        String[]  @default([]) // Subset of tags where sentiment = negative
   unmappedInsights    String[]  @default([]) // LLM-identified insights outside the taxonomy
   source              String    @default("private") // "private" | "google_redirect"
+  language            String    @default("en") // Form language the customer submitted in (ADR 0021)
   status              String    @default("unread")
   photos              String[]  // Stored as URLs
   analyzedAt          DateTime? // Set when the feedback has been processed by the batch analyzer

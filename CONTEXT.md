@@ -79,12 +79,24 @@ The language the owner originally typed a [tag] in — the last-resort anchor in
 _Avoid_: original language, source language
 
 **Base language**:
-A business's primary language (its `defaultLanguage`) — shown as "BASE" in settings. Always enabled, cannot be turned off, and is the language the form renders in and the analyzer maps against. Other [supported languages] are optional add-ons whose blank [labels] auto-fill from the base. Distinct from [authored language], which is per-tag.
-_Avoid_: primary language, master language, locale
+A business's primary language (its `defaultLanguage`) — shown as "BASE" in settings. Always enabled, cannot be turned off. It is the *default* [form language] (what a scan opens in absent a [language cue]) and the language the [batch analyzer] maps against — **not** the only language the form can render in: a customer may switch to any other [supported language] at runtime. Other [supported languages] are optional add-ons whose blank [labels] auto-fill from the base. Distinct from [authored language], which is per-tag.
+_Avoid_: primary language, master language, locale, form language (that's the runtime choice)
 
 **Supported languages**:
-The set of languages a business's form is authored in (`supportedLanguages`); the [base language] plus any the owner has toggled on in settings. Toggling one on auto-fills its blank [labels] from the base; toggling one off hides it from the form but keeps its labels. Not the same as the (deferred) customer-facing language switcher — the form still renders only the [base language].
+The set of languages a business's form is authored in (`supportedLanguages`); the [base language] plus any the owner has toggled on in settings. Toggling one on auto-fills its blank [labels] from the base; toggling one off hides it from the form but keeps its labels. This set is also the **source of truth for the customer-facing language switcher**: the [form language] switcher offers exactly these, and a [language cue] is honoured only if it names one of them. A business with a single supported language shows no switcher.
 _Avoid_: locales, enabled languages (fine informally), translations
+
+**Form language**:
+The language a customer is *currently* viewing the feedback form in — runtime client state, chosen via the top-right language switcher (present from step 1) or seeded by a [language cue]. It re-resolves [chip] [labels] + the welcome message and selects the static UI [chrome] strings, and it is the language the AI drafts the review in. Falls back to the [base language]. Recorded on each submission (`AnonymousFeedback.language`). Distinct from [base language] (the *default*), [supported languages] (the *menu*), [authored language] (per-tag), and [Card language] (a print-template choice, not runtime). Today: `en` or `de` only.
+_Avoid_: active language, locale, UI language, render language
+
+**Language cue**:
+A `?language=<code>` URL parameter that pre-selects the opening [form language] — added to the QR link on a language-specific printed card (e.g. a German card carries `?language=de`) so a scan opens in that language. Honoured only when the code is one of the business's [supported languages]; otherwise ignored in favour of the [base language]. Read client-side (it does not make the route dynamic — see ADR-0021).
+_Avoid_: lang param, locale param
+
+**Chrome**:
+The form's static UI strings that aren't business content — buttons, headings, the handoff instructions, the done message, aria-labels ("Back", "Weiter", "What did you love?"). Translated via a lightweight in-app typed dictionary keyed by [form language], **not** an i18n library. Distinct from [labels] (per-business taxonomy wording) and the [welcome message] (business content with a localized code-default).
+_Avoid_: copy, UI text, strings (fine informally)
 
 **Business Type**:
 The vertical a business belongs to — `restaurant` now, `dentist` / `doctor` later. Determines which [Taxonomy Template] seeds the business's form at onboarding. Strictly distinct from [Category]: a Business Type classifies the *whole business*, a Category groups [tags] *within one business's form*.

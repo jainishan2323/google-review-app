@@ -27,8 +27,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={cn("font-sans", nunitoSans.variable)}>
+    // We ship our own en/de switcher (ADR 0021), so browser auto-translation is both
+    // redundant and harmful — it would re-translate the AI draft the customer pastes into
+    // Google, and fights our own resolution. Opt out of it page-wide: `translate="no"` +
+    // `notranslate` (the HTML5 standard, honoured by Chrome/Safari/Firefox) and the Google
+    // meta that suppresses Chrome's translate prompt. There's no reliable way to *detect*
+    // translation at runtime, so we prevent it instead.
+    <html lang="en" translate="no" className={cn("font-sans notranslate", nunitoSans.variable)}>
       <head>
+        <meta name="google" content="notranslate" />
         {/* Warm the connection to Google's review host — the handoff target for 4-5★. */}
         <link rel="preconnect" href="https://search.google.com" />
       </head>

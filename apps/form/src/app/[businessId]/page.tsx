@@ -53,11 +53,9 @@ async function FormLoader({ businessId }: { businessId: string }) {
       googleMapsReviewUrl={business.googleMapsReviewUrl}
       brandColor={config?.brandColor ?? "#2563EB"}
       logoUrl={config?.logoUrl ?? null}
-      welcomeMessage={
-        config?.welcomeMessage ?? "Thanks for visiting! We'd love your feedback."
-      }
       defaultLanguage={config?.defaultLanguage ?? "en"}
-      categories={config?.categories ?? []}
+      supportedLanguages={config?.supportedLanguages ?? ["en"]}
+      byLanguage={config?.byLanguage ?? {}}
     />
   );
 }

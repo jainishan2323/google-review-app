@@ -12,7 +12,15 @@
  *   1.8–3.0s  review text fills the field, line by line
  *   3.0–4.2s  hold, then fade out and reset
  */
-export function PasteCoachmark({ brandColor }: { brandColor: string }) {
+export function PasteCoachmark({
+  brandColor,
+  pasteLabel,
+  placeholder,
+}: {
+  brandColor: string;
+  pasteLabel: string;
+  placeholder: string;
+}) {
   return (
     <div className="relative mx-auto h-40 w-full max-w-[260px] select-none" aria-hidden="true">
       <style>{KEYFRAMES}</style>
@@ -27,7 +35,7 @@ export function PasteCoachmark({ brandColor }: { brandColor: string }) {
 
         {/* Placeholder shown before the text fills in */}
         <span className="jg-placeholder absolute left-3 top-3 text-[11px] text-gray-300">
-          Share details of your experience…
+          {placeholder}
         </span>
       </div>
 
@@ -36,7 +44,7 @@ export function PasteCoachmark({ brandColor }: { brandColor: string }) {
         className="jg-paste absolute left-1/2 top-0 -translate-x-1/2 rounded-md px-3 py-1 text-[11px] font-medium text-white shadow-md"
         style={{ backgroundColor: brandColor }}
       >
-        Paste
+        {pasteLabel}
         <span
           className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent"
           style={{ borderTopColor: brandColor }}

@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { Messages } from "@/lib/i18n";
 
 /**
  * Bottom-sheet explainer for the review-ready screen: tells the customer why the
@@ -10,17 +11,20 @@ import { cn } from "@/lib/utils";
  * (e.g. a measured 3★ review) doesn't read as a bug.
  *
  * The mood ladder MUST stay faithful to the generator's actual rating bands
- * (review-generator.ts: 1–2 / 3 / 4–5). English-only for now, matching the rest
- * of the step-3 chrome.
+ * (review-generator.ts: 1–2 / 3 / 4–5). Localized via the active form language's
+ * chrome dictionary (ADR 0021).
  */
 
 type BandKey = "low" | "mid" | "high";
 
-const BANDS: { key: BandKey; stars: string; mood: string; desc: string }[] = [
-  { key: "low", stars: "1–2★", mood: "Honest", desc: "Names what fell short — direct, but not piling on." },
-  { key: "mid", stars: "3★", mood: "Balanced", desc: "A fair mix of good and not-so-good. Lands lukewarm." },
-  { key: "high", stars: "4–5★", mood: "Warm", desc: "Genuinely positive, like a happy regular." },
-];
+/** Stars are language-invariant; mood + desc come from the chrome dictionary. */
+function bandsFor(t: Messages): { key: BandKey; stars: string; mood: string; desc: string }[] {
+  return [
+    { key: "low", stars: "1–2★", mood: t.bandLowMood, desc: t.bandLowDesc },
+    { key: "mid", stars: "3★", mood: t.bandMidMood, desc: t.bandMidDesc },
+    { key: "high", stars: "4–5★", mood: t.bandHighMood, desc: t.bandHighDesc },
+  ];
+}
 
 function bandFor(rating: number): BandKey {
   if (rating <= 2) return "low";
@@ -31,10 +35,12 @@ function bandFor(rating: number): BandKey {
 export function GenerationInfoSheet({
   rating,
   brandColor,
+  t,
   onClose,
 }: {
   rating: number;
   brandColor: string;
+  t: Messages;
   onClose: () => void;
 }) {
   // Lock background scroll and close on Escape while the sheet is open.
@@ -52,17 +58,18 @@ export function GenerationInfoSheet({
   }, [onClose]);
 
   const current = bandFor(rating);
+  const bands = bandsFor(t);
 
   return (
     <div
       className="fixed inset-0 z-50 flex flex-col justify-end"
       role="dialog"
       aria-modal="true"
-      aria-label="How your review was written"
+      aria-label={t.infoAria}
     >
       <button
         type="button"
-        aria-label="Close"
+        aria-label={t.infoClose}
         onClick={onClose}
         className="absolute inset-0 bg-black/40 animate-in fade-in duration-200"
       />
@@ -75,20 +82,17 @@ export function GenerationInfoSheet({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Close"
+          aria-label={t.infoClose}
           className="absolute right-4 top-4 text-muted-foreground touch-manipulation"
         >
           <X className="size-5" />
         </button>
 
-        <h2 className="text-base font-semibold text-foreground">How your review was written</h2>
-        <p className="mt-1.5 text-sm text-muted-foreground">
-          Your star rating sets the tone. The chips you tapped — and anything you typed — set what
-          it talks about. AI writes the wording.
-        </p>
+        <h2 className="text-base font-semibold text-foreground">{t.infoTitle}</h2>
+        <p className="mt-1.5 text-sm text-muted-foreground">{t.infoIntro}</p>
 
         <ul className="mt-4 space-y-2">
-          {BANDS.map((band) => {
+          {bands.map((band) => {
             const active = band.key === current;
             return (
               <li
@@ -113,7 +117,7 @@ export function GenerationInfoSheet({
                         className="rounded-full px-2 py-0.5 text-[10px] font-semibold text-white"
                         style={{ backgroundColor: brandColor }}
                       >
-                        Your rating
+                        {t.infoYourRating}
                       </span>
                     )}
                   </span>
@@ -124,10 +128,7 @@ export function GenerationInfoSheet({
           })}
         </ul>
 
-        <p className="mt-4 text-xs text-muted-foreground">
-          It only uses what you told us — it won&apos;t invent things you didn&apos;t mention. You
-          can edit the draft, or tap &ldquo;Generate another version&rdquo;.
-        </p>
+        <p className="mt-4 text-xs text-muted-foreground">{t.infoFooter}</p>
       </div>
     </div>
   );

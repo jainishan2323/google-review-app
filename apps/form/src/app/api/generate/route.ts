@@ -23,6 +23,9 @@ const schema = z.object({
     .transform(sanitize)
     .optional(),
   attempt: z.number().int().min(0).max(10).default(0),
+  // The active form language the customer is using (ADR 0021). Validated against the
+  // business's supportedLanguages below; ignored/falls back to defaultLanguage otherwise.
+  language: z.string().min(2).max(8).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -37,21 +40,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { businessId, rating, tagIds, customText, attempt } = parsed.data;
+    const { businessId, rating, tagIds, customText, attempt, language: requested } = parsed.data;
 
     const business = await prisma.business.findUnique({
       where: { id: businessId },
-      select: { name: true, formConfig: { select: { defaultLanguage: true } } },
+      select: {
+        name: true,
+        formConfig: { select: { defaultLanguage: true, supportedLanguages: true } },
+      },
     });
 
     if (!business) {
       return NextResponse.json({ error: "Business not found" }, { status: 404 });
     }
 
-    const language = business.formConfig?.defaultLanguage ?? "en";
+    const defaultLanguage = business.formConfig?.defaultLanguage ?? "en";
+    const supported = business.formConfig?.supportedLanguages ?? [];
+    // Honour the customer's choice only if the business actually offers it; else default.
+    const language =
+      requested && supported.includes(requested) ? requested : defaultLanguage;
 
-    // Resolve identities → labels in the default language, preserving the
-    // customer's selection order. Sanitize since labels reach the LLM.
+    // Resolve identities → labels in the active language (fallback to default),
+    // preserving the customer's selection order. Sanitize since labels reach the LLM.
     const tags = tagIds.length
       ? await prisma.tag
           .findMany({
@@ -64,7 +74,13 @@ export async function POST(req: NextRequest) {
               .map((id) => byId.get(id))
               .filter((r): r is NonNullable<typeof r> => r !== undefined)
               .map((r) =>
-                sanitize(resolveLabel(r.labels, { default: language, authored: r.authoredLanguage }))
+                sanitize(
+                  resolveLabel(r.labels, {
+                    active: language,
+                    default: defaultLanguage,
+                    authored: r.authoredLanguage,
+                  })
+                )
               )
               .filter((label) => label.length > 0);
           })

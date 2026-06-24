@@ -11,6 +11,8 @@ const schema = z.object({
   // Tag IDENTITIES selected by the customer (never display wording).
   tagIds: z.array(z.string().max(40)).max(20).default([]),
   source: z.enum(["private", "google_redirect"]).default("private"),
+  // Active form language at submit time — for adoption analytics (ADR 0021).
+  language: z.string().min(2).max(8).default("en"),
 });
 
 const DASHBOARD_URL = (
@@ -26,7 +28,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { businessId, rating, text, generatedReview, tagIds, source } = parsed.data;
+    const { businessId, rating, text, generatedReview, tagIds, source, language } = parsed.data;
 
     // Keep only identities that belong to this business; derive negativeTags from
     // each tag's polarity (by identity), not by string-matching a chip list.
@@ -51,6 +53,7 @@ export async function POST(req: NextRequest) {
         tags,
         negativeTags,
         source,
+        language,
         status: "unread",
       },
     });

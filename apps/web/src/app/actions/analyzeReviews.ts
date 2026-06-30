@@ -39,6 +39,10 @@ export async function analyzeBatchOnce(
       }
     : { businessId, analyzedAt: null, text: { not: null } };
 
+  // google_redirect rows represent intent to post, not confirmed posts — exclude
+  // them from analysis so analytics only covers private feedback and Google reviews.
+  const feedbackPendingWhere = { ...pendingWhere, source: "private" as const };
+
   const formConfig = await prisma.formConfig.findUnique({
     where: { businessId },
     include: {
@@ -88,7 +92,7 @@ export async function analyzeBatchOnce(
   const feedback =
     feedbackTake > 0
       ? await prisma.anonymousFeedback.findMany({
-          where: pendingWhere,
+          where: feedbackPendingWhere,
           select: { id: true, text: true, rating: true },
           take: feedbackTake,
           orderBy: { createdAt: "asc" },
@@ -143,7 +147,7 @@ export async function analyzeBatchOnce(
 
   const [remainingReviews, remainingFeedback] = await Promise.all([
     prisma.review.count({ where: pendingWhere }),
-    prisma.anonymousFeedback.count({ where: pendingWhere }),
+    prisma.anonymousFeedback.count({ where: feedbackPendingWhere }),
   ]);
 
   const remaining = remainingReviews + remainingFeedback;

@@ -178,11 +178,11 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const now = new Date();
   const prevSince = since ? new Date(since.getTime() - (now.getTime() - since.getTime())) : null;
 
-  const [feedback, reviews, prevFeedback, prevReviews, pendingAnalysis, totalAnalyzed, oldestAnalyzedAt, formConfig, allInsightRows] =
+  const [feedback, reviews, prevFeedback, prevReviews, pendingAnalysis, totalAnalyzed, oldestAnalyzedAt, formConfig, allInsightRows, googleRedirects] =
     await Promise.all([
       prisma.anonymousFeedback.findMany({
-        where: { businessId, ...(since ? { createdAt: { gte: since } } : {}) },
-        select: { createdAt: true, rating: true, tags: true, negativeTags: true, source: true },
+        where: { businessId, source: "private", ...(since ? { createdAt: { gte: since } } : {}) },
+        select: { createdAt: true, rating: true, tags: true, negativeTags: true },
         orderBy: { createdAt: "asc" },
       }),
       prisma.review.findMany({
@@ -192,7 +192,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
       }),
       prevSince && since
         ? prisma.anonymousFeedback.findMany({
-            where: { businessId, createdAt: { gte: prevSince, lt: since } },
+            where: { businessId, source: "private", createdAt: { gte: prevSince, lt: since } },
             select: { tags: true, rating: true },
           })
         : Promise.resolve([]),
@@ -204,11 +204,11 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
         : Promise.resolve([]),
       Promise.all([
         prisma.review.count({ where: { businessId, analyzedAt: null, text: { not: null } } }),
-        prisma.anonymousFeedback.count({ where: { businessId, analyzedAt: null, text: { not: null } } }),
+        prisma.anonymousFeedback.count({ where: { businessId, source: "private", analyzedAt: null, text: { not: null } } }),
       ]).then(([r, f]) => r + f),
       Promise.all([
         prisma.review.count({ where: { businessId, analyzedAt: { not: null } } }),
-        prisma.anonymousFeedback.count({ where: { businessId, analyzedAt: { not: null } } }),
+        prisma.anonymousFeedback.count({ where: { businessId, source: "private", analyzedAt: { not: null } } }),
       ]).then(([r, f]) => r + f),
       Promise.all([
         prisma.review.findFirst({
@@ -217,7 +217,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           select: { analyzedAt: true },
         }),
         prisma.anonymousFeedback.findFirst({
-          where: { businessId, analyzedAt: { not: null } },
+          where: { businessId, source: "private", analyzedAt: { not: null } },
           orderBy: { analyzedAt: "asc" },
           select: { analyzedAt: true },
         }),
@@ -240,7 +240,7 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
           select: { unmappedInsights: true, rating: true },
         }),
         prisma.anonymousFeedback.findMany({
-          where: { businessId, analyzedAt: { not: null } },
+          where: { businessId, source: "private", analyzedAt: { not: null } },
           select: { unmappedInsights: true, rating: true },
         }),
       ]).then(([r, f]) => {
@@ -265,6 +265,9 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
             sentiment: s.pos > s.neg ? "positive" : s.neg > s.pos ? "negative" : "neutral",
           }))
           .sort((a, b) => b.count - a.count);
+      }),
+      prisma.anonymousFeedback.count({
+        where: { businessId, source: "google_redirect", ...(since ? { createdAt: { gte: since } } : {}) },
       }),
     ]);
 
@@ -319,7 +322,6 @@ export default async function AnalyticsPage({ searchParams }: PageProps) {
   const ratings = [...feedback.map((f) => f.rating), ...reviews.map((r) => r.rating)];
   const totalFeedback = ratings.length;
   const googleReviewCount = reviews.length;
-  const googleRedirects = feedback.filter((f) => f.source === "google_redirect").length;
   const avgRating = totalFeedback > 0 ? ratings.reduce((s, r) => s + r, 0) / totalFeedback : null;
 
   const distribution = [5, 4, 3, 2, 1].map((star) => ({

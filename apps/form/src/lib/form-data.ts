@@ -2,12 +2,19 @@ import { unstable_cache } from "next/cache";
 import { prisma } from "@repo/db";
 import { resolveLabel, type FormTag } from "@repo/types";
 import { normalizePlaceId } from "./place-id";
+import { DEFAULT_WELCOME, isLocale } from "./i18n";
 
 export interface FormCategory {
-  /** Category display label resolved to the business default language. */
+  /** Category display label resolved to this language. */
   name: string;
   /** Active tags in this category, label resolved + polarity attached. */
   tags: FormTag[];
+}
+
+/** The language-varying slice of the form config — one of these per supported language. */
+export interface LanguageConfig {
+  welcomeMessage: string;
+  categories: FormCategory[];
 }
 
 export interface FormData {
@@ -17,16 +24,42 @@ export interface FormData {
     googleMapsReviewUrl: string | null;
   };
   config: {
+    // Language-invariant branding.
     brandColor: string;
     logoUrl: string | null;
-    welcomeMessage: string;
+    // The language a scan opens in (absent/invalid cue) and the analyzer's anchor.
     defaultLanguage: string;
-    categories: FormCategory[];
+    // Drives the customer-facing switcher; always includes defaultLanguage.
+    supportedLanguages: string[];
+    // Per-supported-language pre-resolved config; the client picks byLanguage[active].
+    // resolveLabel's fallback chain stays server-only (ADR 0021).
+    byLanguage: Record<string, LanguageConfig>;
   } | null;
 }
 
 // Form payload cache TTL (production only). See docs/adr/0016.
 const CACHE_TTL_SECONDS = 30;
+
+/**
+ * Resolve the welcome for one language. Unlike chips, welcome never crosses to
+ * another language's authored text — a German form must not show an English custom
+ * welcome. So: authored-in-this-language → localized code-default (ADR 0021).
+ */
+function resolveWelcome(
+  welcomeMap: unknown,
+  lang: string,
+  defaultLanguage: string
+): string {
+  const map =
+    welcomeMap && typeof welcomeMap === "object"
+      ? (welcomeMap as Record<string, unknown>)
+      : {};
+  const authored = map[lang];
+  if (typeof authored === "string" && authored.length > 0) return authored;
+  if (isLocale(lang)) return DEFAULT_WELCOME[lang];
+  if (isLocale(defaultLanguage)) return DEFAULT_WELCOME[defaultLanguage];
+  return DEFAULT_WELCOME.en;
+}
 
 /**
  * Loads the business + form config for a given id. Returns null when the
@@ -54,34 +87,53 @@ async function loadFormData(businessId: string): Promise<FormData | null> {
 
   if (!business) return null;
 
-  const defaultLanguage = config?.defaultLanguage ?? "en";
+  const businessOut = {
+    name: business.name,
+    googlePlaceId: normalizePlaceId(business.googlePlaceId),
+    googleMapsReviewUrl: business.googleMapsReviewUrl ?? null,
+  };
+
+  if (!config) {
+    return { business: businessOut, config: null };
+  }
+
+  const defaultLanguage = config.defaultLanguage;
+  // defaultLanguage is always offered, even if a row omitted it from the array.
+  const supportedLanguages = Array.from(
+    new Set([defaultLanguage, ...config.supportedLanguages])
+  );
+
+  // Pre-resolve the language-varying config once per supported language. Chips keep
+  // the full fallback chain (a chip in another language beats a blank one); only the
+  // welcome gets the no-cross-language rule above.
+  const byLanguage: Record<string, LanguageConfig> = {};
+  for (const lang of supportedLanguages) {
+    byLanguage[lang] = {
+      welcomeMessage: resolveWelcome(config.welcomeMessage, lang, defaultLanguage),
+      categories: config.categories.map((c) => ({
+        name: resolveLabel(c.labels, { active: lang, default: defaultLanguage }),
+        tags: c.tags.map((t) => ({
+          id: t.id,
+          label: resolveLabel(t.labels, {
+            active: lang,
+            default: defaultLanguage,
+            authored: t.authoredLanguage,
+          }),
+          polarity: t.polarity,
+        })),
+      })),
+    };
+  }
 
   return {
-    business: {
-      name: business.name,
-      googlePlaceId: normalizePlaceId(business.googlePlaceId),
-      googleMapsReviewUrl: business.googleMapsReviewUrl ?? null,
+    business: businessOut,
+    config: {
+      brandColor: config.brandColor,
+      logoUrl: config.logoUrl ?? null,
+      defaultLanguage,
+      supportedLanguages,
+      byLanguage,
     },
-    config: config
-      ? {
-          brandColor: config.brandColor,
-          logoUrl: config.logoUrl ?? null,
-          // welcomeMessage is a per-language map; resolve to the default language.
-          welcomeMessage: resolveLabel(config.welcomeMessage, { default: defaultLanguage }),
-          defaultLanguage,
-          categories: config.categories.map((c) => ({
-            name: resolveLabel(c.labels, { default: defaultLanguage }),
-            tags: c.tags.map((t) => ({
-              id: t.id,
-              label: resolveLabel(t.labels, {
-                default: defaultLanguage,
-                authored: t.authoredLanguage,
-              }),
-              polarity: t.polarity,
-            })),
-          })),
-        }
-      : null,
   };
 }
 

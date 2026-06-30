@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { Star, ArrowLeft, RefreshCw, Loader2, CheckCircle2, Copy, ExternalLink, Info, VenetianMask, Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
@@ -18,10 +19,18 @@ const PasteCoachmark = dynamic(
 );
 
 import type { FormTag } from "@repo/types";
+import { messages, isLocale, LANGUAGE_ENDONYMS, type Locale } from "@/lib/i18n";
+import { FlagIcon } from "@/components/FlagIcon";
 
 interface Category {
   name: string;
   tags: FormTag[];
+}
+
+/** The language-varying slice of the form config (mirrors form-data's LanguageConfig). */
+interface LanguageConfig {
+  welcomeMessage: string;
+  categories: Category[];
 }
 
 interface Props {
@@ -31,9 +40,48 @@ interface Props {
   googleMapsReviewUrl: string | null;
   brandColor: string;
   logoUrl: string | null;
-  welcomeMessage: string;
   defaultLanguage: string;
-  categories: Category[];
+  supportedLanguages: string[];
+  byLanguage: Record<string, LanguageConfig>;
+}
+
+/** Compact top-right segmented language switcher (ADR 0021). Hidden by the caller
+ *  when a business offers only one language. */
+function LanguageSwitcher({
+  value,
+  options,
+  brandColor,
+  onChange,
+}: {
+  value: string;
+  options: string[];
+  brandColor: string;
+  onChange: (lang: string) => void;
+}) {
+  return (
+    <div className="fixed right-4 top-4 z-30 flex overflow-hidden rounded-full border border-border bg-background/90 shadow-sm backdrop-blur">
+      {options.map((lang) => {
+        const selected = lang === value;
+        return (
+          <button
+            key={lang}
+            type="button"
+            onClick={() => onChange(lang)}
+            aria-label={LANGUAGE_ENDONYMS[lang as Locale] ?? lang}
+            aria-pressed={selected}
+            className={cn(
+              "flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold uppercase transition-colors touch-manipulation",
+              selected ? "text-white" : "text-muted-foreground"
+            )}
+            style={selected ? { backgroundColor: brandColor } : undefined}
+          >
+            <FlagIcon locale={lang} className="h-3 w-[18px]" />
+            {lang}
+          </button>
+        );
+      })}
+    </div>
+  );
 }
 
 // TODO: replace with real Place ID from Business.googlePlaceId once onboarding is built
@@ -58,10 +106,50 @@ export default function ReviewForm({
   googleMapsReviewUrl,
   brandColor,
   logoUrl,
-  welcomeMessage,
   defaultLanguage,
-  categories,
+  supportedLanguages,
+  byLanguage,
 }: Props) {
+  // Active form language (ADR 0021). Seeded to defaultLanguage so server + first client
+  // render match (no hydration mismatch); a valid ?language cue is applied in an effect
+  // on mount — the accepted, bounded step-1 welcome "flash" for cued-non-default scans.
+  const searchParams = useSearchParams();
+  const [active, setActive] = useState(defaultLanguage);
+
+  useEffect(() => {
+    const cue = searchParams.get("language");
+    if (cue && cue !== active && supportedLanguages.includes(cue)) setActive(cue);
+    // Mount-only: the cue seeds the opening language; later changes go through the switcher.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Switch language: update state AND reflect it in the URL without a reload or history
+  // spam, so a refresh/back preserves the choice.
+  function changeLanguage(lang: string) {
+    setActive(lang);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("language", lang);
+      window.history.replaceState(null, "", url.toString());
+    }
+  }
+
+  // Resolved config for the active language (chips + welcome) and the chrome strings.
+  const langConfig =
+    byLanguage[active] ?? byLanguage[defaultLanguage] ?? { welcomeMessage: "", categories: [] };
+  const { welcomeMessage, categories } = langConfig;
+  const t =
+    messages[isLocale(active) ? active : isLocale(defaultLanguage) ? defaultLanguage : "en"];
+  const showSwitcher = supportedLanguages.length > 1;
+  const switcher = showSwitcher ? (
+    <LanguageSwitcher
+      value={active}
+      options={supportedLanguages}
+      brandColor={brandColor}
+      onChange={changeLanguage}
+    />
+  ) : null;
+
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [rating, setRating] = useState(0);
   const [hovered, setHovered] = useState(0);
@@ -78,7 +166,6 @@ export default function ReviewForm({
   const [regenError, setRegenError] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isDone, setIsDone] = useState(false);
-  const [doneMessage, setDoneMessage] = useState("");
   // "idle" → step-3 editor; "copied"/"error" → guided handoff screen before Google.
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
   const [appRatingSubmitted, setAppRatingSubmitted] = useState(false);
@@ -108,7 +195,7 @@ export default function ReviewForm({
       const response = await fetch("/api/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ businessId, rating, tagIds: selectedTagIds, customText, attempt }),
+        body: JSON.stringify({ businessId, rating, tagIds: selectedTagIds, customText, attempt, language: active }),
       });
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -136,7 +223,7 @@ export default function ReviewForm({
       if (attempt === 0) {
         // First draft failed: seed version 1 with editable fallback so the customer
         // still has a box to write in.
-        setVersions(["Couldn't generate a review right now. Feel free to write your own above."]);
+        setVersions([t.draftFallback]);
         setCurrentVersion(0);
       } else {
         // Regenerate failed: no-op. Keep the current draft, surface an inline error.
@@ -145,7 +232,7 @@ export default function ReviewForm({
     } finally {
       setIsGenerating(false);
     }
-  }, [businessId, rating, selectedTagIds, customText, versions.length]);
+  }, [businessId, rating, selectedTagIds, customText, versions.length, active, t.draftFallback]);
 
   useEffect(() => {
     if (step === 3) void runGenerate();
@@ -237,6 +324,7 @@ export default function ReviewForm({
         text: customText || undefined,
         generatedReview: currentText,
         source: "google_redirect",
+        language: active,
       }),
     }).catch(() => { /* best-effort */ });
 
@@ -255,7 +343,7 @@ export default function ReviewForm({
         style={variant === "primary" ? { backgroundColor: brandColor } : undefined}
       >
         <GoogleLogo className="size-5" />
-        Copy &amp; Post to Google
+        {t.postToGoogle}
       </button>
     );
   }
@@ -270,7 +358,7 @@ export default function ReviewForm({
         style={variant === "primary" ? { backgroundColor: brandColor } : undefined}
       >
         <VenetianMask className="size-5" />
-        Send privately to the manager
+        {t.sendPrivately}
       </button>
     );
   }
@@ -292,10 +380,10 @@ export default function ReviewForm({
           generatedReview: currentText || undefined,
           tagIds: selectedTagIds,
           source: "private",
+          language: active,
         }),
       });
     } catch { /* best-effort */ }
-    setDoneMessage("Thank you! Your feedback has been sent privately to the manager.");
     setIsDone(true);
   }
 
@@ -303,15 +391,16 @@ export default function ReviewForm({
   if (isDone) {
     return (
       <div className="relative flex min-h-svh flex-col items-center justify-center gap-6 p-6 pb-12 text-center">
+        {switcher}
         <div className="text-6xl">🎉</div>
-        <p className="text-lg font-semibold text-foreground max-w-xs">{doneMessage}</p>
+        <p className="text-lg font-semibold text-foreground max-w-xs">{t.privateThankYou}</p>
 
         <div className="w-full max-w-xs border-t pt-6">
           {appRatingSubmitted ? (
-            <p className="text-sm text-muted-foreground">Thanks for the feedback! ✓</p>
+            <p className="text-sm text-muted-foreground">{t.appRatingThanks}</p>
           ) : (
             <>
-              <p className="text-sm font-medium text-muted-foreground mb-4">How was using Jugnoo?</p>
+              <p className="text-sm font-medium text-muted-foreground mb-4">{t.appRatingPrompt}</p>
               <div className="flex justify-center gap-4">
                 {APP_EMOJIS.map(({ emoji, value }) => (
                   <button
@@ -319,7 +408,7 @@ export default function ReviewForm({
                     type="button"
                     onClick={() => handleAppRating(value)}
                     className="text-3xl touch-manipulation transition-transform active:scale-90 hover:scale-110"
-                    aria-label={`Rate Jugnoo ${value} out of 5`}
+                    aria-label={t.appRatingAria(value)}
                   >
                     {emoji}
                   </button>
@@ -347,6 +436,7 @@ export default function ReviewForm({
     const displayRating = hovered || rating;
     return (
       <div className="relative flex min-h-svh flex-col items-center justify-center gap-8 p-6">
+        {switcher}
         {/* The fixed h-14 w-40 logo slot is reserved UNCONDITIONALLY (matching
             FormSkeleton's placeholder) — whether or not this business has a logo —
             so the skeleton→form swap never changes the column height and recenters
@@ -392,7 +482,7 @@ export default function ReviewForm({
               onMouseEnter={() => setHovered(star)}
               onMouseLeave={() => setHovered(0)}
               className="touch-manipulation p-1 transition-transform active:scale-90"
-              aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+              aria-label={t.rateAria(star)}
             >
               <Star
                 className="size-14 transition-colors duration-100"
@@ -405,7 +495,7 @@ export default function ReviewForm({
             </button>
           ))}
         </div>
-        <p className="text-sm text-muted-foreground">Tap a star to rate</p>
+        <p className="text-sm text-muted-foreground">{t.tapToRate}</p>
 
         <a
           href="https://jugnoo.de"
@@ -424,13 +514,14 @@ export default function ReviewForm({
   if (step === 2) {
     return (
       <div className="flex min-h-svh flex-col p-6 pb-8 gap-6">
+        {switcher}
         <button
           type="button"
           onClick={() => setStep(1)}
           className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation"
         >
           <ArrowLeft className="size-4" />
-          Back
+          {t.back}
         </button>
 
         <div className="space-y-1.5">
@@ -448,7 +539,7 @@ export default function ReviewForm({
             ))}
           </div>
           <p className="text-base font-semibold text-foreground">
-            {rating >= 4 ? "What did you love?" : "What can we improve?"}
+            {rating >= 4 ? t.lovePrompt : t.improvePrompt}
           </p>
         </div>
 
@@ -498,7 +589,7 @@ export default function ReviewForm({
         <Textarea
           value={customText}
           onChange={(e) => setCustomText(e.target.value)}
-          placeholder="Tell us a bit more (optional)..."
+          placeholder={t.morePlaceholder}
           className="min-h-28 resize-none"
           maxLength={500}
         />
@@ -510,7 +601,7 @@ export default function ReviewForm({
             className="w-full rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80"
             style={{ backgroundColor: brandColor }}
           >
-            Next
+            {t.next}
           </button>
           <a
             href="https://jugnoo.de"
@@ -531,32 +622,28 @@ export default function ReviewForm({
     const failed = copyState === "error";
     return (
       <div className="flex min-h-svh flex-col gap-6 p-6">
+        {switcher}
         <button
           type="button"
           onClick={() => setCopyState("idle")}
           className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation"
         >
           <ArrowLeft className="size-4" />
-          Back to edit
+          {t.backToEdit}
         </button>
 
         {failed ? (
           <div className="space-y-1">
-            <p className="text-base font-semibold text-foreground">Almost there — copy your review</p>
-            <p className="text-sm text-muted-foreground">
-              We couldn&apos;t copy it automatically. Tap the button below (or select the text), then
-              open Google and paste.
-            </p>
+            <p className="text-base font-semibold text-foreground">{t.copyFailedTitle}</p>
+            <p className="text-sm text-muted-foreground">{t.copyFailedSub}</p>
           </div>
         ) : (
           <div className="space-y-1">
             <p className="flex items-center gap-2 text-base font-semibold text-foreground">
               <CheckCircle2 className="size-5" style={{ color: brandColor }} />
-              Review copied!
+              {t.copiedTitle}
             </p>
-            <p className="text-sm text-muted-foreground">
-              On the next screen, tap the review box and <strong>hold to Paste</strong>.
-            </p>
+            <p className="text-sm text-muted-foreground">{t.copiedSub}</p>
           </div>
         )}
 
@@ -594,12 +681,18 @@ export default function ReviewForm({
           {rating >= 4 && (
             <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               <Camera className="size-4 shrink-0" style={{ color: brandColor }} />
-              Don&apos;t forget to add photos too!
+              {t.addPhotos}
             </p>
           )}
         </div>
 
-        {!failed && <PasteCoachmark brandColor={brandColor} />}
+        {!failed && (
+          <PasteCoachmark
+            brandColor={brandColor}
+            pasteLabel={t.pasteLabel}
+            placeholder={t.pastePlaceholder}
+          />
+        )}
 
         <div className="sticky bottom-0 -mx-6 mt-auto space-y-3 border-t border-border bg-background px-6 pb-8 pt-4">
           {failed && (
@@ -609,7 +702,7 @@ export default function ReviewForm({
               className="flex w-full items-center justify-center gap-2 rounded-xl border border-border py-4 text-base font-medium text-foreground transition-colors hover:bg-muted active:bg-muted"
             >
               <Copy className="size-4" />
-              Copy review text
+              {t.copyReviewText}
             </button>
           )}
           <button
@@ -618,7 +711,7 @@ export default function ReviewForm({
             className="flex w-full items-center justify-center gap-2 rounded-xl py-4 text-base font-semibold text-white transition-opacity active:opacity-80"
             style={{ backgroundColor: brandColor }}
           >
-            Open Google Reviews
+            {t.openGoogleReviews}
             <ExternalLink className="size-4" />
           </button>
           <a
@@ -638,13 +731,14 @@ export default function ReviewForm({
   // ── Step 3: Review + actions ─────────────────────────────────
   return (
     <div className="flex min-h-svh flex-col p-6 pb-8 gap-6">
+      {switcher}
       <button
         type="button"
         onClick={() => setStep(2)}
         className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation"
       >
         <ArrowLeft className="size-4" />
-        Back
+        {t.back}
       </button>
 
       <div className="space-y-1.5">
@@ -661,16 +755,15 @@ export default function ReviewForm({
             />
           ))}
         </div>
-        <p className="text-base font-semibold text-foreground">Your review is ready</p>
-        <p className="text-sm text-muted-foreground">
-          Edit it if you&apos;d like, then choose how to share.
-        </p>
+        <p className="text-base font-semibold text-foreground">{t.reviewReady}</p>
+        <p className="text-sm text-muted-foreground">{t.reviewReadySub}</p>
       </div>
 
       {infoOpen && (
         <GenerationInfoSheet
           rating={rating}
           brandColor={brandColor}
+          t={t}
           onClose={() => setInfoOpen(false)}
         />
       )}
@@ -678,7 +771,7 @@ export default function ReviewForm({
       {isGenerating ? (
         <div className="flex flex-col items-center justify-center gap-3 py-12 text-muted-foreground">
           <Loader2 className="size-6 animate-spin" />
-          <p className="text-sm">Drafting your review…</p>
+          <p className="text-sm">{t.drafting}</p>
         </div>
       ) : (
         <>
@@ -697,19 +790,19 @@ export default function ReviewForm({
                 type="button"
                 onClick={() => setCurrentVersion((v) => Math.max(0, v - 1))}
                 disabled={currentVersion === 0}
-                aria-label="Previous version"
+                aria-label={t.prevVersion}
                 className="touch-manipulation text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
               >
                 <ChevronLeft className="size-5" />
               </button>
               <span className="text-sm text-muted-foreground tabular-nums">
-                Version {currentVersion + 1} of {versions.length}
+                {t.versionOf(currentVersion + 1, versions.length)}
               </span>
               <button
                 type="button"
                 onClick={() => setCurrentVersion((v) => Math.min(versions.length - 1, v + 1))}
                 disabled={currentVersion === versions.length - 1}
-                aria-label="Next version"
+                aria-label={t.nextVersion}
                 className="touch-manipulation text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
               >
                 <ChevronRight className="size-5" />
@@ -726,15 +819,13 @@ export default function ReviewForm({
                 className="flex items-center gap-1.5 text-sm text-muted-foreground w-fit touch-manipulation hover:text-foreground transition-colors disabled:opacity-40"
               >
                 <RefreshCw className="size-3.5" />
-                Generate another version
+                {t.generateAnother}
               </button>
             ) : (
-              <p className="text-xs text-muted-foreground">Maximum versions reached</p>
+              <p className="text-xs text-muted-foreground">{t.maxVersions}</p>
             )}
             {regenError && (
-              <p className="text-xs text-destructive">
-                Couldn&apos;t generate another version — try again.
-              </p>
+              <p className="text-xs text-destructive">{t.regenError}</p>
             )}
             <button
               type="button"
@@ -742,7 +833,7 @@ export default function ReviewForm({
               className="flex items-center gap-1.5 text-sm text-muted-foreground touch-manipulation hover:text-foreground transition-colors"
             >
               <Info className="size-3.5" />
-              How was this written?
+              {t.howWritten}
             </button>
           </div>
         </>

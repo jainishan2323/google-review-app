@@ -1,10 +1,17 @@
 import { prisma } from "@repo/db";
 import { Separator } from "@/components/ui/separator";
 import { FormConfigEditor } from "@/components/FormConfigEditor";
+import { QrCodeCard } from "@/components/QrCodeCard";
 import { SeedStarterFormButton } from "@/components/SeedStarterFormButton";
 import { requireCurrentBusiness } from "@/lib/current-business";
 
 export const dynamic = "force-dynamic";
+
+const FORM_BASE_URL =
+  process.env.NEXT_PUBLIC_FORM_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "https://feedback.jugnoo.de"
+    : "http://localhost:3001");
 
 export default async function FeedbackSettingsPage() {
   const business = await requireCurrentBusiness();
@@ -37,10 +44,11 @@ export default async function FeedbackSettingsPage() {
     <main className="p-8 space-y-8 max-w-6xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Feedback Settings
+          QR settings
         </h1>
         <p className="text-sm mt-1 text-muted-foreground">
-          Customize the feedback form your customers see — {business.name}.
+          Customize the feedback form your customers see, then grab the QR code
+          that opens it — {business.name}.
         </p>
       </div>
 
@@ -82,6 +90,12 @@ export default async function FeedbackSettingsPage() {
           <SeedStarterFormButton />
         </div>
       )}
+
+      <Separator />
+
+      <div className="max-w-md">
+        <QrCodeCard formUrl={`${FORM_BASE_URL}/${business.id}?src=qr`} />
+      </div>
     </main>
   );
 }

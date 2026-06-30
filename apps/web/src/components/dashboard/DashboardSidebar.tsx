@@ -9,7 +9,7 @@ import {
   BarChart2,
   MessageSquare,
   QrCode,
-  Settings,
+  Store,
   LogOut,
   VenetianMask,
 } from "lucide-react";
@@ -22,9 +22,9 @@ const navItems: { href: string; label: string; icon: ComponentType<{ className?:
   { href: "/dashboard",                   label: "Overview",  icon: LayoutDashboard, soon: false },
   { href: "/dashboard/reviews",           label: "Reviews",   icon: GoogleLogo,      soon: false },
   { href: "/dashboard/analytics",         label: "Analytics", icon: BarChart2,       soon: process.env.NEXT_PUBLIC_ANALYTICS !== "true" },
-  { href: "/dashboard/feedback",          label: "Feedback",  icon: VenetianMask,    soon: false },
-  { href: "/dashboard/cards",             label: "Cards",     icon: QrCode,          soon: false },
-  { href: "/dashboard/feedback/settings", label: "Settings",  icon: Settings,        soon: false },
+  { href: "/dashboard/feedback",          label: "Feedback",    icon: VenetianMask,  soon: false },
+  { href: "/dashboard/feedback/settings", label: "QR settings", icon: QrCode,        soon: false },
+  { href: "/dashboard/cards",             label: "Print shop",  icon: Store,         soon: true },
 ];
 
 export function DashboardSidebar({ businessName }: { businessName: string }) {

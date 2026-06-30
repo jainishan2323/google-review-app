@@ -272,19 +272,19 @@ export function FormConfigEditor({
               <span className="flex items-center gap-1.5 text-xs font-medium text-foreground">
                 <span className="size-1.5 rounded-full bg-primary" />
                 {defaultLanguage.toUpperCase()}
-                <span className="text-muted-foreground tracking-widest"> · BASE</span>
+                <span className="text-muted-foreground">· BASE</span>
               </span>
               {allLanguages
                 .filter((l) => l !== defaultLanguage)
                 .map((lang) => (
-                  <span key={lang} className="flex items-center gap-2 text-sm font-medium text-foreground">
-                    {languageName(lang)}
+                  <label key={lang} className="flex items-center gap-1.5 cursor-pointer">
+                    <span className="text-xs font-medium text-foreground">{languageName(lang)}</span>
                     <Switch
                       checked={enabled.includes(lang)}
                       onCheckedChange={(on) => toggleLanguage(lang, on)}
                       aria-label={`Enable ${languageName(lang)}`}
                     />
-                  </span>
+                  </label>
                 ))}
             </div>
           </CardContent>
@@ -496,7 +496,7 @@ export function FormConfigEditor({
             welcome={welcome}
             categories={categories}
             defaultLanguage={defaultLanguage}
-            languages={editLanguages}
+            activeLanguage={editLang}
           />
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { prisma } from "@repo/db";
 import { Separator } from "@/components/ui/separator";
 import { CardStudio } from "@/components/cards/CardStudio";
-import { QrCodeCard } from "@/components/QrCodeCard";
+import { ComingSoon } from "@/components/ComingSoon";
 import { requireCurrentBusiness } from "@/lib/current-business";
 import { loadCardTemplates } from "@/lib/card-templates";
 import { buildQrSvg } from "@/lib/qr-svg";
@@ -16,11 +16,25 @@ const FORM_BASE_URL =
 
 // Feature flag: the full card studio (template, theme switch, NFC, "send to print")
 // is gated off by default for the pilot — print output isn't production-ready yet and
-// orders are fulfilled manually. When off, the page falls back to the simple branded
-// QR download. See docs/adr/0002-card-print-deferred-behind-flag.md.
+// orders are fulfilled manually. See docs/adr/0002-card-print-deferred-behind-flag.md.
 const CARDS_STUDIO_ENABLED = process.env.NEXT_PUBLIC_CARDS_STUDIO === "true";
 
+// The Print shop (ordering branded / NFC cards) is parked as "coming soon" for the
+// pilot regardless of the studio flag above — we show an honest placeholder, same as
+// Reviews/Analytics did pre-Google. The full CardStudio path below is preserved
+// intact and re-lights the moment this is flipped on.
+const PRINT_SHOP_ENABLED = process.env.NEXT_PUBLIC_PRINT_SHOP === "true";
+
 export default async function CardsPage() {
+  if (!PRINT_SHOP_ENABLED) {
+    return (
+      <ComingSoon
+        title="Print shop"
+        description="Branded review cards — table tents, stickers, and tap-to-review NFC — designed, printed, and shipped to your door. We're putting the finishing touches on it. In the meantime, download your QR code from QR settings to print your own."
+      />
+    );
+  }
+
   const business = await requireCurrentBusiness();
   const formConfig = await prisma.formConfig.findUnique({
     where: { businessId: business.id },
@@ -55,53 +69,47 @@ export default async function CardsPage() {
     <main className="mx-auto p-8 space-y-8 max-w-5xl">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-          Review Cards
+          Print shop
         </h1>
         <p className="text-sm mt-1 text-muted-foreground">
-          {CARDS_STUDIO_ENABLED
-            ? `Customize your review card, print it yourself, or order physical cards for ${business.name}.`
-            : `Download your QR code to print on table tents, receipts, or stickers for ${business.name}.`}
+          Customize your review card, print it yourself, or order physical cards for {business.name}.
         </p>
       </div>
 
       <Separator />
 
-      {CARDS_STUDIO_ENABLED ? (
-        <CardStudio
-          businessId={business.id}
-          businessName={business.name}
-          templates={templates}
-          availableVariants={Object.keys(templates)}
-          qrSvg={qrSvg}
-          formUrl={`${FORM_BASE_URL}/${business.id}?src=qr`}
-          defaultLogoUrl={formConfig?.logoUrl ?? ""}
-          defaultLanguage={defaultLanguage}
-          activeOrder={
-            activeOrder
-              ? {
-                  createdAt: activeOrder.createdAt.toISOString(),
-                  // New orders carry line items; legacy rows fall back to the flat columns.
-                  items: (activeOrder.items.length > 0
-                    ? activeOrder.items
-                    : [
-                        {
-                          hasNfc: activeOrder.hasNfc,
-                          language: activeOrder.language,
-                          quantity: activeOrder.quantity,
-                        },
-                      ]
-                  ).map((i) => ({
-                    hasNfc: i.hasNfc,
-                    language: i.language === "de" ? "de" : "en",
-                    quantity: i.quantity,
-                  })),
-                }
-              : null
-          }
-        />
-      ) : (
-        <QrCodeCard formUrl={`${FORM_BASE_URL}/${business.id}?src=qr`} />
-      )}
+      <CardStudio
+        businessId={business.id}
+        businessName={business.name}
+        templates={templates}
+        availableVariants={Object.keys(templates)}
+        qrSvg={qrSvg}
+        formUrl={`${FORM_BASE_URL}/${business.id}?src=qr`}
+        defaultLogoUrl={formConfig?.logoUrl ?? ""}
+        defaultLanguage={defaultLanguage}
+        activeOrder={
+          activeOrder
+            ? {
+                createdAt: activeOrder.createdAt.toISOString(),
+                // New orders carry line items; legacy rows fall back to the flat columns.
+                items: (activeOrder.items.length > 0
+                  ? activeOrder.items
+                  : [
+                      {
+                        hasNfc: activeOrder.hasNfc,
+                        language: activeOrder.language,
+                        quantity: activeOrder.quantity,
+                      },
+                    ]
+                ).map((i) => ({
+                  hasNfc: i.hasNfc,
+                  language: i.language === "de" ? "de" : "en",
+                  quantity: i.quantity,
+                })),
+              }
+            : null
+        }
+      />
     </main>
   );
 }

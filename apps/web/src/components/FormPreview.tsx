@@ -24,7 +24,8 @@ interface Props {
   welcome: LabelMap;
   categories: PreviewCategory[];
   defaultLanguage: string;
-  languages: string[];
+  /** The language the preview renders in — driven by the editor's "Editing in" control. */
+  activeLanguage: string;
 }
 
 const LANGUAGE_NAMES: Record<string, string> = { en: "English", de: "Deutsch" };
@@ -36,15 +37,12 @@ export function FormPreview({
   welcome,
   categories,
   defaultLanguage,
-  languages,
+  activeLanguage,
 }: Props) {
   const [band, setBand] = useState<Band>("low");
-  const [lang, setLang] = useState(defaultLanguage);
 
-  // Keep the preview language valid if it gets toggled off.
-  const activeLang = languages.includes(lang) ? lang : defaultLanguage;
   const color = /^#[0-9A-Fa-f]{6}$/.test(brandColor) ? brandColor : "#2563EB";
-  const label = (m: LabelMap) => resolveLabel(m, { default: defaultLanguage, active: activeLang });
+  const label = (m: LabelMap) => resolveLabel(m, { default: defaultLanguage, active: activeLanguage });
 
   return (
     <div className="flex flex-col items-center gap-3 select-none">
@@ -52,7 +50,7 @@ export function FormPreview({
         Live preview
       </p>
 
-      {/* Controls: rating band + language */}
+      {/* Controls: rating band (language follows the editor's "Editing in" control) */}
       <div className="flex w-full items-center justify-center gap-2">
         <div className="flex gap-1 rounded-full bg-muted p-1 text-xs">
           {([
@@ -72,23 +70,6 @@ export function FormPreview({
             </button>
           ))}
         </div>
-        {languages.length > 1 && (
-          <div className="flex gap-1 rounded-full bg-muted p-1 text-xs">
-            {languages.map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => setLang(l)}
-                className={`rounded-full px-2.5 py-1 transition-colors ${
-                  activeLang === l ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
-                }`}
-                title={LANGUAGE_NAMES[l] ?? l}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
-        )}
       </div>
 
       {/* Phone frame */}
@@ -107,7 +88,7 @@ export function FormPreview({
 
       <p className="text-[10px] text-muted-foreground/60">
         {band === "stars" ? "Welcome screen" : band === "high" ? "Happy path (4–5★)" : "Improve path (1–3★)"} ·{" "}
-        {LANGUAGE_NAMES[activeLang] ?? activeLang}
+        {LANGUAGE_NAMES[activeLanguage] ?? activeLanguage}
       </p>
     </div>
   );

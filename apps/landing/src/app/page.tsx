@@ -1,7 +1,8 @@
 import Link from "next/link";
 import {
-  QrCode,
-  Star,
+  Link2,
+  TrendingUp,
+  MessageSquare,
   BarChart3,
   Zap,
   Shield,
@@ -18,6 +19,7 @@ import {
 } from "@/components/ui/card";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { AIReviewCard } from "@/components/AIReviewCard";
+import { AIReplyCard } from "@/components/AIReplyCard";
 import { FireflyLogo } from "@/components/FireflyLogo";
 import { ScreenshotCarousel } from "@/components/ScreenshotCarousel";
 import { cn } from "@/lib/utils";
@@ -25,24 +27,24 @@ import { cn } from "@/lib/utils";
 const HOW_IT_WORKS_STEPS = [
   {
     number: "01",
-    Icon: QrCode,
-    title: "Scan.",
+    Icon: Link2,
+    title: "Connect.",
     description:
-      "Put a Jugnoo card on the counter or table. Customer scans, gets a short form. No app. No signup. Takes them about a minute.",
+      "Link your Google Business Profile. About two minutes, then Jugnoo does the watching.",
   },
   {
     number: "02",
-    Icon: Star,
-    title: "Sort.",
+    Icon: TrendingUp,
+    title: "Spot.",
     description:
-      "If they're happy, the AI writes the Google review for them. They read it, maybe tweak a word, and tap Post.",
+      "Every review gets read the moment it lands — what's mentioned, how sentiment's trending, what keeps coming up.",
   },
   {
     number: "03",
-    Icon: BarChart3,
-    title: "Save.",
+    Icon: MessageSquare,
+    title: "Act.",
     description:
-      "If something went wrong, they get a way to tell you privately. You hear about it first and can fix it before it goes anywhere.",
+      "A clear weekly picture of what needs you, with an AI-drafted reply ready whenever you want to respond.",
   },
 ];
 
@@ -107,16 +109,17 @@ export default function LandingPage() {
 
             {/* Headline */}
             <h1 className="mb-6 max-w-3xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-              Your happy customers want to leave a{" "}
-              <span className="text-primary">5-star Google review.</span>{" "}
-              They just don&apos;t know what to write.
+              Your reviews are already telling you what&apos;s wrong.{" "}
+              <span className="text-primary">Most owners never see the pattern.</span>
             </h1>
 
             {/* Subheadline */}
             <p className="mb-8 max-w-2xl text-base text-muted-foreground sm:text-lg">
-              We write the review for them. They read it, tap Post, and you get
-              another 5 stars. When someone had a bad time, they get a private
-              way to tell you first. Before they tell everyone else.
+              Jugnoo reads every Google review as it comes in and shows you
+              what&apos;s actually changing — recurring complaints before they
+              pile up, what&apos;s driving your rating up or down, and where to
+              focus this week. Reply faster too, with an AI-drafted response
+              ready in one tap.
             </p>
 
             {/* CTAs */}
@@ -198,17 +201,20 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ─── Screenshot Carousel ─────────────────────────────── */}
-      <div className="py-12 sm:py-16">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <div className="relative">
-            <ScreenshotCarousel />
-            <div className="absolute bottom-5 right-6 opacity-40 pointer-events-none">
-              <FireflyLogo size={32} />
+      {/* ─── Screenshot Carousel — temporarily disabled, restore later ─────
+           Re-enable by flipping `false` to `true` (or delete the wrapper). */}
+      {false && (
+        <div className="py-12 sm:py-16">
+          <div className="mx-auto max-w-5xl px-4 sm:px-6">
+            <div className="relative">
+              <ScreenshotCarousel />
+              <div className="absolute bottom-5 right-6 opacity-40 pointer-events-none">
+                <FireflyLogo size={32} />
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ─── Features (Bento) ────────────────────────────────── */}
       <section id="features" className="py-20 sm:py-28">
@@ -218,65 +224,121 @@ export default function LandingPage() {
               Runs in the background while you run your business
             </h2>
             <p className="mt-3 text-muted-foreground">
-              More Google reviews from the happy ones, private feedback from the
-              unhappy ones, and we write your replies too.
+              Every review read and understood, a reply drafted in your voice,
+              and a weekly picture of what&apos;s changing.
             </p>
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            {/* Card 1 — spans 2 cols × 3 rows on desktop */}
-            <AIReviewCard />
+            {/* Card 1 — AI reply (owner), spans 2 cols × 3 rows on desktop */}
+            <AIReplyCard />
 
-            {/* Card 2 — Active Reputation Shield */}
+            {/* Card 2 — Private feedback from regulars */}
             <Card>
               <CardHeader>
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Shield className="size-5 text-primary" />
                 </div>
-                <CardTitle>Catch problems before they go public</CardTitle>
+                <CardTitle>Hear from your regulars directly</CardTitle>
                 <CardDescription>
-                  The customers who keep coming back care about your place. When
-                  something goes wrong, they want to tell you, not post about
-                  it. Jugnoo gives them a private way to do that. You hear about
-                  it first, fix what needs fixing, and no one reads about it
-                  online.
+                  The customers who keep coming back care about your place.
+                  Jugnoo gives them a private channel to tell you what could be
+                  better — so you hear it straight from them and can act on it
+                  while it still matters.
                 </CardDescription>
               </CardHeader>
             </Card>
 
-            {/* Card 3 — Monday Morning Pulse */}
-            <Card>
-              <CardHeader>
-                <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-                  <Mail className="size-5 text-primary" />
-                </div>
-                <CardTitle>Monday morning email</CardTitle>
-                <CardDescription>
-                  Every Monday at 9am you get a short email. Every complaint
-                  from the past week, what kept coming up, and which way your
-                  rating is heading. Read it over coffee. No login.
-                </CardDescription>
-              </CardHeader>
-            </Card>
-
-            {/* Card 4 — Live alerts */}
+            {/* Card 3 — Live alerts */}
             <Card>
               <CardHeader>
                 <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                   <Bell className="size-5 text-primary" />
                 </div>
-                <CardTitle>Instant alerts for low ratings</CardTitle>
+                <CardTitle>Know the moment something slips</CardTitle>
                 <CardDescription>
-                  The moment a customer gives 1 or 2 stars, you get a
-                  notification. Not the next morning. Right then, while they
-                  might still be in the room. That&apos;s your window to fix it
-                  before they leave and go public.
+                  When a low rating comes in, you get a notification right away
+                  — not the next morning. So you can look into what happened and
+                  respond while it&apos;s still fresh.
                 </CardDescription>
               </CardHeader>
             </Card>
           </div>
         </div>
       </section>
+
+      {/* ─── OLD Features (Bento) — temporarily disabled, restore later ─────
+           Kept intact for reference; re-enable by flipping `false` to `true`
+           (or delete this block and restore the original section). Uses the
+           legacy <AIReviewCard/> customer-review demo + intercept framing. */}
+      {false && (
+        <section id="features-old" className="py-20 sm:py-28">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
+            <div className="mb-14 text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+                Runs in the background while you run your business
+              </h2>
+              <p className="mt-3 text-muted-foreground">
+                More Google reviews from the happy ones, private feedback from
+                the unhappy ones, and we write your replies too.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              {/* Card 1 — spans 2 cols × 3 rows on desktop */}
+              <AIReviewCard />
+
+              {/* Card 2 — Active Reputation Shield */}
+              <Card>
+                <CardHeader>
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Shield className="size-5 text-primary" />
+                  </div>
+                  <CardTitle>Catch problems before they go public</CardTitle>
+                  <CardDescription>
+                    The customers who keep coming back care about your place.
+                    When something goes wrong, they want to tell you, not post
+                    about it. Jugnoo gives them a private way to do that. You
+                    hear about it first, fix what needs fixing, and no one reads
+                    about it online.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Card 3 — Monday Morning Pulse */}
+              <Card>
+                <CardHeader>
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Mail className="size-5 text-primary" />
+                  </div>
+                  <CardTitle>Monday morning email</CardTitle>
+                  <CardDescription>
+                    Every Monday at 9am you get a short email. Every complaint
+                    from the past week, what kept coming up, and which way your
+                    rating is heading. Read it over coffee. No login.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+
+              {/* Card 4 — Live alerts */}
+              <Card>
+                <CardHeader>
+                  <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                    <Bell className="size-5 text-primary" />
+                  </div>
+                  <CardTitle>Instant alerts for low ratings</CardTitle>
+                  <CardDescription>
+                    The moment a customer gives 1 or 2 stars, you get a
+                    notification. Not the next morning. Right then, while they
+                    might still be in the room. That&apos;s your window to fix
+                    it before they leave and go public.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─── The Cost of Doing Nothing ───────────────────────── */}
       <section className="border-y border-border/40 bg-muted/30 py-20 sm:py-28">

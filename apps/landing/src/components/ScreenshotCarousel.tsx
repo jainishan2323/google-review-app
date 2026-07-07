@@ -5,7 +5,6 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 const SLIDES = [
-  { src: "/screenshots/one.png",   alt: "Customized feedback form",  title: "Customized feedback form" },
   { src: "/screenshots/two.png",   alt: "Review overview",            title: "Review overview" },
   { src: "/screenshots/three.png", alt: "Detailed review analysis",   title: "Detailed review analysis" },
   { src: "/screenshots/four.png",  alt: "AI assisted reply to users", title: "AI assisted reply" },
@@ -68,13 +67,15 @@ export function ScreenshotCarousel() {
         .title-in { animation: title-fade-in 300ms ease forwards; }
       `}</style>
 
-      <div key={current} className="slide-in" style={{ lineHeight: 0 }}>
+      <div className="relative w-full overflow-hidden" style={{ aspectRatio: "16 / 9" }}>
         <Image
+          key={current}
           src={SLIDES[current].src}
           alt={SLIDES[current].alt}
-          width={1280}
-          height={800}
-          className="w-full object-cover"
+          width={1920}
+          height={1080}
+          sizes="(max-width: 1024px) 100vw, 1024px"
+          className="slide-in absolute inset-0 h-full w-full object-cover"
           priority={current === 0}
           quality={85}
         />

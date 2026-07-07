@@ -9,9 +9,9 @@ const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 const SITE_URL = "https://jugnoo.de";
 const SITE_NAME = "Jugnoo";
-const TITLE = "Jugnoo — Turn Happy Customers into 5-Star Google Reviews";
+const TITLE = "Jugnoo — Understand every review, reply in one tap";
 const DESCRIPTION =
-  "The AI-powered QR form that cures blank page syndrome for your customers and gives you real-time operational analytics.";
+  "Jugnoo reads every Google review as it comes in, shows you what's changing, and drafts a reply in your voice — so you always know what needs your attention.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     "Google reviews",
     "review management",
     "AI review reply",
-    "QR review form",
+    "review analytics",
     "restaurant reviews",
     "customer feedback",
     "Google Bewertungen",
